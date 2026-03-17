@@ -52,12 +52,13 @@ class QdrantStore:
         return self._client
 
     async def ensure_collection(self, vector_size: int = 1024) -> None:
-        """Erstellt die Collection mit Dense + Sparse Vektoren, falls nicht vorhanden."""
-        collections = [
-            c.name for c in (await self.client.get_collections()).collections
-        ]
+        """Erstellt die Collection mit Dense + Sparse Vektoren, falls nicht vorhanden.
 
-        if self.collection_name in collections:
+        Prueft ob der Name als Collection oder Alias existiert, bevor eine neue
+        Collection erstellt wird.
+        """
+        # Pruefen ob Collection oder Alias bereits erreichbar ist
+        try:
             info = await self.client.get_collection(self.collection_name)
             logger.info(
                 "Collection '%s' existiert bereits (%d Punkte)",
@@ -65,6 +66,8 @@ class QdrantStore:
                 info.points_count,
             )
             return
+        except Exception:
+            pass  # Collection/Alias existiert nicht -> erstellen
 
         logger.info("Erstelle Collection '%s' mit Hybrid-Vektoren", self.collection_name)
         await self.client.create_collection(
