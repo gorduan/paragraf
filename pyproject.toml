@@ -1,0 +1,76 @@
+[project]
+name = "paragraf"
+version = "0.2.0"
+description = "MCP-Server fuer deutsches Recht – semantische Suche ueber alle deutschen Gesetze"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+
+dependencies = [
+    # MCP SDK
+    "mcp[cli]>=1.0.0",
+    # Vektordatenbank
+    "qdrant-client>=1.12.0",
+    # Embedding & Reranking
+    "FlagEmbedding>=1.3.0",
+    "sentence-transformers>=3.0.0",
+    "torch>=2.2.0",
+    "transformers>=4.36.0",
+    # RAG & NLP
+    "rank-bm25>=0.2.2",
+    # HTTP & Async
+    "httpx>=0.27.0",
+    # XML Parsing
+    "lxml>=5.0.0",
+    "beautifulsoup4>=4.12.0",
+    # Configuration & Validation
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    # Logging
+    "structlog>=24.0.0",
+    # Retry Logic
+    "tenacity>=8.2.0",
+    # Excel (EUTB-Daten)
+    "openpyxl>=3.1.0",
+    # Tokenization
+    "tiktoken>=0.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+]
+compression = [
+    "llmlingua>=0.2.0",
+]
+
+[project.scripts]
+paragraf = "paragraf.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/paragraf"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]  # Lange Zeilen in Test-XML-Strings erlaubt
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
