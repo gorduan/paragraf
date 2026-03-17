@@ -52,6 +52,7 @@ def register_search_tools(mcp: FastMCP) -> None:
             Relevante Gesetzestexte mit Quellenangaben und RDG-Disclaimer.
         """
         app = ctx.request_context.lifespan_context
+        await app.ensure_ready()
         qdrant = app.qdrant
         reranker = app.reranker
 
@@ -139,6 +140,7 @@ def register_search_tools(mcp: FastMCP) -> None:
             Vollstaendiger Gesetzestext mit Metadaten.
         """
         app = ctx.request_context.lifespan_context
+        await app.ensure_ready()
         qdrant = app.qdrant
 
         # Exakte Suche nach Gesetz + Paragraph
@@ -210,6 +212,7 @@ def register_search_tools(mcp: FastMCP) -> None:
         import re
 
         app = ctx.request_context.lifespan_context
+        await app.ensure_ready()
         qdrant = app.qdrant
 
         output_parts = ["## Vergleich\n"]

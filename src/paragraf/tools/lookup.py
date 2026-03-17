@@ -26,6 +26,7 @@ def register_lookup_tools(mcp: FastMCP) -> None:
             Tabellarische Uebersicht aller verfuegbaren Gesetze.
         """
         app = ctx.request_context.lifespan_context
+        await app.ensure_ready()
         qdrant = app.qdrant
 
         info = await qdrant.get_collection_info()
@@ -84,7 +85,7 @@ def register_lookup_tools(mcp: FastMCP) -> None:
         Returns:
             Liste passender Beratungsstellen mit Kontaktdaten.
         """
-        # EUTB-Daten aus lokaler JSON-Datei laden (nach Ingestion verfuegbar)
+        # EUTB-Daten aus lokaler JSON-Datei laden (kein ML-Modell noetig)
         app = ctx.request_context.lifespan_context
         data_dir = app.data_dir
 
@@ -184,6 +185,7 @@ def register_lookup_tools(mcp: FastMCP) -> None:
             Server-Status mit Statistiken.
         """
         app = ctx.request_context.lifespan_context
+        await app.ensure_ready()
         qdrant = app.qdrant
         embedding = app.embedding
 

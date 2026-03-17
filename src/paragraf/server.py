@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -25,24 +25,46 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AppContext:
-    """Anwendungskontext – wird ueber Lifespan initialisiert und an Tools uebergeben."""
+    """Anwendungskontext mit Lazy-Loading fuer schwere ML-Modelle.
+
+    Embedding und Reranker werden erst beim ersten Tool-Aufruf geladen,
+    damit der Server innerhalb des Claude Desktop Timeouts starten kann.
+    """
 
     embedding: EmbeddingService
     qdrant: QdrantStore
     reranker: RerankerService
     parser: GesetzParser
     data_dir: Path
+    _initialized: bool = field(default=False, repr=False)
+
+    async def ensure_ready(self) -> None:
+        """Laedt ML-Modelle und verbindet Qdrant (lazy, beim ersten Aufruf)."""
+        if self._initialized:
+            return
+
+        logger.info("Lade ML-Modelle (erster Aufruf)...")
+
+        # 1. Embedding-Modell laden
+        await self.embedding.initialize()
+
+        # 2. Qdrant verbinden + Collection sicherstellen
+        await self.qdrant.connect()
+        await self.qdrant.ensure_collection(vector_size=self.embedding.dimension)
+
+        # 3. Reranker laden
+        await self.reranker.initialize()
+
+        self._initialized = True
+        logger.info("=== Alle Services initialisiert ===")
 
 
 @asynccontextmanager
 async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
-    """Initialisiert alle Services beim Serverstart, raeumt beim Stop auf.
+    """Erstellt den AppContext sofort, laedt schwere Modelle lazy.
 
-    Lifecycle:
-    1. Embedding-Modell laden (bge-m3)
-    2. Mit Qdrant verbinden, Collection sicherstellen
-    3. Reranker laden (bge-reranker-v2-m3)
-    4. Parser initialisieren
+    Der Server antwortet sofort auf die MCP-Handshake-Anfrage.
+    Embedding- und Reranker-Modelle werden erst beim ersten Tool-Aufruf geladen.
     """
     logger.info("=== Paragraf MCP Server startet ===")
 
@@ -52,7 +74,7 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
     (data_dir / "raw").mkdir(exist_ok=True)
     (data_dir / "processed").mkdir(exist_ok=True)
 
-    # 1. Embedding-Service
+    # Services konfigurieren (noch nicht initialisieren!)
     embedding = EmbeddingService(
         model_name=settings.embedding_model,
         device=settings.embedding_device,
@@ -60,30 +82,21 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
         batch_size=settings.embedding_batch_size,
         max_length=settings.embedding_max_length,
     )
-    await embedding.initialize()
 
-    # 2. Qdrant
     qdrant = QdrantStore(
         url=settings.qdrant_url,
         collection_name=settings.qdrant_collection,
         embedding_service=embedding,
     )
-    await qdrant.connect()
-    await qdrant.ensure_collection(vector_size=embedding.dimension)
 
-    # 3. Reranker
     reranker = RerankerService(
         model_name=settings.reranker_model,
         device=settings.embedding_device,
         use_fp16=settings.embedding_device != "cpu",
         top_k=settings.reranker_top_k,
     )
-    await reranker.initialize()
 
-    # 4. Parser
     parser = GesetzParser(data_dir=data_dir)
-
-    logger.info("=== Alle Services initialisiert ===")
 
     ctx = AppContext(
         embedding=embedding,
@@ -93,10 +106,13 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
         data_dir=data_dir,
     )
 
+    logger.info("=== Server bereit (Modelle werden lazy geladen) ===")
+
     try:
         yield ctx
     finally:
-        await qdrant.close()
+        if ctx._initialized:
+            await qdrant.close()
         logger.info("=== Paragraf MCP Server gestoppt ===")
 
 

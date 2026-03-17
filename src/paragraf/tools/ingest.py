@@ -33,6 +33,7 @@ def register_ingest_tools(mcp: FastMCP) -> None:
             Status der Indexierung mit Statistiken.
         """
         app = ctx.request_context.lifespan_context
+        await app.ensure_ready()
         parser = app.parser
         qdrant = app.qdrant
 
@@ -112,6 +113,7 @@ def register_ingest_tools(mcp: FastMCP) -> None:
         """
         import httpx
 
+        # EUTB-Import braucht kein ML-Modell, aber data_dir
         app = ctx.request_context.lifespan_context
         data_dir = app.data_dir
         processed_dir = data_dir / "processed"
