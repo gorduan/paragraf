@@ -5,7 +5,7 @@ import * as http from "http";
 
 export type BackendState =
   | "stopped"
-  | "starting_docker"
+  | "starting_qdrant"
   | "starting_backend"
   | "loading_models"
   | "ready"
@@ -13,26 +13,45 @@ export type BackendState =
 
 export interface BackendStatus {
   state: BackendState;
-  docker: boolean;
   qdrant: boolean;
   backend: boolean;
   error?: string;
   log: string[];
+  loadingProgress: number;
+  loadingStage: string;
 }
+
+// Bekannte Log-Muster und ihr Fortschritt (0–100)
+const LOADING_STAGES: [RegExp, number, string][] = [
+  [/Paragraf REST-API startet/, 5, "Initialisiere Services..."],
+  [/Lade Embedding|Loading.*bge-m3|sentence-transformers/, 10, "Lade Embedding-Modell (BAAI/bge-m3)..."],
+  [/Downloading.*model|Fetching.*files/, 20, "Lade Modell-Dateien herunter..."],
+  [/tokenizer_config|vocab.*loading|Loading.*tokenizer/, 35, "Lade Tokenizer..."],
+  [/model\.safetensors|Loading.*weights|Loading.*model/, 45, "Lade Modell-Gewichte..."],
+  [/Embedding.*geladen|Loaded.*embedding|model loaded/, 55, "Embedding-Modell geladen"],
+  [/Verbinde mit Qdrant|Connecting.*Qdrant/, 60, "Verbinde mit Qdrant..."],
+  [/Qdrant erreichbar|collections/, 65, "Qdrant verbunden"],
+  [/Collection.*existiert|ensure_collection/, 68, "Collection geprüft"],
+  [/Lade Reranker|Loading.*reranker/, 70, "Lade Reranker-Modell..."],
+  [/Reranker.*geladen|reranker.*loaded/, 90, "Reranker geladen"],
+  [/Alle Services initialisiert|Services ready/, 95, "Fast fertig..."],
+  [/Uvicorn running|Application startup complete/, 100, "Backend bereit"],
+];
 
 export class BackendManager {
   private state: BackendState = "stopped";
+  private qdrantProcess: ChildProcess | null = null;
   private pythonProcess: ChildProcess | null = null;
   private logs: string[] = [];
-  private dockerAvailable = false;
   private qdrantRunning = false;
   private backendRunning = false;
   private error: string | undefined;
   private projectDir: string;
+  private loadingProgress = 0;
+  private loadingStage = "";
   private onStateChange?: (status: BackendStatus) => void;
 
   constructor() {
-    // Projekt-Root finden (ein Verzeichnis über desktop/)
     this.projectDir = path.resolve(__dirname, "..", "..", "..");
   }
 
@@ -43,11 +62,12 @@ export class BackendManager {
   getStatus(): BackendStatus {
     return {
       state: this.state,
-      docker: this.dockerAvailable,
       qdrant: this.qdrantRunning,
       backend: this.backendRunning,
       error: this.error,
       log: this.logs.slice(-100),
+      loadingProgress: this.loadingProgress,
+      loadingStage: this.loadingStage,
     };
   }
 
@@ -64,79 +84,126 @@ export class BackendManager {
     this.emitState();
   }
 
+  private setProgress(progress: number, stage: string): void {
+    this.loadingProgress = progress;
+    this.loadingStage = stage;
+    this.emitState();
+  }
+
   private emitState(): void {
     this.onStateChange?.(this.getStatus());
   }
 
-  // ── Docker ──────────────────────────────────────────────────────────
-
-  async checkDocker(): Promise<boolean> {
-    this.log("Prüfe Docker...");
-    try {
-      const result = await this.execWithTimeout("docker version --format {{.Server.Version}}", 8000);
-      if (result) {
-        this.dockerAvailable = true;
-        this.log(`Docker verfügbar (Version: ${result.trim()})`);
-        return true;
+  private parseLogForProgress(line: string): void {
+    for (const [pattern, progress, stage] of LOADING_STAGES) {
+      if (pattern.test(line) && progress > this.loadingProgress) {
+        this.setProgress(progress, stage);
+        break;
       }
-    } catch {
-      // Fallback
     }
-    this.dockerAvailable = false;
-    this.log("Docker nicht verfügbar – bitte Docker Desktop starten und warten bis es bereit ist");
-    return false;
-  }
-
-  private execWithTimeout(command: string, timeoutMs: number): Promise<string | null> {
-    return new Promise((resolve) => {
-      const child = spawn(command, [], {
-        shell: true,
-        stdio: ["pipe", "pipe", "pipe"],
-        timeout: timeoutMs,
-      });
-
-      let stdout = "";
-      child.stdout?.on("data", (data: Buffer) => {
-        stdout += data.toString();
-      });
-
-      const timer = setTimeout(() => {
-        child.kill("SIGKILL");
-        resolve(null);
-      }, timeoutMs);
-
-      child.on("close", (code) => {
-        clearTimeout(timer);
-        resolve(code === 0 ? stdout : null);
-      });
-
-      child.on("error", () => {
-        clearTimeout(timer);
-        resolve(null);
-      });
-    });
   }
 
   // ── Qdrant ──────────────────────────────────────────────────────────
 
-  async startQdrant(): Promise<boolean> {
-    this.setState("starting_docker");
-    this.log("Starte Qdrant via Docker Compose...");
+  async checkQdrant(): Promise<boolean> {
+    this.log("Prüfe Qdrant...");
+    const ok = await this.checkQdrantHealth();
+    if (ok) {
+      this.qdrantRunning = true;
+      this.log("Qdrant läuft bereits auf Port 6333");
+      return true;
+    }
+    this.log("Qdrant nicht erreichbar");
+    return false;
+  }
 
+  private findQdrant(): string | null {
+    const candidates: string[] = [];
+
+    if (process.platform === "win32") {
+      candidates.push(
+        "E:\\qdrant\\qdrant.exe",
+        path.join(this.projectDir, "qdrant", "qdrant.exe"),
+        path.join(process.env.LOCALAPPDATA || "", "qdrant", "qdrant.exe"),
+        path.join(process.env.USERPROFILE || "", "qdrant", "qdrant.exe"),
+      );
+    } else {
+      const home = process.env.HOME || "";
+      candidates.push(
+        path.join(this.projectDir, "qdrant", "qdrant"),
+        path.join(home, "qdrant", "qdrant"),
+        "/usr/local/bin/qdrant",
+      );
+    }
+
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+
+    // PATH
     try {
-      execSync("docker compose up -d qdrant", {
-        cwd: this.projectDir,
-        stdio: "pipe",
-        timeout: 60000,
-      });
-    } catch (e: any) {
-      this.log(`Docker Compose Fehler: ${e.message}`);
-      this.setState("error", "Qdrant konnte nicht gestartet werden");
+      const result = execSync(
+        process.platform === "win32" ? "where qdrant" : "which qdrant",
+        { stdio: "pipe", timeout: 3000 },
+      );
+      const p = result.toString().trim().split("\n")[0];
+      if (p && fs.existsSync(p)) return p;
+    } catch {}
+
+    return null;
+  }
+
+  async startQdrant(): Promise<boolean> {
+    this.setState("starting_qdrant");
+
+    // Bereits laufend?
+    if (await this.checkQdrantHealth()) {
+      this.qdrantRunning = true;
+      this.log("Qdrant läuft bereits");
+      return true;
+    }
+
+    const qdrantPath = this.findQdrant();
+    if (!qdrantPath) {
+      this.setState(
+        "error",
+        "Qdrant nicht gefunden. Bitte qdrant.exe nach E:\\qdrant\\ legen.\n"
+        + "Download: https://github.com/qdrant/qdrant/releases",
+      );
       return false;
     }
 
-    // Health-Check warten (max 30s)
-    for (let i = 0; i < 30; i++) {
+    this.log(`Starte Qdrant: ${qdrantPath}`);
+
+    const storagePath = path.join(path.dirname(qdrantPath), "storage");
+    fs.mkdirSync(storagePath, { recursive: true });
+
+    this.qdrantProcess = spawn(qdrantPath, [], {
+      cwd: path.dirname(qdrantPath),
+      stdio: ["pipe", "pipe", "pipe"],
+      env: {
+        ...process.env,
+        QDRANT__STORAGE__STORAGE_PATH: storagePath,
+      },
+    });
+
+    this.qdrantProcess.stdout?.on("data", (data: Buffer) => {
+      data.toString().split("\n").filter(Boolean).forEach((l) => this.log(`[Qdrant] ${l}`));
+    });
+
+    this.qdrantProcess.stderr?.on("data", (data: Buffer) => {
+      data.toString().split("\n").filter(Boolean).forEach((l) => this.log(`[Qdrant] ${l}`));
+    });
+
+    this.qdrantProcess.on("exit", (code) => {
+      this.log(`Qdrant beendet (Code: ${code})`);
+      this.qdrantRunning = false;
+    });
+
+    // Health-Check (max 15s)
+    for (let i = 0; i < 15; i++) {
       if (await this.checkQdrantHealth()) {
         this.qdrantRunning = true;
         this.log("Qdrant bereit");
@@ -145,7 +212,7 @@ export class BackendManager {
       await this.sleep(1000);
     }
 
-    this.setState("error", "Qdrant Timeout");
+    this.setState("error", "Qdrant konnte nicht gestartet werden");
     return false;
   }
 
@@ -165,16 +232,14 @@ export class BackendManager {
   // ── Python Backend ──────────────────────────────────────────────────
 
   private findUv(): string | null {
-    // 1. PATH
     try {
       const result = execSync(
         process.platform === "win32" ? "where uv" : "which uv",
-        { stdio: "pipe", timeout: 5000 }
+        { stdio: "pipe", timeout: 5000 },
       );
       return result.toString().trim().split("\n")[0];
     } catch {}
 
-    // 2. Typische Installationsorte
     const candidates: string[] = [];
     if (process.platform === "win32") {
       const localAppData = process.env.LOCALAPPDATA || "";
@@ -182,29 +247,26 @@ export class BackendManager {
       candidates.push(
         path.join(localAppData, "uv", "uv.exe"),
         path.join(userProfile, ".local", "bin", "uv.exe"),
-        path.join(userProfile, ".cargo", "bin", "uv.exe")
+        path.join(userProfile, ".cargo", "bin", "uv.exe"),
       );
     } else {
       const home = process.env.HOME || "";
       candidates.push(
         path.join(home, ".local", "bin", "uv"),
         path.join(home, ".cargo", "bin", "uv"),
-        "/usr/local/bin/uv"
+        "/usr/local/bin/uv",
       );
     }
 
     for (const candidate of candidates) {
-      if (fs.existsSync(candidate)) {
-        return candidate;
-      }
+      if (fs.existsSync(candidate)) return candidate;
     }
-
     return null;
   }
 
   async startBackend(): Promise<boolean> {
     this.setState("starting_backend");
-    this.log("Suche uv...");
+    this.setProgress(0, "Suche uv...");
 
     const uvPath = this.findUv();
     if (!uvPath) {
@@ -213,8 +275,8 @@ export class BackendManager {
     }
     this.log(`uv gefunden: ${uvPath}`);
 
-    this.log("Starte Python Backend...");
     this.setState("loading_models");
+    this.setProgress(2, "Starte Python Backend...");
 
     this.pythonProcess = spawn(
       uvPath,
@@ -223,31 +285,39 @@ export class BackendManager {
         cwd: this.projectDir,
         stdio: ["pipe", "pipe", "pipe"],
         env: { ...process.env, PYTHONUNBUFFERED: "1" },
-      }
+      },
     );
 
     this.pythonProcess.stdout?.on("data", (data: Buffer) => {
       const lines = data.toString().split("\n").filter(Boolean);
-      lines.forEach((line) => this.log(`[API] ${line}`));
+      lines.forEach((line) => {
+        this.log(`[API] ${line}`);
+        this.parseLogForProgress(line);
+      });
     });
 
     this.pythonProcess.stderr?.on("data", (data: Buffer) => {
       const lines = data.toString().split("\n").filter(Boolean);
-      lines.forEach((line) => this.log(`[API] ${line}`));
+      lines.forEach((line) => {
+        this.log(`[API] ${line}`);
+        this.parseLogForProgress(line);
+      });
     });
 
     this.pythonProcess.on("exit", (code) => {
       this.log(`Python-Prozess beendet (Code: ${code})`);
       this.backendRunning = false;
+      this.pythonProcess = null;
       if (this.state !== "stopped") {
         this.setState("error", `Backend unerwartet beendet (Code: ${code})`);
       }
     });
 
-    // Health-Check warten (max 120s – Modelle laden dauert)
-    for (let i = 0; i < 120; i++) {
+    // Health-Check (max 180s)
+    for (let i = 0; i < 180; i++) {
       if (await this.checkBackendHealth()) {
         this.backendRunning = true;
+        this.setProgress(100, "Backend bereit");
         this.setState("ready");
         this.log("Backend bereit");
         return true;
@@ -276,19 +346,12 @@ export class BackendManager {
 
   async start(): Promise<boolean> {
     if (this.state === "ready") return true;
-
     this.error = undefined;
 
-    // 1. Docker prüfen
-    if (!this.checkDocker()) {
-      this.setState("error", "Docker ist nicht verfügbar. Bitte Docker Desktop starten.");
-      return false;
-    }
-
-    // 2. Qdrant starten
+    // 1. Qdrant starten
     if (!(await this.startQdrant())) return false;
 
-    // 3. Backend starten
+    // 2. Backend starten
     if (!(await this.startBackend())) return false;
 
     return true;
@@ -299,7 +362,6 @@ export class BackendManager {
 
     if (this.pythonProcess) {
       this.pythonProcess.kill("SIGTERM");
-      // Grace period
       await this.sleep(2000);
       if (this.pythonProcess && !this.pythonProcess.killed) {
         this.pythonProcess.kill("SIGKILL");
@@ -308,23 +370,23 @@ export class BackendManager {
     }
 
     this.backendRunning = false;
+    this.setProgress(0, "");
     this.setState("stopped");
     this.log("Backend gestoppt");
   }
 
   async stopQdrant(): Promise<void> {
     this.log("Stoppe Qdrant...");
-    try {
-      execSync("docker compose stop qdrant", {
-        cwd: this.projectDir,
-        stdio: "pipe",
-        timeout: 30000,
-      });
-      this.qdrantRunning = false;
-      this.log("Qdrant gestoppt");
-    } catch (e: any) {
-      this.log(`Fehler beim Stoppen von Qdrant: ${e.message}`);
+    if (this.qdrantProcess) {
+      this.qdrantProcess.kill("SIGTERM");
+      await this.sleep(1000);
+      if (this.qdrantProcess && !this.qdrantProcess.killed) {
+        this.qdrantProcess.kill("SIGKILL");
+      }
+      this.qdrantProcess = null;
     }
+    this.qdrantRunning = false;
+    this.log("Qdrant gestoppt");
   }
 
   private sleep(ms: number): Promise<void> {

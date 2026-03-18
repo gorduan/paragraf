@@ -4,11 +4,12 @@ export {};
 
 interface BackendStatus {
   state: string;
-  docker: boolean;
   qdrant: boolean;
   backend: boolean;
   error?: string;
   log: string[];
+  loadingProgress: number;
+  loadingStage: string;
 }
 
 interface ElectronAPI {
@@ -17,7 +18,7 @@ interface ElectronAPI {
     start: () => Promise<boolean>;
     stop: () => Promise<boolean>;
     stopQdrant: () => Promise<boolean>;
-    checkDocker: () => Promise<boolean>;
+    checkQdrant: () => Promise<boolean>;
     onStatus: (callback: (status: BackendStatus) => void) => () => void;
   };
   onSearchShortcut: (callback: () => void) => () => void;

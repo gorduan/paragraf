@@ -2,11 +2,12 @@ import { contextBridge, ipcRenderer } from "electron";
 
 export interface BackendStatus {
   state: string;
-  docker: boolean;
   qdrant: boolean;
   backend: boolean;
   error?: string;
   log: string[];
+  loadingProgress: number;
+  loadingStage: string;
 }
 
 const electronAPI = {
@@ -18,8 +19,8 @@ const electronAPI = {
     stop: (): Promise<boolean> => ipcRenderer.invoke("backend:stop"),
     stopQdrant: (): Promise<boolean> =>
       ipcRenderer.invoke("backend:stopQdrant"),
-    checkDocker: (): Promise<boolean> =>
-      ipcRenderer.invoke("backend:checkDocker"),
+    checkQdrant: (): Promise<boolean> =>
+      ipcRenderer.invoke("backend:checkQdrant"),
     onStatus: (callback: (status: BackendStatus) => void) => {
       const handler = (_event: any, status: BackendStatus) => callback(status);
       ipcRenderer.on("backend:status", handler);

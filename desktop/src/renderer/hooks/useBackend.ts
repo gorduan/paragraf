@@ -2,19 +2,21 @@ import { useState, useEffect, useCallback } from "react";
 
 interface BackendStatus {
   state: string;
-  docker: boolean;
   qdrant: boolean;
   backend: boolean;
   error?: string;
   log: string[];
+  loadingProgress: number;
+  loadingStage: string;
 }
 
 const DEFAULT_STATUS: BackendStatus = {
   state: "stopped",
-  docker: false,
   qdrant: false,
   backend: false,
   log: [],
+  loadingProgress: 0,
+  loadingStage: "",
 };
 
 export function useBackend() {
@@ -23,10 +25,8 @@ export function useBackend() {
   const [stopping, setStopping] = useState(false);
 
   useEffect(() => {
-    // Initial status
     window.electronAPI?.backend.getStatus().then(setStatus).catch(() => {});
 
-    // Listen for updates
     const unsubscribe = window.electronAPI?.backend.onStatus(setStatus);
     return () => unsubscribe?.();
   }, []);
@@ -52,7 +52,7 @@ export function useBackend() {
   const isReady = status.state === "ready";
   const isError = status.state === "error";
   const isLoading =
-    status.state === "starting_docker" ||
+    status.state === "starting_qdrant" ||
     status.state === "starting_backend" ||
     status.state === "loading_models";
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -16,92 +16,86 @@ interface SetupWizardProps {
   onComplete: () => void;
 }
 
-type StepStatus = "pending" | "running" | "done" | "error";
-
 export function SetupWizard({ onComplete }: SetupWizardProps) {
   const [step, setStep] = useState(0);
-  const [dockerOk, setDockerOk] = useState<boolean | null>(null);
   const [qdrantOk, setQdrantOk] = useState<boolean | null>(null);
-  const [backendOk, setBackendOk] = useState<boolean | null>(null);
-  const [indexing, setIndexing] = useState(false);
-  const [indexProgress, setIndexProgress] = useState<IndexProgressEvent | null>(
-    null
-  );
-  const [indexDone, setIndexDone] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [indexing, setIndexing] = useState(false);
+  const [indexProgress, setIndexProgress] = useState<IndexProgressEvent | null>(null);
+  const [indexDone, setIndexDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const backend = useBackend();
 
   const steps = [
     "Willkommen",
-    "Docker prüfen",
-    "Qdrant starten",
+    "Qdrant prüfen",
     "Backend starten",
     "Gesetze indexieren",
     "Fertig",
   ];
 
-  const checkDocker = async () => {
+  // Qdrant-Status live verfolgen
+  useEffect(() => {
+    if (backend.status.qdrant && !qdrantOk) {
+      setQdrantOk(true);
+    }
+  }, [backend.status.qdrant, qdrantOk]);
+
+  const checkQdrant = async () => {
     setError(null);
     setChecking(true);
     try {
-      const ok = await window.electronAPI?.backend.checkDocker();
-      setDockerOk(ok ?? false);
-      if (!ok) setError("Docker ist nicht verfügbar. Bitte Docker Desktop starten und warten bis es bereit ist.");
+      const ok = await window.electronAPI?.backend.checkQdrant();
+      setQdrantOk(ok ?? false);
+      if (!ok) {
+        setError(
+          "Qdrant läuft nicht auf Port 6333.\n" +
+          "Bitte Qdrant starten: E:\\qdrant\\qdrant.exe"
+        );
+      }
     } catch {
-      setDockerOk(false);
-      setError("Docker-Prüfung fehlgeschlagen.");
+      setQdrantOk(false);
+      setError("Qdrant-Prüfung fehlgeschlagen.");
     } finally {
       setChecking(false);
     }
   };
 
-  const startQdrant = async () => {
+  const startBackend = async () => {
     setError(null);
-    const ok = await backend.start();
-    if (backend.status.qdrant) {
-      setQdrantOk(true);
-    } else {
-      setQdrantOk(false);
-      setError(backend.status.error || "Qdrant konnte nicht gestartet werden.");
+    try {
+      await backend.start();
+    } catch {
+      setError("Backend konnte nicht gestartet werden.");
     }
   };
 
-  const checkBackend = async () => {
+  const checkBackendHealth = async () => {
     setError(null);
     try {
       await api.health();
-      setBackendOk(true);
+      return true;
     } catch {
-      setBackendOk(false);
       setError("Backend ist noch nicht bereit. Bitte warten...");
+      return false;
     }
   };
 
   const startIndexing = () => {
     setIndexing(true);
     setError(null);
-    let lastDoneProgress = 0;
     api.indexGesetze({}, (event) => {
       setIndexProgress(event);
       if (event.schritt === "error") {
         setError(event.nachricht);
       }
       if (event.schritt === "done") {
-        lastDoneProgress = event.fortschritt;
-        // Alle Gesetze fertig wenn fortschritt === gesamt
         if (event.gesamt > 0 && event.fortschritt >= event.gesamt) {
           setIndexDone(true);
           setIndexing(false);
         }
       }
     });
-  };
-
-  const StatusIcon = ({ ok }: { ok: boolean | null }) => {
-    if (ok === null) return <Loader size={20} className="animate-spin text-slate-400" />;
-    if (ok) return <CheckCircle size={20} className="text-green-500" />;
-    return <XCircle size={20} className="text-red-500" />;
   };
 
   const renderStep = () => {
@@ -117,7 +111,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
             <div className="text-sm text-slate-400 space-y-1">
               <p>Voraussetzungen:</p>
               <ul className="list-disc list-inside">
-                <li>Docker Desktop</li>
+                <li>Qdrant (läuft auf Port 6333)</li>
                 <li>Internetverbindung (Modelle + Gesetze laden)</li>
                 <li>~2 GB Speicherplatz (Modelle)</li>
               </ul>
@@ -128,26 +122,32 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       case 1:
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">Docker prüfen</h2>
+            <h2 className="text-xl font-bold">Qdrant prüfen</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Docker wird für die Qdrant-Vektordatenbank benötigt.
+              Qdrant ist die Vektordatenbank für die semantische Suche.
             </p>
             <div className="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-700 rounded-lg">
-              {dockerOk === null ? (
+              {qdrantOk === null && !checking ? (
                 <div className="w-5 h-5 rounded-full bg-slate-300 dark:bg-slate-500" />
+              ) : checking ? (
+                <Loader size={20} className="animate-spin text-blue-400" />
+              ) : qdrantOk ? (
+                <CheckCircle size={20} className="text-green-500" />
               ) : (
-                <StatusIcon ok={dockerOk} />
+                <XCircle size={20} className="text-red-500" />
               )}
               <span>
-                {dockerOk === null
-                  ? "Klicken Sie 'Prüfen' um Docker zu testen"
-                  : dockerOk
-                  ? "Docker ist verfügbar"
-                  : "Docker nicht gefunden"}
+                {checking
+                  ? "Prüfe Qdrant..."
+                  : qdrantOk === null
+                  ? "Klicken Sie 'Prüfen' um Qdrant zu testen"
+                  : qdrantOk
+                  ? "Qdrant läuft auf Port 6333"
+                  : "Qdrant nicht erreichbar"}
               </span>
             </div>
             <button
-              onClick={checkDocker}
+              onClick={checkQdrant}
               disabled={checking}
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -160,62 +160,61 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       case 2:
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">Qdrant starten</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Qdrant ist die Vektordatenbank für die semantische Suche.
-            </p>
-            <div className="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-700 rounded-lg">
-              <StatusIcon ok={qdrantOk} />
-              <span>
-                {qdrantOk === null
-                  ? "Qdrant wird gestartet..."
-                  : qdrantOk
-                  ? "Qdrant läuft"
-                  : "Qdrant Fehler"}
-              </span>
-            </div>
-            <button
-              onClick={startQdrant}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700"
-            >
-              Starten
-            </button>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-4">
             <h2 className="text-xl font-bold">Backend starten</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Das Python-Backend lädt die Embedding- und Reranking-Modelle (~2 GB beim ersten Start).
             </p>
-            <div className="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-700 rounded-lg">
-              <StatusIcon ok={backendOk} />
-              <span>
-                {backendOk === null
-                  ? "Backend wird gestartet..."
-                  : backendOk
-                  ? "Backend bereit"
-                  : "Backend nicht erreichbar"}
-              </span>
-            </div>
+
+            {/* Fortschrittsanzeige */}
             {backend.isLoading && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                Modelle werden geladen, das kann einige Minuten dauern...
-              </p>
+              <div className="space-y-3">
+                <ProgressBar
+                  progress={backend.status.loadingProgress}
+                  total={100}
+                  label={backend.status.loadingStage}
+                />
+                <p className="text-xs text-slate-400 text-center">
+                  {backend.status.loadingProgress}%
+                </p>
+              </div>
             )}
-            <button
-              onClick={checkBackend}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700"
-            >
-              <RefreshCw size={16} />
-              Status prüfen
-            </button>
+
+            {backend.isReady && (
+              <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <CheckCircle size={20} className="text-green-500" />
+                <span className="text-green-700 dark:text-green-300">Backend bereit!</span>
+              </div>
+            )}
+
+            {backend.isError && (
+              <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                <XCircle size={20} className="text-red-500" />
+                <span className="text-red-700 dark:text-red-300">{backend.status.error}</span>
+              </div>
+            )}
+
+            {!backend.isReady && !backend.isLoading && !backend.isError && (
+              <button
+                onClick={startBackend}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700"
+              >
+                Backend starten
+              </button>
+            )}
+
+            {backend.isError && (
+              <button
+                onClick={startBackend}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700"
+              >
+                <RefreshCw size={16} />
+                Erneut versuchen
+              </button>
+            )}
           </div>
         );
 
-      case 4:
+      case 3:
         return (
           <div className="space-y-4">
             <h2 className="text-xl font-bold">Gesetze indexieren</h2>
@@ -260,7 +259,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
           </div>
         );
 
-      case 5:
+      case 4:
         return (
           <div className="text-center space-y-4">
             <CheckCircle size={48} className="text-green-500 mx-auto" />
@@ -295,7 +294,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
         {/* Error */}
         {error && (
-          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300 whitespace-pre-line">
             {error}
           </div>
         )}

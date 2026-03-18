@@ -47,16 +47,6 @@ export function SettingsPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <StatusDot ok={backend.status.docker} />
-              <span className="text-sm">Docker</span>
-            </div>
-            <span className="text-xs text-slate-500">
-              {backend.status.docker ? "Verfügbar" : "Nicht verfügbar"}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
               <StatusDot ok={backend.status.qdrant} />
               <span className="text-sm">Qdrant</span>
             </div>
@@ -71,7 +61,9 @@ export function SettingsPage() {
               <span className="text-sm">Python Backend</span>
             </div>
             <span className="text-xs text-slate-500">
-              {backend.status.backend ? "Bereit" : "Gestoppt"}
+              {backend.isLoading
+                ? `${backend.status.loadingStage} (${backend.status.loadingProgress}%)`
+                : backend.status.backend ? "Bereit" : "Gestoppt"}
             </span>
           </div>
 

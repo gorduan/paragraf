@@ -8,7 +8,7 @@ und Cross-Encoder Reranking.
 ## Tech-Stack
 - **Python 3.12+** mit FastMCP (Official MCP SDK) + FastAPI (REST-API)
 - **Electron + React 19** (Desktop-App mit TailwindCSS)
-- **Qdrant** als Vektordatenbank (Docker, Port 6333)
+- **Qdrant** als Vektordatenbank (nativ, Port 6333)
 - **BAAI/bge-m3** (1024-dim Dense + Sparse Lexical Weights)
 - **BAAI/bge-reranker-v2-m3** (Cross-Encoder Reranking)
 - **Pydantic v2** fuer Modelle und Settings
@@ -55,7 +55,8 @@ desktop/
 ### Setup
 ```bash
 uv venv && uv pip install -e ".[dev]"
-docker compose up -d  # Qdrant starten
+# Qdrant starten (Binary von https://github.com/qdrant/qdrant/releases)
+E:\qdrant\qdrant.exe
 ```
 
 ### Tests ausfuehren
