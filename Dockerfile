@@ -27,7 +27,7 @@ USER appuser
 
 # Health-Check Endpoint (nur bei HTTP-Transport)
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD curl -f http://localhost:8000/sse || exit 1
+    CMD curl -f http://localhost:8000/mcp || exit 1
 
 # Standardmaessig stdio-Transport
 CMD ["uv", "run", "python", "-m", "paragraf"]

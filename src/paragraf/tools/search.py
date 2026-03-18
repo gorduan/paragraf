@@ -6,6 +6,7 @@ import logging
 
 from mcp.server.fastmcp import Context, FastMCP
 
+from paragraf.config import settings
 from paragraf.models.law import SearchFilter
 from paragraf.services.reranker import long_context_reorder
 
@@ -30,7 +31,7 @@ def register_search_tools(mcp: FastMCP) -> None:
         anfrage: str,
         gesetzbuch: str | None = None,
         abschnitt: str | None = None,
-        max_ergebnisse: int = 5,
+        max_ergebnisse: int = settings.final_top_k,
     ) -> str:
         """Durchsucht deutsche Gesetze nach relevanten Paragraphen.
 
@@ -66,11 +67,11 @@ def register_search_tools(mcp: FastMCP) -> None:
             abschnitt=abschnitt,
         )
 
-        # 2. Hybrid-Search (Dense + Sparse, Top 20)
+        # 2. Hybrid-Search (Dense + Sparse)
         await ctx.report_progress(progress=1, total=4)
         raw_results = await qdrant.hybrid_search(
             query=anfrage,
-            top_k=20,
+            top_k=settings.retrieval_top_k,
             search_filter=search_filter,
         )
 
@@ -82,9 +83,20 @@ def register_search_tools(mcp: FastMCP) -> None:
                 "entfernen Sie den Gesetzbuch-Filter."
             )
 
-        # 3. Cross-Encoder Reranking (Top 20 -> Top k)
+        # 3. Cross-Encoder Reranking -> Top k
         await ctx.report_progress(progress=2, total=4)
         reranked = reranker.rerank(anfrage, raw_results, top_k=max_ergebnisse)
+
+        # Ergebnisse unter Schwellenwert entfernen
+        reranked = [r for r in reranked if r.score >= settings.similarity_threshold]
+
+        if not reranked:
+            return (
+                f"Keine ausreichend relevanten Ergebnisse fuer '{anfrage}' gefunden "
+                f"(Schwellenwert: {settings.similarity_threshold})."
+                + (f" (Filter: {gesetzbuch})" if gesetzbuch else "")
+                + "\n\nVersuchen Sie eine allgemeinere Formulierung."
+            )
 
         # 4. Deduplizierung: Paragraph-Chunks bevorzugen, Absatz-Duplikate entfernen
         await ctx.report_progress(progress=3, total=4)

@@ -94,123 +94,141 @@ class GesetzParser:
         current_abschnitt = ""
 
         for norm in soup.find_all("norm"):
-            meta = norm.find("metadaten")
-            if not meta:
-                continue
+            try:
+                # Gliederungseinheit tracken (Buch, Teil, Kapitel, Abschnitt)
+                meta = norm.find("metadaten")
+                if meta:
+                    gliederung = meta.find("gliederungseinheit")
+                    if gliederung:
+                        gl_bez = gliederung.find("gliederungsbez")
+                        gl_titel = gliederung.find("gliederungstitel")
+                        if gl_bez and gl_titel:
+                            current_abschnitt = (
+                                f"{gl_bez.get_text(strip=True)} – "
+                                f"{gl_titel.get_text(strip=True)}"
+                            )
 
-            # Gliederungseinheit tracken (Buch, Teil, Kapitel, Abschnitt)
-            gliederung = meta.find("gliederungseinheit")
-            if gliederung:
-                gl_bez = gliederung.find("gliederungsbez")
-                gl_titel = gliederung.find("gliederungstitel")
-                if gl_bez and gl_titel:
-                    current_abschnitt = (
-                        f"{gl_bez.get_text(strip=True)} – {gl_titel.get_text(strip=True)}"
-                    )
-
-            # Normen mit Paragraph/Art.-Bezeichnung ODER Anlagen
-            enbez_tag = meta.find("enbez")
-            if not enbez_tag:
-                continue
-            enbez = enbez_tag.get_text(strip=True)
-
-            # Anlage erkennen und separat parsen
-            if enbez.startswith("Anlage"):
-                anlage_chunks = self._parse_anlage(
+                norm_chunks = self._parse_single_norm(
                     norm, gesetz_abk, current_abschnitt
                 )
-                chunks.extend(anlage_chunks)
-                continue
-
-            if not (enbez.startswith("§") or enbez.startswith("Art")):
-                continue
-
-            # Titel extrahieren
-            titel_tag = meta.find("titel", attrs={"format": "parat"})
-            if not titel_tag:
-                titel_tag = meta.find("titel")
-            titel = titel_tag.get_text(strip=True) if titel_tag else ""
-
-            # Norm-ID
-            norm_id = norm.get("doknr", "")
-
-            # Jurabk dieser Norm (kann sich bei Sammelnormen unterscheiden)
-            norm_jurabk_tag = meta.find("jurabk")
-            norm_abk = gesetz_abk
-            if norm_jurabk_tag:
-                norm_abk = self._normalize_abkuerzung(norm_jurabk_tag.get_text(strip=True))
-
-            # Gesetzestext extrahieren
-            textdaten = norm.find("textdaten")
-            if not textdaten:
-                continue
-
-            text_tag = textdaten.find("text")
-            if not text_tag:
-                continue
-
-            content = text_tag.find("Content")
-            if not content:
-                continue
-
-            # Absaetze extrahieren
-            absaetze = self._extract_absaetze(content)
-
-            if not absaetze:
-                continue
-
-            # Hierarchie-Pfad
-            hierarchie = " > ".join(
-                [p for p in [norm_abk, current_abschnitt, enbez] if p]
-            )
-
-            # Kompletter Paragraph-Text als ein Chunk
-            full_text = "\n\n".join(absaetze)
-            if len(full_text.strip()) < 10:
-                continue
-
-            paragraph_id = f"{norm_abk}_{enbez}".replace(" ", "_").replace("§_", "§")
-            chunk = LawChunk(
-                id=paragraph_id,
-                text=f"{enbez} {norm_abk}" + (f" – {titel}" if titel else "") + f"\n\n{full_text}",
-                metadata=ChunkMetadata(
-                    gesetz=norm_abk,
-                    paragraph=enbez,
-                    absatz=None,
-                    titel=titel,
-                    abschnitt=current_abschnitt,
-                    hierarchie_pfad=hierarchie,
-                    norm_id=norm_id,
-                    quelle="gesetze-im-internet.de",
-                    chunk_typ="paragraph",
-                ),
-            )
-            chunks.append(chunk)
-
-            # Bei langen Paragraphen: zusaetzlich Absatz-Level Chunks
-            if len(absaetze) > 1 and len(full_text) > 800:
-                for abs_nr, abs_text in enumerate(absaetze, start=1):
-                    if len(abs_text.strip()) < 20:
-                        continue
-                    abs_id = f"{paragraph_id}_Abs{abs_nr}"
-                    abs_chunk = LawChunk(
-                        id=abs_id,
-                        text=f"{enbez} Abs. {abs_nr} {norm_abk}\n\n{abs_text}",
-                        metadata=ChunkMetadata(
-                            gesetz=norm_abk,
-                            paragraph=enbez,
-                            absatz=abs_nr,
-                            titel=titel,
-                            abschnitt=current_abschnitt,
-                            hierarchie_pfad=f"{hierarchie} > Abs. {abs_nr}",
-                            norm_id=norm_id,
-                            quelle="gesetze-im-internet.de",
-                            chunk_typ="absatz",
-                        ),
-                    )
-                    chunks.append(abs_chunk)
+                chunks.extend(norm_chunks)
+            except Exception as e:
+                norm_id = norm.get("doknr", "unbekannt")
+                logger.warning(
+                    "Fehler beim Parsen von Norm %s in %s: %s",
+                    norm_id, gesetz_abk, e,
+                )
 
         logger.info("Geparst: %s -> %d Chunks", gesetz_abk or "unbekannt", len(chunks))
+        return chunks
+
+    def _parse_single_norm(
+        self, norm: Tag, gesetz_abk: str, current_abschnitt: str
+    ) -> list[LawChunk]:
+        """Parst eine einzelne Norm und gibt Chunks zurueck."""
+        meta = norm.find("metadaten")
+        if not meta:
+            return []
+
+        # Normen mit Paragraph/Art.-Bezeichnung ODER Anlagen
+        enbez_tag = meta.find("enbez")
+        if not enbez_tag:
+            return []
+        enbez = enbez_tag.get_text(strip=True)
+
+        # Anlage erkennen und separat parsen
+        if enbez.startswith("Anlage"):
+            return self._parse_anlage(norm, gesetz_abk, current_abschnitt)
+
+        if not (enbez.startswith("§") or enbez.startswith("Art")):
+            return []
+
+        # Titel extrahieren
+        titel_tag = meta.find("titel", attrs={"format": "parat"})
+        if not titel_tag:
+            titel_tag = meta.find("titel")
+        titel = titel_tag.get_text(strip=True) if titel_tag else ""
+
+        # Norm-ID
+        norm_id = norm.get("doknr", "")
+
+        # Jurabk dieser Norm (kann sich bei Sammelnormen unterscheiden)
+        norm_jurabk_tag = meta.find("jurabk")
+        norm_abk = gesetz_abk
+        if norm_jurabk_tag:
+            norm_abk = self._normalize_abkuerzung(norm_jurabk_tag.get_text(strip=True))
+
+        # Gesetzestext extrahieren
+        textdaten = norm.find("textdaten")
+        if not textdaten:
+            return []
+
+        text_tag = textdaten.find("text")
+        if not text_tag:
+            return []
+
+        content = text_tag.find("Content")
+        if not content:
+            return []
+
+        # Absaetze extrahieren
+        absaetze = self._extract_absaetze(content)
+
+        if not absaetze:
+            return []
+
+        # Hierarchie-Pfad
+        hierarchie = " > ".join(
+            [p for p in [norm_abk, current_abschnitt, enbez] if p]
+        )
+
+        # Kompletter Paragraph-Text als ein Chunk
+        full_text = "\n\n".join(absaetze)
+        if len(full_text.strip()) < 10:
+            return []
+
+        chunks: list[LawChunk] = []
+        paragraph_id = f"{norm_abk}_{enbez}".replace(" ", "_").replace("§_", "§")
+        chunk = LawChunk(
+            id=paragraph_id,
+            text=f"{enbez} {norm_abk}" + (f" – {titel}" if titel else "") + f"\n\n{full_text}",
+            metadata=ChunkMetadata(
+                gesetz=norm_abk,
+                paragraph=enbez,
+                absatz=None,
+                titel=titel,
+                abschnitt=current_abschnitt,
+                hierarchie_pfad=hierarchie,
+                norm_id=norm_id,
+                quelle="gesetze-im-internet.de",
+                chunk_typ="paragraph",
+            ),
+        )
+        chunks.append(chunk)
+
+        # Bei langen Paragraphen: zusaetzlich Absatz-Level Chunks
+        if len(absaetze) > 1 and len(full_text) > 800:
+            for abs_nr, abs_text in enumerate(absaetze, start=1):
+                if len(abs_text.strip()) < 20:
+                    continue
+                abs_id = f"{paragraph_id}_Abs{abs_nr}"
+                abs_chunk = LawChunk(
+                    id=abs_id,
+                    text=f"{enbez} Abs. {abs_nr} {norm_abk}\n\n{abs_text}",
+                    metadata=ChunkMetadata(
+                        gesetz=norm_abk,
+                        paragraph=enbez,
+                        absatz=abs_nr,
+                        titel=titel,
+                        abschnitt=current_abschnitt,
+                        hierarchie_pfad=f"{hierarchie} > Abs. {abs_nr}",
+                        norm_id=norm_id,
+                        quelle="gesetze-im-internet.de",
+                        chunk_typ="absatz",
+                    ),
+                )
+                chunks.append(abs_chunk)
+
         return chunks
 
     def _parse_anlage(

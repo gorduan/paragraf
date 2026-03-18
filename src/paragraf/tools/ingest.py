@@ -165,6 +165,28 @@ def register_ingest_tools(mcp: FastMCP) -> None:
                     continue
 
                 data = dict(zip(headers, row, strict=False))
+                # Schwerpunkte aus verschiedenen moeglichen Spalten extrahieren
+                schwerpunkte_raw = ""
+                for sp_key in ("schwerpunkte", "beratungsschwerpunkte",
+                               "schwerpunkt", "beratungsschwerpunkt", "themen"):
+                    val = data.get(sp_key, "")
+                    if val and str(val).strip() and str(val).strip() != "None":
+                        schwerpunkte_raw = str(val).strip()
+                        break
+
+                # Komma- oder semikolon-getrennte Liste parsen
+                schwerpunkte: list[str] = []
+                if schwerpunkte_raw:
+                    for sep in (";", ",", "|"):
+                        if sep in schwerpunkte_raw:
+                            schwerpunkte = [
+                                s.strip() for s in schwerpunkte_raw.split(sep)
+                                if s.strip()
+                            ]
+                            break
+                    if not schwerpunkte:
+                        schwerpunkte = [schwerpunkte_raw]
+
                 stelle = {
                     "name": str(data.get("name", data.get("bezeichnung", ""))).strip(),
                     "traeger": str(data.get("träger", data.get("traeger", ""))).strip(),
@@ -175,7 +197,7 @@ def register_ingest_tools(mcp: FastMCP) -> None:
                     "telefon": str(data.get("telefon", "")).strip(),
                     "email": str(data.get("e-mail", data.get("email", ""))).strip(),
                     "website": str(data.get("homepage", data.get("website", ""))).strip(),
-                    "schwerpunkte": [],
+                    "schwerpunkte": schwerpunkte,
                 }
 
                 # None-Werte bereinigen

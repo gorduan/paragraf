@@ -79,8 +79,8 @@ class RerankerService:
 
         try:
             scores = self._reranker.compute_score(pairs, normalize=True)
-        except Exception as e:
-            logger.warning("Reranking fehlgeschlagen: %s", e)
+        except Exception:
+            logger.warning("Reranking fehlgeschlagen – Fallback auf Original-Reihenfolge", exc_info=True)
             return results[:k]
 
         # Scores koennen ein einzelner Float oder eine Liste sein
