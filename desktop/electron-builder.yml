@@ -1,0 +1,31 @@
+appId: de.paragraf.desktop
+productName: Paragraf
+directories:
+  output: release
+  buildResources: resources
+files:
+  - dist/**/*
+  - resources/**/*
+win:
+  target: nsis
+  icon: resources/icon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: resources/icon.ico
+mac:
+  target: dmg
+  icon: resources/icon.icns
+  category: public.app-category.reference
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+linux:
+  target: AppImage
+  icon: resources
+  category: Education

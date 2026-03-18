@@ -1,12 +1,13 @@
-# Paragraf – MCP Server fuer deutsches Recht
+# Paragraf – MCP Server & Desktop-App fuer deutsches Recht
 
 ## Projektbeschreibung
-MCP-Server fuer deutsches Recht mit RAG-basierter Rechtsauskunft.
+MCP-Server + Electron Desktop-App fuer deutsches Recht mit RAG-basierter Rechtsauskunft.
 Verwendet BAAI/bge-m3 Embeddings, Qdrant Hybrid-Search (Dense + Sparse mit RRF-Fusion)
 und Cross-Encoder Reranking.
 
 ## Tech-Stack
-- **Python 3.12+** mit FastMCP (Official MCP SDK)
+- **Python 3.12+** mit FastMCP (Official MCP SDK) + FastAPI (REST-API)
+- **Electron + React 19** (Desktop-App mit TailwindCSS)
 - **Qdrant** als Vektordatenbank (Docker, Port 6333)
 - **BAAI/bge-m3** (1024-dim Dense + Sparse Lexical Weights)
 - **BAAI/bge-reranker-v2-m3** (Cross-Encoder Reranking)
@@ -17,8 +18,10 @@ und Cross-Encoder Reranking.
 ## Projektstruktur
 ```
 src/paragraf/
-  __main__.py        # Entry Point
+  __main__.py        # Entry Point (--mode mcp|api)
   server.py          # FastMCP + Lifespan
+  api.py             # FastAPI REST-Layer (11 Endpoints)
+  api_models.py      # Pydantic Request/Response-Modelle
   config.py          # Pydantic Settings (.env)
   models/law.py      # Datenmodelle (LawChunk, SearchResult, etc.)
   services/
@@ -31,6 +34,10 @@ src/paragraf/
     lookup.py        # paragraf_laws, paragraf_counseling, paragraf_status
     ingest.py        # paragraf_index, paragraf_index_eutb
   prompts/           # MCP Prompt-Templates
+desktop/
+  src/main/          # Electron Main-Prozess (backend.ts, ipc-handlers.ts)
+  src/renderer/      # React Frontend (7 Pages, Components, Hooks)
+  package.json       # Electron + React Dependencies
 ```
 
 ## MCP Tools
@@ -56,9 +63,19 @@ docker compose up -d  # Qdrant starten
 uv run pytest tests/ -v
 ```
 
-### Server starten (lokal, stdio)
+### MCP-Server starten (stdio)
 ```bash
 uv run python -m paragraf
+```
+
+### REST-API starten (fuer Desktop-App)
+```bash
+uv run python -m paragraf --mode api --port 8000
+```
+
+### Desktop-App starten
+```bash
+cd desktop && npm install && npm run dev
 ```
 
 ### Gesetze indexieren

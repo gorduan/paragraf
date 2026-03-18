@@ -1,0 +1,27 @@
+import React from "react";
+
+interface ServerStatusProps {
+  state: string;
+}
+
+const STATE_CONFIG: Record<string, { color: string; label: string }> = {
+  ready: { color: "bg-green-500", label: "Bereit" },
+  stopped: { color: "bg-slate-400", label: "Gestoppt" },
+  starting_docker: { color: "bg-yellow-500 animate-pulse", label: "Docker startet..." },
+  starting_backend: { color: "bg-yellow-500 animate-pulse", label: "Backend startet..." },
+  loading_models: { color: "bg-yellow-500 animate-pulse", label: "Modelle laden..." },
+  error: { color: "bg-red-500", label: "Fehler" },
+};
+
+export function ServerStatus({ state }: ServerStatusProps) {
+  const config = STATE_CONFIG[state] || STATE_CONFIG.stopped;
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className={`w-2.5 h-2.5 rounded-full ${config.color}`} />
+      <span className="text-xs text-slate-500 dark:text-slate-400">
+        {config.label}
+      </span>
+    </div>
+  );
+}
