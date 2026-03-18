@@ -70,17 +70,51 @@ export class BackendManager {
 
   // ── Docker ──────────────────────────────────────────────────────────
 
-  checkDocker(): boolean {
+  async checkDocker(): Promise<boolean> {
+    this.log("Prüfe Docker...");
     try {
-      execSync("docker info", { stdio: "pipe", timeout: 10000 });
-      this.dockerAvailable = true;
-      this.log("Docker verfügbar");
-      return true;
+      const result = await this.execWithTimeout("docker version --format {{.Server.Version}}", 8000);
+      if (result) {
+        this.dockerAvailable = true;
+        this.log(`Docker verfügbar (Version: ${result.trim()})`);
+        return true;
+      }
     } catch {
-      this.dockerAvailable = false;
-      this.log("Docker nicht verfügbar");
-      return false;
+      // Fallback
     }
+    this.dockerAvailable = false;
+    this.log("Docker nicht verfügbar – bitte Docker Desktop starten und warten bis es bereit ist");
+    return false;
+  }
+
+  private execWithTimeout(command: string, timeoutMs: number): Promise<string | null> {
+    return new Promise((resolve) => {
+      const child = spawn(command, [], {
+        shell: true,
+        stdio: ["pipe", "pipe", "pipe"],
+        timeout: timeoutMs,
+      });
+
+      let stdout = "";
+      child.stdout?.on("data", (data: Buffer) => {
+        stdout += data.toString();
+      });
+
+      const timer = setTimeout(() => {
+        child.kill("SIGKILL");
+        resolve(null);
+      }, timeoutMs);
+
+      child.on("close", (code) => {
+        clearTimeout(timer);
+        resolve(code === 0 ? stdout : null);
+      });
+
+      child.on("error", () => {
+        clearTimeout(timer);
+        resolve(null);
+      });
+    });
   }
 
   // ── Qdrant ──────────────────────────────────────────────────────────

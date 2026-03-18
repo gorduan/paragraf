@@ -28,7 +28,7 @@ export function registerIpcHandlers(backend: BackendManager): void {
     return true;
   });
 
-  ipcMain.handle("backend:checkDocker", () => {
-    return backend.checkDocker();
+  ipcMain.handle("backend:checkDocker", async () => {
+    return await backend.checkDocker();
   });
 }

@@ -28,6 +28,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     null
   );
   const [indexDone, setIndexDone] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const backend = useBackend();
 
@@ -42,9 +43,17 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
   const checkDocker = async () => {
     setError(null);
-    const ok = await window.electronAPI?.backend.checkDocker();
-    setDockerOk(ok ?? false);
-    if (!ok) setError("Docker ist nicht verfügbar. Bitte Docker Desktop installieren und starten.");
+    setChecking(true);
+    try {
+      const ok = await window.electronAPI?.backend.checkDocker();
+      setDockerOk(ok ?? false);
+      if (!ok) setError("Docker ist nicht verfügbar. Bitte Docker Desktop starten und warten bis es bereit ist.");
+    } catch {
+      setDockerOk(false);
+      setError("Docker-Prüfung fehlgeschlagen.");
+    } finally {
+      setChecking(false);
+    }
   };
 
   const startQdrant = async () => {
@@ -124,10 +133,14 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
               Docker wird für die Qdrant-Vektordatenbank benötigt.
             </p>
             <div className="flex items-center gap-3 p-4 bg-slate-100 dark:bg-slate-700 rounded-lg">
-              <StatusIcon ok={dockerOk} />
+              {dockerOk === null ? (
+                <div className="w-5 h-5 rounded-full bg-slate-300 dark:bg-slate-500" />
+              ) : (
+                <StatusIcon ok={dockerOk} />
+              )}
               <span>
                 {dockerOk === null
-                  ? "Docker-Status wird geprüft..."
+                  ? "Klicken Sie 'Prüfen' um Docker zu testen"
                   : dockerOk
                   ? "Docker ist verfügbar"
                   : "Docker nicht gefunden"}
@@ -135,10 +148,11 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
             </div>
             <button
               onClick={checkDocker}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700"
+              disabled={checking}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <RefreshCw size={16} />
-              Prüfen
+              {checking ? <Loader size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+              {checking ? "Prüfe..." : "Prüfen"}
             </button>
           </div>
         );
