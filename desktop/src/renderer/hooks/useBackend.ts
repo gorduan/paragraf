@@ -24,7 +24,7 @@ export function useBackend() {
 
   useEffect(() => {
     // Initial status
-    window.electronAPI?.backend.getStatus().then(setStatus);
+    window.electronAPI?.backend.getStatus().then(setStatus).catch(() => {});
 
     // Listen for updates
     const unsubscribe = window.electronAPI?.backend.onStatus(setStatus);

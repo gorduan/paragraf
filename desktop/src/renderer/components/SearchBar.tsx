@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+
 import { Search, X, ChevronDown } from "lucide-react";
 
 interface SearchBarProps {
@@ -32,7 +33,6 @@ export function SearchBar({
   });
   const [showHistory, setShowHistory] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (autoFocus) inputRef.current?.focus();
@@ -51,7 +51,6 @@ export function SearchBar({
 
   const handleChange = (value: string) => {
     setQuery(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

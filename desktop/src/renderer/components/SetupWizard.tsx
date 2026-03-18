@@ -72,10 +72,19 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   const startIndexing = () => {
     setIndexing(true);
     setError(null);
+    let lastDoneProgress = 0;
     api.indexGesetze({}, (event) => {
       setIndexProgress(event);
       if (event.schritt === "error") {
         setError(event.nachricht);
+      }
+      if (event.schritt === "done") {
+        lastDoneProgress = event.fortschritt;
+        // Alle Gesetze fertig wenn fortschritt === gesamt
+        if (event.gesamt > 0 && event.fortschritt >= event.gesamt) {
+          setIndexDone(true);
+          setIndexing(false);
+        }
       }
     });
   };
@@ -209,16 +218,29 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
               </div>
             )}
             {!indexing && !indexDone && (
-              <button
-                onClick={startIndexing}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700"
-              >
-                Indexierung starten
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={startIndexing}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700"
+                >
+                  Indexierung starten
+                </button>
+                <button
+                  onClick={() => { setIndexDone(true); }}
+                  className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700"
+                >
+                  Überspringen
+                </button>
+              </div>
             )}
             {indexing && !indexDone && (
               <p className="text-xs text-amber-600 dark:text-amber-400">
                 Indexierung läuft... Bitte nicht schließen.
+              </p>
+            )}
+            {indexDone && (
+              <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+                Indexierung abgeschlossen!
               </p>
             )}
           </div>
