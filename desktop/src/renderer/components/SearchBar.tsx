@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-
 import { Search, X, ChevronDown } from "lucide-react";
+import { api, type LawInfo } from "../lib/api";
 
 interface SearchBarProps {
   onSearch: (query: string, gesetzbuch?: string) => void;
@@ -8,13 +8,6 @@ interface SearchBarProps {
   showFilter?: boolean;
   autoFocus?: boolean;
 }
-
-const GESETZE = [
-  "Alle Gesetze",
-  "SGB I", "SGB II", "SGB III", "SGB IV", "SGB V", "SGB VI", "SGB VII",
-  "SGB VIII", "SGB IX", "SGB X", "SGB XI", "SGB XII", "SGB XIV",
-  "BGG", "AGG", "VersMedV", "EStG", "KraftStG",
-];
 
 export function SearchBar({
   onSearch,
@@ -24,6 +17,7 @@ export function SearchBar({
 }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("Alle Gesetze");
+  const [laws, setLaws] = useState<LawInfo[]>([]);
   const [history, setHistory] = useState<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem("paragraf_search_history") || "[]");
@@ -33,10 +27,23 @@ export function SearchBar({
   });
   const [showHistory, setShowHistory] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (autoFocus) inputRef.current?.focus();
   }, [autoFocus]);
+
+  useEffect(() => {
+    api.laws().then((res) => setLaws(res.gesetze)).catch(() => {});
+  }, []);
+
+  // Group laws by rechtsgebiet
+  const groupedLaws = laws.reduce<Record<string, LawInfo[]>>((acc, law) => {
+    const group = law.rechtsgebiet || "Sonstiges";
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(law);
+    return acc;
+  }, {});
 
   const doSearch = (q: string) => {
     if (!q.trim()) return;
@@ -51,6 +58,7 @@ export function SearchBar({
 
   const handleChange = (value: string) => {
     setQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -119,10 +127,15 @@ export function SearchBar({
               onChange={(e) => setFilter(e.target.value)}
               className="appearance-none h-full pl-3 pr-8 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
             >
-              {GESETZE.map((g) => (
-                <option key={g} value={g}>
-                  {g}
-                </option>
+              <option value="Alle Gesetze">Alle Gesetze</option>
+              {Object.entries(groupedLaws).map(([group, groupLaws]) => (
+                <optgroup key={group} label={group}>
+                  {groupLaws.map((law) => (
+                    <option key={law.abkuerzung} value={law.abkuerzung}>
+                      {law.abkuerzung}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
             <ChevronDown

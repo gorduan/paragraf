@@ -7,7 +7,7 @@ import logging
 
 from mcp.server.fastmcp import Context, FastMCP
 
-from paragraf.models.law import GESETZ_DOWNLOAD_SLUGS
+from paragraf.models.law import BESCHREIBUNGEN, LAW_REGISTRY
 
 logger = logging.getLogger(__name__)
 
@@ -35,32 +35,14 @@ def register_lookup_tools(mcp: FastMCP) -> None:
         output += f"**Datenbank-Status:** {info.get('status', 'unbekannt')}\n"
         output += f"**Gesamt-Chunks:** {info.get('points_count', 0):,}\n\n"
 
-        output += "| Gesetz | Beschreibung |\n|---|---|\n"
+        output += "| Gesetz | Beschreibung | Rechtsgebiet |\n|---|---|---|\n"
 
-        beschreibungen = {
-            "SGB I": "Allgemeiner Teil – Grundsaetze des Sozialrechts",
-            "SGB II": "Grundsicherung fuer Arbeitsuchende (Buergergeld)",
-            "SGB III": "Arbeitsfoerderung",
-            "SGB IV": "Gemeinsame Vorschriften fuer die Sozialversicherung",
-            "SGB V": "Gesetzliche Krankenversicherung",
-            "SGB VI": "Gesetzliche Rentenversicherung",
-            "SGB VII": "Gesetzliche Unfallversicherung",
-            "SGB VIII": "Kinder- und Jugendhilfe",
-            "SGB IX": "Rehabilitation und Teilhabe von Menschen mit Behinderungen",
-            "SGB X": "Sozialverwaltungsverfahren und Sozialdatenschutz",
-            "SGB XI": "Soziale Pflegeversicherung",
-            "SGB XII": "Sozialhilfe",
-            "SGB XIV": "Soziale Entschaedigung",
-            "BGG": "Behindertengleichstellungsgesetz",
-            "AGG": "Allgemeines Gleichbehandlungsgesetz",
-            "VersMedV": "Versorgungsmedizin-Verordnung (GdB-Feststellung)",
-            "EStG": "Einkommensteuergesetz (u.a. Behinderten-Pauschbetrag § 33b)",
-            "KraftStG": "Kraftfahrzeugsteuergesetz (u.a. Kfz-Steuerbefreiung § 3a)",
-        }
-
-        for abk in GESETZ_DOWNLOAD_SLUGS:
-            beschreibung = beschreibungen.get(abk, "")
-            output += f"| **{abk}** | {beschreibung} |\n"
+        current_gebiet = ""
+        for abk, law_def in LAW_REGISTRY.items():
+            if law_def.rechtsgebiet != current_gebiet:
+                current_gebiet = law_def.rechtsgebiet
+                output += f"| **--- {current_gebiet} ---** | | |\n"
+            output += f"| **{abk}** | {law_def.beschreibung} | {law_def.rechtsgebiet} |\n"
 
         return output
 

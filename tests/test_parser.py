@@ -84,6 +84,19 @@ class TestGesetzParser:
         assert GesetzParser._normalize_abkuerzung("SGB 12") == "SGB XII"
         assert GesetzParser._normalize_abkuerzung("BGG") == "BGG"
 
+    def test_abkuerzung_neue_gesetze(self):
+        """Neue Gesetzesabkuerzungen werden korrekt erkannt."""
+        assert GesetzParser._normalize_abkuerzung("BGB") == "BGB"
+        assert GesetzParser._normalize_abkuerzung("StGB") == "StGB"
+        assert GesetzParser._normalize_abkuerzung("ZPO") == "ZPO"
+        assert GesetzParser._normalize_abkuerzung("GG") == "GG"
+        assert GesetzParser._normalize_abkuerzung("AO") == "AO"
+        assert GesetzParser._normalize_abkuerzung("BetrVG") == "BetrVG"
+        assert GesetzParser._normalize_abkuerzung("HGB") == "HGB"
+        assert GesetzParser._normalize_abkuerzung("StVO") == "StVO"
+        assert GesetzParser._normalize_abkuerzung("BDSG") == "BDSG"
+        assert GesetzParser._normalize_abkuerzung("UrhG") == "UrhG"
+
     def test_paragraph_text_content(self):
         chunks = self.parser.parse_xml(SAMPLE_XML)
         p2 = next((c for c in chunks if c.metadata.paragraph == "\u00a7 2"), None)

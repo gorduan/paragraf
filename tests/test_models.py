@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from paragraf.models.law import (
     GESETZ_DOWNLOAD_SLUGS,
+    LAW_REGISTRY,
     ChunkMetadata,
     EUTBBeratungsstelle,
     Gesetzbuch,

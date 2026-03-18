@@ -3,6 +3,7 @@ import {
   api,
   type IndexStatusItem,
   type IndexProgressEvent,
+  type LawInfo,
 } from "../lib/api";
 import { ProgressBar } from "../components/ProgressBar";
 import {
@@ -24,14 +25,19 @@ export function IndexPage() {
   const [progress, setProgress] = useState<IndexProgressEvent | null>(null);
   const [eutbLoading, setEutbLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [laws, setLaws] = useState<LawInfo[]>([]);
 
   const loadStatus = async () => {
     setLoading(true);
     try {
-      const res = await api.indexStatus();
-      setStatusItems(res.gesetze);
-      setTotalChunks(res.total_chunks);
-      setDbStatus(res.db_status);
+      const [statusRes, lawsRes] = await Promise.all([
+        api.indexStatus(),
+        api.laws(),
+      ]);
+      setStatusItems(statusRes.gesetze);
+      setTotalChunks(statusRes.total_chunks);
+      setDbStatus(statusRes.db_status);
+      setLaws(lawsRes.gesetze);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -81,6 +87,17 @@ export function IndexPage() {
     }
   };
 
+  // Build a lookup map for status items
+  const statusMap = new Map(statusItems.map((s) => [s.gesetz, s]));
+
+  // Group laws by rechtsgebiet
+  const groupedLaws = laws.reduce<Record<string, LawInfo[]>>((acc, law) => {
+    const group = law.rechtsgebiet || "Sonstiges";
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(law);
+    return acc;
+  }, {});
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-6 flex items-center justify-between">
@@ -91,7 +108,7 @@ export function IndexPage() {
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             {totalChunks.toLocaleString()} Chunks indexiert &middot; DB-Status:{" "}
-            {dbStatus}
+            {dbStatus} &middot; {laws.length} Gesetze
           </p>
         </div>
         <div className="flex gap-2">
@@ -135,60 +152,82 @@ export function IndexPage() {
         </div>
       )}
 
-      {/* Table */}
+      {/* Table grouped by Rechtsgebiet */}
       {loading ? (
         <div className="flex justify-center py-12">
           <Loader className="animate-spin text-primary-500" size={24} />
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-                <th className="text-left px-4 py-3 font-medium">Gesetz</th>
-                <th className="text-left px-4 py-3 font-medium">Status</th>
-                <th className="text-right px-4 py-3 font-medium">Chunks</th>
-                <th className="text-right px-4 py-3 font-medium">Aktion</th>
-              </tr>
-            </thead>
-            <tbody>
-              {statusItems.map((item) => (
-                <tr
-                  key={item.gesetz}
-                  className="border-b border-slate-100 dark:border-slate-700 last:border-0"
-                >
-                  <td className="px-4 py-3 font-medium">{item.gesetz}</td>
-                  <td className="px-4 py-3">
-                    {item.status === "indexiert" ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full">
-                        <CheckCircle size={12} />
-                        Indexiert
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-500 text-xs rounded-full">
-                        <XCircle size={12} />
-                        Nicht indexiert
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right text-slate-500">
-                    {item.chunks.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => startIndex(item.gesetz)}
-                      disabled={indexing}
-                      className="text-xs text-primary-600 dark:text-primary-400 hover:underline disabled:opacity-50"
-                    >
-                      {item.status === "indexiert"
-                        ? "Neu indexieren"
-                        : "Indexieren"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-4">
+          {Object.entries(groupedLaws).map(([group, groupLaws]) => (
+            <div
+              key={group}
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden"
+            >
+              <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
+                <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                  {group}
+                  <span className="ml-2 text-xs font-normal text-slate-400">
+                    ({groupLaws.length})
+                  </span>
+                </h3>
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 dark:border-slate-700">
+                    <th className="text-left px-4 py-2 font-medium text-xs text-slate-500">Gesetz</th>
+                    <th className="text-left px-4 py-2 font-medium text-xs text-slate-500">Beschreibung</th>
+                    <th className="text-left px-4 py-2 font-medium text-xs text-slate-500">Status</th>
+                    <th className="text-right px-4 py-2 font-medium text-xs text-slate-500">Chunks</th>
+                    <th className="text-right px-4 py-2 font-medium text-xs text-slate-500">Aktion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groupLaws.map((law) => {
+                    const status = statusMap.get(law.abkuerzung);
+                    const chunks = status?.chunks ?? 0;
+                    const isIndexed = chunks > 0;
+                    return (
+                      <tr
+                        key={law.abkuerzung}
+                        className="border-b border-slate-50 dark:border-slate-700/50 last:border-0"
+                      >
+                        <td className="px-4 py-2 font-medium">{law.abkuerzung}</td>
+                        <td className="px-4 py-2 text-slate-500 dark:text-slate-400 text-xs truncate max-w-[200px]">
+                          {law.beschreibung}
+                        </td>
+                        <td className="px-4 py-2">
+                          {isIndexed ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full">
+                              <CheckCircle size={10} />
+                              Indexiert
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-500 text-xs rounded-full">
+                              <XCircle size={10} />
+                              Offen
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-right text-slate-500 text-xs">
+                          {chunks.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <button
+                            onClick={() => startIndex(law.abkuerzung)}
+                            disabled={indexing}
+                            className="text-xs text-primary-600 dark:text-primary-400 hover:underline disabled:opacity-50"
+                          >
+                            {isIndexed ? "Neu" : "Indexieren"}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ))}
         </div>
       )}
 

@@ -7,7 +7,7 @@ import logging
 
 from mcp.server.fastmcp import Context, FastMCP
 
-from paragraf.models.law import GESETZ_DOWNLOAD_SLUGS
+from paragraf.models.law import GESETZ_DOWNLOAD_SLUGS, LAW_REGISTRY
 
 logger = logging.getLogger(__name__)
 
@@ -40,19 +40,29 @@ def register_ingest_tools(mcp: FastMCP) -> None:
         await ctx.info("Starte Indexierung...")
 
         if gesetzbuch:
-            # Einzelnes Gesetz
-            slug = GESETZ_DOWNLOAD_SLUGS.get(gesetzbuch)
-            if not slug:
+            law_def = LAW_REGISTRY.get(gesetzbuch)
+            if not law_def:
                 return (
                     f"Unbekanntes Gesetzbuch: {gesetzbuch}\n"
-                    f"Verfuegbar: {', '.join(GESETZ_DOWNLOAD_SLUGS.keys())}"
+                    f"Verfuegbar: {', '.join(LAW_REGISTRY.keys())}"
                 )
 
             await ctx.info(f"Lade {gesetzbuch}...")
             await ctx.report_progress(progress=1, total=3)
 
-            path = await parser.download_gesetz(slug)
-            chunks = parser.parse_zip(path)
+            if law_def.quelle == "eur-lex.europa.eu":
+                from paragraf.services.eurlex_client import EurLexClient
+                from paragraf.services.eurlex_parser import EurLexParser
+                eurlex_client = EurLexClient(data_dir=app.data_dir)
+                html_path = await eurlex_client.download(law_def.slug)
+                eurlex_parser = EurLexParser()
+                chunks = eurlex_parser.parse_html(
+                    html_path.read_text(encoding="utf-8"),
+                    gesetz_abk=gesetzbuch,
+                )
+            else:
+                path = await parser.download_gesetz(law_def.slug)
+                chunks = parser.parse_zip(path)
 
             await ctx.info(f"{len(chunks)} Chunks geparst – starte Embedding...")
             await ctx.report_progress(progress=2, total=3)
@@ -67,18 +77,29 @@ def register_ingest_tools(mcp: FastMCP) -> None:
             )
 
         else:
-            # Alle Gesetze indexieren
-            total_gesetze = len(GESETZ_DOWNLOAD_SLUGS)
+            total_gesetze = len(LAW_REGISTRY)
             total_chunks = 0
             errors: list[str] = []
 
-            for i, (name, slug) in enumerate(GESETZ_DOWNLOAD_SLUGS.items()):
+            for i, (name, law_def) in enumerate(LAW_REGISTRY.items()):
                 await ctx.info(f"[{i+1}/{total_gesetze}] Verarbeite {name}...")
                 await ctx.report_progress(progress=i + 1, total=total_gesetze)
 
                 try:
-                    path = await parser.download_gesetz(slug)
-                    chunks = parser.parse_zip(path)
+                    if law_def.quelle == "eur-lex.europa.eu":
+                        from paragraf.services.eurlex_client import EurLexClient
+                        from paragraf.services.eurlex_parser import EurLexParser
+                        eurlex_client = EurLexClient(data_dir=app.data_dir)
+                        html_path = await eurlex_client.download(law_def.slug)
+                        eurlex_parser = EurLexParser()
+                        chunks = eurlex_parser.parse_html(
+                            html_path.read_text(encoding="utf-8"),
+                            gesetz_abk=name,
+                        )
+                    else:
+                        path = await parser.download_gesetz(law_def.slug)
+                        chunks = parser.parse_zip(path)
+
                     if chunks:
                         count = await qdrant.upsert_chunks(chunks)
                         total_chunks += count

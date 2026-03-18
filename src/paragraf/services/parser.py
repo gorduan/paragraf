@@ -482,7 +482,22 @@ class GesetzParser:
             return f"SGB {roman.get(num, num)}"
 
         # Bekannte Abkuerzungen direkt zurueckgeben
-        known = {"BGG", "AGG", "VersMedV", "BTHG", "GG", "BGB", "StGB", "ZPO"}
+        known = {
+            "BGG", "AGG", "VersMedV", "BTHG", "GG", "BGB", "StGB", "ZPO",
+            "StPO", "JGG", "OWiG", "VwGO", "VwVfG", "InsO", "ZVG", "FamFG",
+            "BetrVG", "KSchG", "ArbZG", "MuSchG", "BEEG", "TzBfG",
+            "EntgTranspG", "ArbSchG", "BUrlG", "EntgFG",
+            "HGB", "GmbHG", "AktG", "GewO", "UWG", "GWB",
+            "EStG", "KraftStG", "AO", "UStG", "GewStG", "KStG", "ErbStG",
+            "AufenthG", "AsylG",
+            "StVO", "StVG", "StVZO", "FZV", "FeV",
+            "BImSchG", "BNatSchG", "WHG",
+            "WEG", "BauGB", "BauNVO",
+            "BDSG", "UrhG", "MarkenG", "PatG",
+            "GVG", "BRAO", "RVG", "GKG",
+            "StAG", "PStG", "BBG", "TKG",
+            "WoGG", "BKGG", "AsylbLG",
+        }
         if abk in known:
             return abk
 

@@ -37,7 +37,13 @@ from paragraf.api_models import (
     SearchResultItem,
 )
 from paragraf.config import settings
-from paragraf.models.law import GESETZ_DOWNLOAD_SLUGS, SearchFilter
+from paragraf.models.law import (
+    BESCHREIBUNGEN,
+    EURLEX_LAWS,
+    GESETZ_DOWNLOAD_SLUGS,
+    LAW_REGISTRY,
+    SearchFilter,
+)
 from paragraf.server import AppContext
 from paragraf.services.embedding import EmbeddingService
 from paragraf.services.parser import GesetzParser
@@ -45,30 +51,6 @@ from paragraf.services.qdrant_store import QdrantStore
 from paragraf.services.reranker import RerankerService
 
 logger = logging.getLogger(__name__)
-
-# ── Gesetzbuch-Beschreibungen ────────────────────────────────────────────────
-
-BESCHREIBUNGEN: dict[str, str] = {
-    "SGB I": "Allgemeiner Teil – Grundsaetze des Sozialrechts",
-    "SGB II": "Grundsicherung fuer Arbeitsuchende (Buergergeld)",
-    "SGB III": "Arbeitsfoerderung",
-    "SGB IV": "Gemeinsame Vorschriften fuer die Sozialversicherung",
-    "SGB V": "Gesetzliche Krankenversicherung",
-    "SGB VI": "Gesetzliche Rentenversicherung",
-    "SGB VII": "Gesetzliche Unfallversicherung",
-    "SGB VIII": "Kinder- und Jugendhilfe",
-    "SGB IX": "Rehabilitation und Teilhabe von Menschen mit Behinderungen",
-    "SGB X": "Sozialverwaltungsverfahren und Sozialdatenschutz",
-    "SGB XI": "Soziale Pflegeversicherung",
-    "SGB XII": "Sozialhilfe",
-    "SGB XIV": "Soziale Entschaedigung",
-    "BGG": "Behindertengleichstellungsgesetz",
-    "AGG": "Allgemeines Gleichbehandlungsgesetz",
-    "VersMedV": "Versorgungsmedizin-Verordnung (GdB-Feststellung)",
-    "EStG": "Einkommensteuergesetz (u.a. Behinderten-Pauschbetrag § 33b)",
-    "KraftStG": "Kraftfahrzeugsteuergesetz (u.a. Kfz-Steuerbefreiung § 3a)",
-}
-
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
 
@@ -144,7 +126,7 @@ def create_api() -> FastAPI:
 
     app = FastAPI(
         title="Paragraf API",
-        description="REST-API fuer deutsches Recht – Semantische Suche ueber 18 Gesetze",
+        description="REST-API fuer deutsches Recht und EU-Recht – Semantische Suche ueber ~95 Gesetze",
         version="0.2.0",
         lifespan=api_lifespan,
     )
@@ -360,10 +342,12 @@ def _register_routes(app: FastAPI) -> None:
         gesetze = [
             LawInfo(
                 abkuerzung=abk,
-                beschreibung=BESCHREIBUNGEN.get(abk, ""),
-                slug=slug,
+                beschreibung=law_def.beschreibung,
+                slug=law_def.slug,
+                rechtsgebiet=law_def.rechtsgebiet,
+                quelle=law_def.quelle,
             )
-            for abk, slug in GESETZ_DOWNLOAD_SLUGS.items()
+            for abk, law_def in LAW_REGISTRY.items()
         ]
 
         return LawsResponse(
@@ -493,7 +477,7 @@ def _register_routes(app: FastAPI) -> None:
 
         # Pro Gesetz Chunk-Anzahl ermitteln via Qdrant count
         gesetze_status: list[IndexStatusItem] = []
-        for abk in GESETZ_DOWNLOAD_SLUGS:
+        for abk in LAW_REGISTRY:
             try:
                 count_result = await ctx.qdrant.client.count(
                     collection_name=ctx.qdrant.collection_name,
@@ -530,8 +514,8 @@ def _register_routes(app: FastAPI) -> None:
                 return f"data: {data.model_dump_json()}\n\n"
 
             if body.gesetzbuch:
-                slug = GESETZ_DOWNLOAD_SLUGS.get(body.gesetzbuch)
-                if not slug:
+                law_def = LAW_REGISTRY.get(body.gesetzbuch)
+                if not law_def:
                     yield _event(IndexProgressEvent(
                         gesetz=body.gesetzbuch or "",
                         schritt="error",
@@ -543,11 +527,25 @@ def _register_routes(app: FastAPI) -> None:
                     gesetz=body.gesetzbuch, schritt="download", nachricht="Lade herunter...",
                 ))
                 try:
-                    path = await ctx.parser.download_gesetz(slug)
-                    yield _event(IndexProgressEvent(
-                        gesetz=body.gesetzbuch, schritt="parse", nachricht="Parse XML...",
-                    ))
-                    chunks = ctx.parser.parse_zip(path)
+                    if law_def.quelle == "eur-lex.europa.eu":
+                        from paragraf.services.eurlex_client import EurLexClient
+                        from paragraf.services.eurlex_parser import EurLexParser
+                        eurlex_client = EurLexClient(data_dir=ctx.data_dir)
+                        html_path = await eurlex_client.download(law_def.slug)
+                        yield _event(IndexProgressEvent(
+                            gesetz=body.gesetzbuch, schritt="parse", nachricht="Parse HTML...",
+                        ))
+                        eurlex_parser = EurLexParser()
+                        chunks = eurlex_parser.parse_html(
+                            html_path.read_text(encoding="utf-8"),
+                            gesetz_abk=body.gesetzbuch,
+                        )
+                    else:
+                        path = await ctx.parser.download_gesetz(law_def.slug)
+                        yield _event(IndexProgressEvent(
+                            gesetz=body.gesetzbuch, schritt="parse", nachricht="Parse XML...",
+                        ))
+                        chunks = ctx.parser.parse_zip(path)
 
                     yield _event(IndexProgressEvent(
                         gesetz=body.gesetzbuch, schritt="embedding",
@@ -567,23 +565,37 @@ def _register_routes(app: FastAPI) -> None:
                         nachricht=str(e),
                     ))
             else:
-                # Alle Gesetze
-                total = len(GESETZ_DOWNLOAD_SLUGS)
-                for i, (name, slug) in enumerate(GESETZ_DOWNLOAD_SLUGS.items()):
+                total = len(LAW_REGISTRY)
+                for i, (name, law_def) in enumerate(LAW_REGISTRY.items()):
                     yield _event(IndexProgressEvent(
                         gesetz=name, schritt="download",
                         fortschritt=i, gesamt=total,
                         nachricht=f"[{i+1}/{total}] Lade {name}...",
                     ))
                     try:
-                        path = await ctx.parser.download_gesetz(slug)
-
-                        yield _event(IndexProgressEvent(
-                            gesetz=name, schritt="parse",
-                            fortschritt=i, gesamt=total,
-                            nachricht=f"Parse {name}...",
-                        ))
-                        chunks = ctx.parser.parse_zip(path)
+                        if law_def.quelle == "eur-lex.europa.eu":
+                            from paragraf.services.eurlex_client import EurLexClient
+                            from paragraf.services.eurlex_parser import EurLexParser
+                            eurlex_client = EurLexClient(data_dir=ctx.data_dir)
+                            html_path = await eurlex_client.download(law_def.slug)
+                            yield _event(IndexProgressEvent(
+                                gesetz=name, schritt="parse",
+                                fortschritt=i, gesamt=total,
+                                nachricht=f"Parse {name}...",
+                            ))
+                            eurlex_parser = EurLexParser()
+                            chunks = eurlex_parser.parse_html(
+                                html_path.read_text(encoding="utf-8"),
+                                gesetz_abk=name,
+                            )
+                        else:
+                            path = await ctx.parser.download_gesetz(law_def.slug)
+                            yield _event(IndexProgressEvent(
+                                gesetz=name, schritt="parse",
+                                fortschritt=i, gesamt=total,
+                                nachricht=f"Parse {name}...",
+                            ))
+                            chunks = ctx.parser.parse_zip(path)
 
                         yield _event(IndexProgressEvent(
                             gesetz=name, schritt="embedding",

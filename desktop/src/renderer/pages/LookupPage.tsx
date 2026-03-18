@@ -1,13 +1,7 @@
-import React, { useState } from "react";
-import { api, type LookupResponse } from "../lib/api";
+import React, { useState, useEffect } from "react";
+import { api, type LookupResponse, type LawInfo } from "../lib/api";
 import { Disclaimer } from "../components/Disclaimer";
 import { Loader, BookOpen } from "lucide-react";
-
-const GESETZE = [
-  "SGB I", "SGB II", "SGB III", "SGB IV", "SGB V", "SGB VI", "SGB VII",
-  "SGB VIII", "SGB IX", "SGB X", "SGB XI", "SGB XII", "SGB XIV",
-  "BGG", "AGG", "VersMedV", "EStG", "KraftStG",
-];
 
 export function LookupPage() {
   const [gesetz, setGesetz] = useState("SGB IX");
@@ -15,6 +9,19 @@ export function LookupPage() {
   const [result, setResult] = useState<LookupResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [laws, setLaws] = useState<LawInfo[]>([]);
+
+  useEffect(() => {
+    api.laws().then((res) => setLaws(res.gesetze)).catch(() => {});
+  }, []);
+
+  // Group laws by rechtsgebiet
+  const groupedLaws = laws.reduce<Record<string, LawInfo[]>>((acc, law) => {
+    const group = law.rechtsgebiet || "Sonstiges";
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(law);
+    return acc;
+  }, {});
 
   const handleLookup = async () => {
     if (!paragraph.trim()) return;
@@ -23,7 +30,7 @@ export function LookupPage() {
     try {
       // Normalize paragraph input
       let p = paragraph.trim();
-      if (!p.startsWith("§")) p = `§ ${p}`;
+      if (!p.startsWith("§") && !p.startsWith("Art")) p = `§ ${p}`;
       const res = await api.lookup({ gesetz, paragraph: p });
       setResult(res);
     } catch (e: any) {
@@ -48,8 +55,14 @@ export function LookupPage() {
           onChange={(e) => setGesetz(e.target.value)}
           className="px-3 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
-          {GESETZE.map((g) => (
-            <option key={g} value={g}>{g}</option>
+          {Object.entries(groupedLaws).map(([group, groupLaws]) => (
+            <optgroup key={group} label={group}>
+              {groupLaws.map((law) => (
+                <option key={law.abkuerzung} value={law.abkuerzung}>
+                  {law.abkuerzung}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
 
@@ -60,7 +73,7 @@ export function LookupPage() {
             value={paragraph}
             onChange={(e) => setParagraph(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleLookup()}
-            placeholder="§-Nummer, z.B. 152 oder § 37"
+            placeholder="§-Nummer oder Art.-Nummer, z.B. 152 oder Art. 5"
             className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>

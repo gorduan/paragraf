@@ -96,6 +96,8 @@ class LawInfo(BaseModel):
     abkuerzung: str
     beschreibung: str
     slug: str | None = None
+    rechtsgebiet: str = ""
+    quelle: str = "gesetze-im-internet.de"
 
 
 class LawsResponse(BaseModel):

@@ -84,6 +84,8 @@ export interface LawInfo {
   abkuerzung: string;
   beschreibung: string;
   slug: string | null;
+  rechtsgebiet: string;
+  quelle: string;
 }
 
 export interface LawsResponse {
