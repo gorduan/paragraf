@@ -284,7 +284,14 @@ export class BackendManager {
       {
         cwd: this.projectDir,
         stdio: ["pipe", "pipe", "pipe"],
-        env: { ...process.env, PYTHONUNBUFFERED: "1" },
+        env: {
+          ...process.env,
+          PYTHONUNBUFFERED: "1",
+          HF_HOME: process.env.HF_HOME || "E:/hf_cache",
+          TORCH_HOME: process.env.TORCH_HOME || "E:/torch_cache",
+          TMPDIR: process.env.TMPDIR || "E:/tmp",
+          UV_CACHE_DIR: process.env.UV_CACHE_DIR || "E:/uv_cache",
+        },
       },
     );
 
