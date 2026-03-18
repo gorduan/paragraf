@@ -266,8 +266,17 @@ export class BackendManager {
 
   async startBackend(): Promise<boolean> {
     this.setState("starting_backend");
-    this.setProgress(0, "Suche uv...");
+    this.setProgress(0, "Prüfe Backend...");
 
+    // Prüfen ob Backend bereits auf Port 8000 läuft
+    if (await this.checkBackendHealth()) {
+      this.backendRunning = true;
+      this.setProgress(100, "Backend bereit (bereits gestartet)");
+      this.log("Backend läuft bereits auf Port 8000");
+      return true;
+    }
+
+    this.setProgress(1, "Suche uv...");
     const uvPath = this.findUv();
     if (!uvPath) {
       this.setState("error", "uv nicht gefunden. Bitte installieren: https://docs.astral.sh/uv/");
