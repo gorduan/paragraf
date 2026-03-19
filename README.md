@@ -1,320 +1,325 @@
 # Paragraf
 
-**MCP-Server fuer deutsches Recht** mit RAG-basierter Rechtsauskunft.
+**Desktop-App & MCP-Server fuer deutsches und europaeisches Recht** – Semantische Suche ueber ~140 Gesetze mit GPU-Beschleunigung.
 
 > **Wichtig:** Dieses System gibt allgemeine Rechtsinformationen, keine individuelle Rechtsberatung im Sinne des RDG. Fuer Einzelfallberatung wenden Sie sich an EUTB-Beratungsstellen (0800 11 10 111) oder Rechtsanwaelte.
 
 ---
 
-## Was macht dieses Projekt?
+## Was ist Paragraf?
 
-### Kurz gesagt
-Paragraf ist ein **digitaler Assistent fuer deutsches Recht**. Er kennt alle Sozialgesetzbuecher (SGB I–XIV), das Behindertengleichstellungsgesetz (BGG), das AGG, die Versorgungsmedizin-Verordnung, das Einkommensteuergesetz, das Kraftfahrzeugsteuergesetz und weitere Gesetze – und kann darin intelligent suchen.
+Paragraf ist ein **Rechtsrecherche-System** mit zwei Nutzungsarten:
 
-Er wird als **MCP-Server** (Model Context Protocol) betrieben – das bedeutet, er wird nicht direkt von einem Menschen bedient, sondern von einem **KI-Assistenten wie Claude** als Werkzeug benutzt. Wenn jemand mit Claude chattet und eine Frage zum deutschen Recht stellt, greift Claude automatisch auf diesen Server zu, um die passenden Gesetzestexte zu finden.
+1. **Desktop-App** (Electron + React) – Eigenstaendige Anwendung mit grafischer Oberflaeche fuer Suche, Nachschlagen, Vergleich und Gesetzesbrowser
+2. **MCP-Server** – Werkzeug fuer KI-Assistenten (Claude Desktop/Code), die im Hintergrund auf Gesetzestexte zugreifen
 
-### Wie funktioniert die Nutzung?
+Die Suche nutzt einen **RAG-Pipeline** (Retrieval-Augmented Generation) mit Hybrid-Search, Cross-Encoder Reranking und hierarchischem Chunking.
 
-Ein Nutzer stellt Claude eine Frage in natuerlicher Sprache. Claude erkennt, dass es um deutsches Recht geht, und ruft im Hintergrund die passenden Werkzeuge des MCP-Servers auf. Der Nutzer merkt davon nichts – er bekommt einfach eine fundierte Antwort mit genauen Paragraphen-Verweisen.
+### Abgedeckte Rechtsgebiete
 
----
-
-## Werkzeug-Uebersicht
-
-| Werkzeug | Zweck | Beispiel-Frage |
+| Rechtsgebiet | Beispiele | Anzahl |
 |---|---|---|
-| `paragraf_search` | Freie Suche in allen Gesetzen | "Welche Leistungen bei Pflegebeduerftigkeit?" |
-| `paragraf_lookup` | Einzelnen Paragraphen nachschlagen | "Was steht in § 35a SGB VIII?" |
-| `paragraf_compare` | Mehrere Paragraphen gegenueberstellen | "Vergleiche § 2 SGB IX mit § 3 BGG" |
-| `paragraf_laws` | Alle verfuegbaren Gesetze anzeigen | "Welche Gesetze sind in der Datenbank?" |
-| `paragraf_counseling` | EUTB-Beratungsstellen finden | "Beratungsstelle in Muenchen?" |
-| `paragraf_status` | Technischen Status pruefen | "Wie viele Paragraphen sind indexiert?" |
+| Sozialrecht | SGB I–XIV, BKGG | ~20 |
+| Behindertenrecht | BGG, AGG, VersMedV | ~5 |
+| Steuerrecht | EStG, UStG, AO, KStG, ErbStG | ~10 |
+| Buergerliches Recht | BGB, ZPO, FamFG, WEG | ~15 |
+| Strafrecht | StGB, StPO, OWiG | ~5 |
+| Arbeitsrecht | ArbZG, BetrVG, KSchG, MuSchG | ~10 |
+| Verwaltungsrecht | VwVfG, VwGO, BauGB | ~10 |
+| Verkehrsrecht | StVO, StVZO, FeV, FZV | ~5 |
+| EU-Recht | DSGVO, AI Act, EU-GRCh, AEUV | 9 |
+| Weitere | Aufenthaltsrecht, Umwelt, Datenschutz, ... | ~50 |
 
-Jede Antwort enthaelt automatisch einen **Rechtshinweis**, dass es sich um allgemeine Information und nicht um individuelle Rechtsberatung handelt (gesetzlich vorgeschrieben nach dem Rechtsdienstleistungsgesetz).
+**Gesamt: ~140 Gesetze** aus 18 Rechtsgebieten (DE: gesetze-im-internet.de, EU: EUR-Lex)
 
 ---
 
-## Prompt-Templates
+## Desktop-App
+
+![Desktop-App](docs/screenshot.png)
+
+### Features
+
+- **Semantische Suche** – Natuerlichsprachliche Anfragen ueber alle Gesetze
+- **Paragraph nachschlagen** – Direkter Zugriff auf einzelne Paragraphen
+- **Vergleich** – Bis zu 5 Paragraphen nebeneinander
+- **Gesetzesbrowser** – Alle Gesetze mit Struktur und Volltext
+- **EUTB-Beratungsstellen** – Suche nach Ort, Bundesland, Schwerpunkt
+- **Index-Management** – Gesetze auswaehlen und indexieren, mit Echtzeit-Log
+- **Einstellungen** – CPU/GPU-Wahl, Suchparameter, MCP-Server, Cache-Verwaltung
+- **Setup-Wizard** – Automatische GPU-Erkennung und PyTorch-Installation
+- **Tastenkuerzel** – Ctrl+1–7 fuer Seitenwechsel, Ctrl+K fuer Suche
+
+### Einstellungen
+
+Ueber die Settings-Seite konfigurierbar (ohne `.env` manuell bearbeiten):
+
+- **Leistung:** CPU/GPU-Auswahl, Batch-Groesse, Max Token-Laenge
+- **Suchqualitaet:** Ergebnisse (Reranking), Kandidaten (Retrieval), Relevanz-Schwelle
+- **Verbindung:** Qdrant URL
+- **Cache-Verzeichnisse:** HuggingFace/PyTorch-Cache mit Speicheranzeige
+- **MCP-Server:** Start/Stop direkt in der App (streamable-http, Port 8001)
+
+---
+
+## MCP-Server (fuer Claude Desktop/Code)
+
+Der MCP-Server stellt Werkzeuge bereit, die Claude automatisch nutzt:
+
+| Werkzeug | Zweck | Beispiel |
+|---|---|---|
+| `paragraf_search` | Semantische Suche | "Welche Leistungen bei Pflegebeduerftigkeit?" |
+| `paragraf_lookup` | Paragraph nachschlagen | "Was steht in § 35a SGB VIII?" |
+| `paragraf_compare` | Paragraphen vergleichen | "Vergleiche § 2 SGB IX mit § 3 BGG" |
+| `paragraf_laws` | Gesetze auflisten | "Welche Gesetze sind verfuegbar?" |
+| `paragraf_counseling` | EUTB-Stellen finden | "Beratungsstelle in Muenchen?" |
+| `paragraf_status` | Status pruefen | "Wie viele Chunks indexiert?" |
+| `paragraf_index` | Gesetze indexieren | Admin-Tool |
+| `paragraf_index_eutb` | EUTB-Daten importieren | Admin-Tool |
+
+### Prompt-Templates
 
 | Prompt | Beschreibung |
 |---|---|
-| `paragraf_legal_info` | Allgemeine Rechtsauskunft zu einem rechtlichen Thema |
+| `paragraf_legal_info` | Allgemeine Rechtsauskunft |
 | `paragraf_easy_language` | Erklaerung in Leichter Sprache (DIN SPEC 33429) |
 | `paragraf_compensation` | Nachteilsausgleiche nach Behinderungsart |
-| `paragraf_benefits` | Voraussetzungen fuer Sozialleistungen pruefen |
+| `paragraf_benefits` | Voraussetzungen fuer Sozialleistungen |
 
 ---
 
-## Features (technisch)
+## REST-API
 
-- **Hybrid-Search:** Kombiniert semantische Suche (Dense Vektoren) mit Keyword-Suche (Sparse/BM25) ueber Reciprocal Rank Fusion
-- **Cross-Encoder Reranking:** BAAI/bge-reranker-v2-m3 fuer praezise Relevanz-Bewertung
-- **Hierarchisches Chunking:** Respektiert die Struktur deutscher Gesetze (Buch > Teil > Kapitel > § > Absatz)
-- **Leichte Sprache:** Prompt-Template nach DIN SPEC 33429
-- **EUTB-Integration:** Suche nach Beratungsstellen fuer Menschen mit Behinderungen
-- **RDG-konform:** System ist als Rechtsinformationssystem konzipiert, nicht als Rechtsberater
+Die Desktop-App kommuniziert ueber 13 REST-Endpoints:
+
+| Methode | Pfad | Beschreibung |
+|---|---|---|
+| GET | `/api/health` | Server-Status und Modell-Info |
+| GET | `/api/settings` | Aktuelle Konfiguration |
+| GET | `/api/settings/gpu` | GPU-Verfuegbarkeit pruefen |
+| POST | `/api/search` | Hybride semantische Suche |
+| POST | `/api/lookup` | Einzelnen Paragraph nachschlagen |
+| POST | `/api/compare` | Paragraphen vergleichen |
+| GET | `/api/laws` | Alle verfuegbaren Gesetze |
+| GET | `/api/laws/{gesetz}/structure` | Struktur eines Gesetzes |
+| GET | `/api/laws/{gesetz}/paragraphs` | Alle Paragraphen eines Gesetzes |
+| POST | `/api/counseling` | EUTB-Beratungsstellen suchen |
+| GET | `/api/index/status` | Indexierungs-Status pro Gesetz |
+| POST | `/api/index` | Indexierung starten (SSE-Stream) |
+| POST | `/api/index/eutb` | EUTB-Daten importieren |
+
+---
 
 ## Tech-Stack
 
 | Komponente | Technologie |
 |---|---|
-| MCP SDK | `mcp` (Official Python SDK) mit FastMCP |
-| Vektordatenbank | Qdrant (nativ) |
+| Desktop | Electron 33 + React 19 + TailwindCSS 4 + Vite 6 |
+| Backend | Python 3.12 + FastAPI + Uvicorn |
+| MCP | Official Python MCP SDK (FastMCP) |
+| Vektordatenbank | Qdrant (nativ, Port 6333) |
 | Embedding | BAAI/bge-m3 (Dense + Sparse, 1024-dim) |
 | Reranking | BAAI/bge-reranker-v2-m3 (Cross-Encoder) |
-| XML-Parsing | lxml + BeautifulSoup4 |
-| Datenquelle | gesetze-im-internet.de (XML, gemeinfrei nach § 5 UrhG) |
+| GPU | PyTorch mit CUDA-Support (optional) |
+| Package-Manager | uv (Python) + npm (Desktop) |
+| Datenquellen | gesetze-im-internet.de (XML) + EUR-Lex (HTML) |
+
+### Such-Pipeline
+
+```
+Anfrage → bge-m3 Embedding → Qdrant Hybrid-Search (Dense + Sparse/BM25 via RRF)
+       → Cross-Encoder Reranking → Schwellenwert-Filter → Deduplizierung → Ergebnis
+```
+
+---
 
 ## Installation
 
 ### Voraussetzungen
 
 - **Python 3.12+**
-- **Qdrant** (Vektordatenbank, nativ) – [Download](https://github.com/qdrant/qdrant/releases) nach `E:\qdrant\` entpacken
-- **~8 GB RAM** (Embedding-Modell + Reranker + Qdrant)
-- **uv** als Package-Manager (empfohlen) – [Installation](https://docs.astral.sh/uv/getting-started/installation/)
-- **Git** (zum Klonen des Projekts)
+- **Node.js 18+** (fuer Desktop-App)
+- **Qdrant** – [Download](https://github.com/qdrant/qdrant/releases)
+- **uv** – [Installation](https://docs.astral.sh/uv/getting-started/installation/)
+- **~8 GB RAM** (Embedding + Reranker + Qdrant)
+- **~4 GB Speicher** (Modelle + Gesetze)
+- Optional: **NVIDIA GPU** mit CUDA fuer schnellere Suche
 
-### Schritt 1: Projekt herunterladen und installieren
+### 1. Projekt klonen und installieren
 
 ```bash
 git clone https://github.com/gorduan/paragraf.git
 cd paragraf
 
-# .env Konfiguration erstellen
+# .env erstellen
 cp .env.example .env
 
-# Virtual Environment und alle Abhaengigkeiten installieren
-uv venv
-uv pip install -e ".[dev]"
+# Python-Abhaengigkeiten installieren
+uv sync
 ```
 
-<details>
-<summary>Alternative ohne uv (mit pip)</summary>
+**Mit GPU (NVIDIA CUDA):**
+
+PyTorch wird automatisch mit CUDA aus dem konfigurierten Index installiert (`pyproject.toml` → `[tool.uv.sources]`). Falls nur CPU gewuenscht:
 
 ```bash
-python -m venv .venv
-
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
-
-pip install -e ".[dev]"
+uv pip install torch --index-url https://download.pytorch.org/whl/cpu
 ```
 
-</details>
-
-### Schritt 2: Qdrant-Datenbank starten
+### 2. Qdrant starten
 
 ```bash
 # Windows:
 E:\qdrant\qdrant.exe
 
-# macOS/Linux:
+# Linux/macOS:
 ./qdrant
 ```
 
-Dies startet die Qdrant-Vektordatenbank auf `http://localhost:6333`. Pruefen ob Qdrant laeuft:
+Laeuft auf `http://localhost:6333`.
+
+### 3. Desktop-App starten
 
 ```bash
-curl http://localhost:6333/healthz
+cd desktop
+npm install
+npm run build    # oder: npm run dev (Entwicklung)
+npm start
 ```
 
-### Schritt 3: Gesetze herunterladen und indexieren
+Die App startet Qdrant und das Python-Backend automatisch. Beim ersten Start fuehrt ein **Setup-Wizard** durch:
+1. GPU-Erkennung und PyTorch-Variante waehlen (CPU/CUDA)
+2. Qdrant-Verbindung pruefen
+3. Backend starten (Modelle laden)
+4. Gesetze indexieren
+
+### 4. MCP-Server nutzen (ohne Desktop-App)
+
+**Claude Code:**
 
 ```bash
-# Ein einzelnes Gesetz (schnell, zum Testen ~2 Min)
-uv run python scripts/ingest_gesetze.py --gesetz "SGB IX"
+# MCP-Server registrieren (streamable-http)
+claude mcp add paragraf --url http://localhost:8001/mcp
 
-# Alle Gesetze (dauert je nach Rechner 10-30 Min)
-uv run python scripts/ingest_gesetze.py --all
-```
-
-Dieser Schritt laedt die Gesetzestexte von gesetze-im-internet.de herunter, zerlegt sie in suchbare Abschnitte und speichert sie als Vektoren in Qdrant.
-
-### Schritt 4: Server starten
-
-```bash
-# stdio-Modus (fuer Claude Desktop / Claude Code)
-uv run python -m paragraf
-
-# HTTP-Modus (fuer Remote-Zugriff)
-MCP_TRANSPORT=streamable-http uv run python -m paragraf
-```
-
----
-
-## Einrichtung fuer Claude Desktop
-
-Claude Desktop verbindet sich per **stdio** – der MCP-Server wird als lokaler Prozess gestartet und kommuniziert direkt mit Claude.
-
-### 1. Konfigurationsdatei oeffnen
-
-| Betriebssystem | Pfad |
-|---|---|
-| **Windows** | `%APPDATA%\Claude\claude_desktop_config.json` |
-| **macOS** | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-
-Falls die Datei nicht existiert, erstelle sie.
-
-### 2. MCP-Server eintragen
-
-**Windows:**
-
-```json
-{
-  "mcpServers": {
-    "paragraf": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "C:\\Users\\DeinName\\paragraf",
-        "python",
-        "-m",
-        "paragraf"
-      ],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333"
-      }
-    }
-  }
-}
-```
-
-**macOS / Linux:**
-
-```json
-{
-  "mcpServers": {
-    "paragraf": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "/home/deinname/paragraf",
-        "python",
-        "-m",
-        "paragraf"
-      ],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333"
-      }
-    }
-  }
-}
-```
-
-> **Wichtig:** Ersetze den Pfad in `--directory` durch den tatsaechlichen Pfad zu deinem Projekt.
-
-### 3. Claude Desktop neu starten
-
-Nach dem Speichern der Konfiguration Claude Desktop komplett beenden und neu starten. In einem neuen Chat sollte das Werkzeug-Symbol (Hammer) erscheinen und die Paragraf-Tools auflisten.
-
-### 4. Testen
-
-Stelle Claude eine Frage wie:
-
-> "Welche Voraussetzungen brauche ich fuer einen Schwerbehindertenausweis?"
-
-Claude sollte automatisch das `paragraf_search`-Tool verwenden und mit Paragraphen-Verweisen antworten.
-
----
-
-## Einrichtung fuer Claude Code (Terminal/CLI)
-
-### 1. MCP-Server registrieren
-
-```bash
+# Oder per stdio:
 claude mcp add paragraf \
   --command "uv" \
-  --args "run" "--directory" "/pfad/zu/paragraf" "python" "-m" "paragraf" \
-  --env "QDRANT_URL=http://localhost:6333"
+  --args "run" "--directory" "/pfad/zu/paragraf" "python" "-m" "paragraf"
 ```
 
-> **Windows-Pfade:** Verwende `/` statt `\`, z.B. `C:/Users/DeinName/paragraf`
-
-### 2. Pruefen ob registriert
-
-```bash
-claude mcp list
-```
-
-### 3. Alternativ: Projekt-lokale Konfiguration
-
-Erstelle im Projektverzeichnis die Datei `.mcp.json`:
+**Claude Desktop** – `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "paragraf": {
       "command": "uv",
-      "args": ["run", "python", "-m", "paragraf"],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333"
-      }
+      "args": ["run", "--directory", "/pfad/zu/paragraf", "python", "-m", "paragraf"],
+      "env": { "QDRANT_URL": "http://localhost:6333" }
     }
   }
 }
 ```
 
+**Standalone REST-API:**
+
+```bash
+uv run python -m paragraf --mode api --port 8000
+```
+
 ---
 
-## Umgebungsvariablen (.env)
+## Konfiguration (.env)
 
 | Variable | Standard | Beschreibung |
 |---|---|---|
-| `QDRANT_URL` | `http://localhost:6333` | Qdrant-Datenbank URL |
-| `QDRANT_COLLECTION` | `paragraf` | Name der Qdrant-Collection |
-| `EMBEDDING_MODEL` | `BAAI/bge-m3` | Embedding-Modell (HuggingFace) |
-| `EMBEDDING_DEVICE` | `cpu` | `cpu` oder `cuda` (GPU) |
-| `EMBEDDING_BATCH_SIZE` | `8` | Batch-Groesse fuer Embedding-Erzeugung |
-| `EMBEDDING_MAX_LENGTH` | `512` | Max. Token-Laenge pro Chunk |
-| `RERANKER_MODEL` | `BAAI/bge-reranker-v2-m3` | Cross-Encoder Reranker-Modell |
-| `RERANKER_TOP_K` | `5` | Anzahl Ergebnisse nach Reranking |
+| `QDRANT_URL` | `http://localhost:6333` | Qdrant-URL |
+| `QDRANT_COLLECTION` | `paragraf` | Collection-Name |
+| `EMBEDDING_MODEL` | `BAAI/bge-m3` | Embedding-Modell |
+| `EMBEDDING_DEVICE` | `cpu` | `cpu` oder `cuda` |
+| `EMBEDDING_BATCH_SIZE` | `8` | Batch-Groesse |
+| `EMBEDDING_MAX_LENGTH` | `512` | Max Token pro Chunk |
+| `RERANKER_MODEL` | `BAAI/bge-reranker-v2-m3` | Reranker-Modell |
+| `RERANKER_TOP_K` | `5` | Ergebnisse nach Reranking |
+| `RETRIEVAL_TOP_K` | `20` | Kandidaten vor Reranking |
+| `SIMILARITY_THRESHOLD` | `0.35` | Mindest-Relevanz (0–1) |
 | `MCP_TRANSPORT` | `stdio` | `stdio` oder `streamable-http` |
-| `MCP_HOST` | `0.0.0.0` | Host fuer HTTP-Modus |
-| `MCP_PORT` | `8000` | Port fuer HTTP-Modus |
-| `LOG_LEVEL` | `INFO` | Log-Level (DEBUG, INFO, WARNING, ERROR) |
-| `DATA_DIR` | `./data` | Verzeichnis fuer heruntergeladene Gesetze |
+| `MCP_PORT` | `8000` | Port (MCP/API) |
+| `HF_HOME` | (System) | HuggingFace-Cache-Pfad |
+| `TORCH_HOME` | (System) | PyTorch-Cache-Pfad |
+| `LOG_LEVEL` | `INFO` | Log-Level |
+
+Alle Werte sind ueber die Settings-Seite der Desktop-App aenderbar.
+
+---
 
 ## Projektstruktur
 
 ```
 paragraf/
-├── src/paragraf/
-│   ├── __main__.py           # Entry Point
-│   ├── server.py             # FastMCP + Lifespan
-│   ├── config.py             # Pydantic Settings
+├── src/paragraf/                  # Python Backend
+│   ├── __main__.py                # Entry Point (--mode mcp|api)
+│   ├── server.py                  # FastMCP Server + Lifespan
+│   ├── api.py                     # FastAPI REST-Layer (13 Endpoints)
+│   ├── api_models.py              # Pydantic Request/Response-Modelle
+│   ├── config.py                  # Pydantic Settings (.env)
 │   ├── models/
-│   │   └── law.py            # Datenmodelle (Chunk, SearchResult, etc.)
+│   │   └── law.py                 # LAW_REGISTRY (~140 Gesetze), Datenmodelle
 │   ├── services/
-│   │   ├── embedding.py      # bge-m3 Dense + Sparse
-│   │   ├── qdrant_store.py   # Qdrant Hybrid-Search
-│   │   ├── parser.py         # XML-Parser fuer gesetze-im-internet.de
-│   │   └── reranker.py       # Cross-Encoder Reranking
-│   ├── tools/
-│   │   ├── search.py         # paragraf_search, paragraf_lookup, paragraf_compare
-│   │   ├── lookup.py         # paragraf_laws, paragraf_counseling, paragraf_status
-│   │   └── ingest.py         # paragraf_index, paragraf_index_eutb
-│   └── prompts/
-│       └── __init__.py       # Prompt-Templates
-├── scripts/
-│   └── ingest_gesetze.py     # Standalone-Indexierung
-├── tests/
-├── data/                     # Heruntergeladene Gesetze (gitignored)
-├── CLAUDE.md                 # Projekt-Konventionen
-├── pyproject.toml
-└── .env.example
+│   │   ├── embedding.py           # bge-m3 Dense + Sparse Embeddings
+│   │   ├── qdrant_store.py        # Qdrant Hybrid-Search + Upsert
+│   │   ├── reranker.py            # Cross-Encoder Reranking
+│   │   ├── parser.py              # XML-Parser (gesetze-im-internet.de)
+│   │   ├── eurlex_client.py       # EUR-Lex HTML-Downloader
+│   │   └── eurlex_parser.py       # EUR-Lex HTML-Parser
+│   ├── tools/                     # MCP Tool-Definitionen
+│   └── prompts/                   # MCP Prompt-Templates
+├── desktop/                       # Electron Desktop-App
+│   ├── src/main/                  # Main-Prozess (Backend, IPC, Qdrant)
+│   ├── src/preload/               # Security Bridge (Context Isolation)
+│   └── src/renderer/              # React Frontend
+│       ├── pages/                 # 7 Seiten (Search, Lookup, Compare, ...)
+│       ├── components/            # UI-Komponenten (Sidebar, SetupWizard, ...)
+│       ├── hooks/                 # React Hooks (useBackend)
+│       └── lib/                   # API-Client (typisiert)
+├── data/                          # Gesetze + EUTB-Daten (gitignored)
+├── .env                           # Konfiguration
+├── pyproject.toml                 # Python-Abhaengigkeiten + uv-Config
+└── CLAUDE.md                      # Projekt-Konventionen fuer KI-Assistenten
 ```
+
+---
+
+## Entwicklung
+
+```bash
+# Python-Backend starten
+uv run python -m paragraf --mode api --port 8000
+
+# Desktop-App im Dev-Modus
+cd desktop && npm run dev
+
+# Tests
+uv run pytest tests/ -v
+
+# Linting
+uv run ruff check src/
+```
+
+---
+
+## Bekannte Einschraenkungen
+
+- **Qdrant auf Windows:** Segment-Optimizer kann auf Windows File-Lock-Probleme haben ([#1](https://github.com/gorduan/paragraf/issues/1)). Workaround: Qdrant-Storage aus Windows Defender ausschliessen oder Qdrant in Docker nutzen.
+- **EUR-Lex:** Bot-Protection (AWS WAF) verhindert automatische Downloads. Die Desktop-App nutzt Playwright als Fallback.
+- **Speicherplatz:** Embedding- und Reranker-Modelle benoetigen ~4 GB. Cache-Verzeichnisse sind konfigurierbar.
 
 ## Rechtliche Hinweise
 
 - **Gesetzestexte** sind nach § 5 Abs. 1 UrhG gemeinfrei
-- **System-Design** ist als Rechtsinformationssystem (nicht Rechtsberatung) konzipiert
-- **DSGVO:** Keine Speicherung von Nutzeranfragen, lokale Verarbeitung
-- **EU AI Act:** Transparenzkennzeichnung als KI-System erforderlich (Art. 50)
+- **Keine Rechtsberatung** im Sinne des RDG – nur allgemeine Rechtsinformation
+- **DSGVO:** Lokale Verarbeitung, keine Speicherung von Nutzeranfragen
+- **EU AI Act:** Transparenzkennzeichnung als KI-System (Art. 50)
 
 ## Lizenz
 
