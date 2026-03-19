@@ -11,5 +11,4 @@ data/processed/
 .env
 *.db
 *.log
-.claude/
 uv.lock
