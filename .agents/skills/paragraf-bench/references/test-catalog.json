@@ -1,0 +1,614 @@
+{
+  "version": "1.0",
+  "description": "Paragraf-Bench Testkatalog: 50 Testfaelle fuer juristische Rechtsrecherche",
+  "tests": [
+    {
+      "id": "sem-01",
+      "category": "semantische_suche",
+      "difficulty": "einfach",
+      "question": "Was ist der GdB (Grad der Behinderung)?",
+      "expected_paragraphs": ["§ 152"],
+      "expected_laws": ["SGB IX"],
+      "verification_checks": {
+        "must_mention": ["Grad der Behinderung", "Versorgungsamt", "Feststellung"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "sem-02",
+      "category": "semantische_suche",
+      "difficulty": "einfach",
+      "question": "Wann hat man Anspruch auf Elternzeit?",
+      "expected_paragraphs": ["§ 15", "§ 16"],
+      "expected_laws": ["BEEG"],
+      "verification_checks": {
+        "must_mention": ["Elternzeit", "Anspruch", "drei Jahre"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "sem-03",
+      "category": "semantische_suche",
+      "difficulty": "schwer",
+      "question": "Welchen Kuendigungsschutz haben schwerbehinderte Arbeitnehmer?",
+      "expected_paragraphs": ["§ 168", "§ 169", "§ 170", "§ 171", "§ 172", "§ 173", "§ 174", "§ 175"],
+      "expected_laws": ["SGB IX", "KSchG"],
+      "verification_checks": {
+        "must_mention": ["Integrationsamt", "Zustimmung", "Kuendigung"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "sem-04",
+      "category": "semantische_suche",
+      "difficulty": "mittel",
+      "question": "Welche Rechte habe ich bei einer Datenpanne nach DSGVO?",
+      "expected_paragraphs": ["Art. 33", "Art. 34"],
+      "expected_laws": ["DSGVO"],
+      "verification_checks": {
+        "must_mention": ["Meldung", "Aufsichtsbehoerde", "72 Stunden", "Benachrichtigung"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "sem-05",
+      "category": "semantische_suche",
+      "difficulty": "mittel",
+      "question": "Was regelt das Allgemeine Gleichbehandlungsgesetz?",
+      "expected_paragraphs": ["§ 1", "§ 2", "§ 3"],
+      "expected_laws": ["AGG"],
+      "verification_checks": {
+        "must_mention": ["Benachteiligung", "Diskriminierung", "Rasse", "Geschlecht", "Behinderung"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "lkp-01",
+      "category": "paragraph_nachschlagen",
+      "difficulty": "einfach",
+      "question": "Wie lautet Artikel 1 des Grundgesetzes?",
+      "expected_paragraphs": ["Art. 1"],
+      "expected_laws": ["GG"],
+      "verification_checks": {
+        "must_mention": ["Wuerde des Menschen", "unantastbar"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "lkp-02",
+      "category": "paragraph_nachschlagen",
+      "difficulty": "einfach",
+      "question": "Was steht in § 823 BGB?",
+      "expected_paragraphs": ["§ 823"],
+      "expected_laws": ["BGB"],
+      "verification_checks": {
+        "must_mention": ["Schadensersatz", "widerrechtlich"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "lkp-03",
+      "category": "paragraph_nachschlagen",
+      "difficulty": "mittel",
+      "question": "Was regelt § 626 BGB zur fristlosen Kuendigung?",
+      "expected_paragraphs": ["§ 626"],
+      "expected_laws": ["BGB"],
+      "verification_checks": {
+        "must_mention": ["wichtiger Grund", "fristlos", "Kuendigung", "zwei Wochen"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "lkp-04",
+      "category": "paragraph_nachschlagen",
+      "difficulty": "mittel",
+      "question": "Was besagt § 242 BGB (Treu und Glauben)?",
+      "expected_paragraphs": ["§ 242"],
+      "expected_laws": ["BGB"],
+      "verification_checks": {
+        "must_mention": ["Treu und Glauben", "Verkehrssitte"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "cmp-01",
+      "category": "vergleich",
+      "difficulty": "mittel",
+      "question": "Vergleiche die Kuendigungsfristen in § 622 BGB und § 34 TVoeD.",
+      "expected_paragraphs": ["§ 622"],
+      "expected_laws": ["BGB"],
+      "verification_checks": {
+        "must_mention": ["Kuendigungsfrist", "Grundkuendigungsfrist", "vier Wochen"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "cmp-02",
+      "category": "vergleich",
+      "difficulty": "schwer",
+      "question": "Vergleiche die Diskriminierungsverbote im AGG, BGG und der EU-Antidiskriminierungsrahmenrichtlinie.",
+      "expected_paragraphs": ["§ 1 AGG", "§ 1 BGG"],
+      "expected_laws": ["AGG", "BGG", "EU_ANTIDISK_RAHMEN"],
+      "verification_checks": {
+        "must_mention": ["Benachteiligung", "Behinderung", "Gleichstellung"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "cmp-03",
+      "category": "vergleich",
+      "difficulty": "schwer",
+      "question": "Wie unterscheiden sich Datenschutzregelungen in DSGVO und BDSG?",
+      "expected_paragraphs": ["Art. 1 DSGVO", "§ 1 BDSG"],
+      "expected_laws": ["DSGVO", "BDSG"],
+      "verification_checks": {
+        "must_mention": ["personenbezogene Daten", "Verarbeitung", "Oeffnungsklausel"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "brw-01",
+      "category": "gesetzesbrowser",
+      "difficulty": "einfach",
+      "question": "Welche Gesetze zum Thema Behindertenrecht sind verfuegbar?",
+      "expected_paragraphs": [],
+      "expected_laws": ["SGB IX", "BGG", "AGG", "VersMedV"],
+      "verification_checks": {
+        "must_mention": ["SGB IX", "BGG"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "brw-02",
+      "category": "gesetzesbrowser",
+      "difficulty": "einfach",
+      "question": "Zeige mir die Struktur des Grundgesetzes.",
+      "expected_paragraphs": [],
+      "expected_laws": ["GG"],
+      "verification_checks": {
+        "must_mention": ["Grundrechte", "Art."],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "brw-03",
+      "category": "gesetzesbrowser",
+      "difficulty": "mittel",
+      "question": "Welche EU-Richtlinien und Verordnungen sind in Paragraf indexiert?",
+      "expected_paragraphs": [],
+      "expected_laws": ["DSGVO", "EU_AI_ACT", "EU_BARR_RL", "EU_GRCH", "AEUV", "EUV"],
+      "verification_checks": {
+        "must_mention": ["DSGVO", "EU"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "eutb-01",
+      "category": "eutb_beratung",
+      "difficulty": "einfach",
+      "question": "Gibt es EUTB-Beratungsstellen in Berlin?",
+      "expected_paragraphs": [],
+      "expected_laws": [],
+      "verification_checks": {
+        "must_mention": ["Berlin", "Beratung"],
+        "must_not_hallucinate": true,
+        "requires_counseling_api": true
+      }
+    },
+    {
+      "id": "eutb-02",
+      "category": "eutb_beratung",
+      "difficulty": "mittel",
+      "question": "Welche Beratungsstellen gibt es in Bayern mit Schwerpunkt Mobilitaet?",
+      "expected_paragraphs": [],
+      "expected_laws": [],
+      "verification_checks": {
+        "must_mention": ["Bayern", "Mobilitaet"],
+        "must_not_hallucinate": true,
+        "requires_counseling_api": true
+      }
+    },
+    {
+      "id": "ls-01",
+      "category": "leichte_sprache",
+      "difficulty": "einfach",
+      "question": "Erklaere mir in einfacher Sprache: Was ist ein Schwerbehindertenausweis?",
+      "expected_paragraphs": ["§ 152"],
+      "expected_laws": ["SGB IX"],
+      "verification_checks": {
+        "must_mention": ["Ausweis", "Behinderung"],
+        "must_not_hallucinate": true,
+        "check_simple_language": true
+      }
+    },
+    {
+      "id": "ls-02",
+      "category": "leichte_sprache",
+      "difficulty": "mittel",
+      "question": "Erklaere mir in einfacher Sprache: Was ist Elterngeld und wer bekommt es?",
+      "expected_paragraphs": ["§ 1", "§ 2"],
+      "expected_laws": ["BEEG"],
+      "verification_checks": {
+        "must_mention": ["Elterngeld", "Eltern", "Kind"],
+        "must_not_hallucinate": true,
+        "check_simple_language": true
+      }
+    },
+    {
+      "id": "quer-01",
+      "category": "querschnitt",
+      "difficulty": "mittel",
+      "question": "Welche Rechte haben Arbeitnehmer bei Krankheit? (Entgeltfortzahlung, Kuendigung, SGB)",
+      "expected_paragraphs": ["§ 3", "§ 5"],
+      "expected_laws": ["EntgFG", "KSchG", "SGB V"],
+      "verification_checks": {
+        "must_mention": ["Entgeltfortzahlung", "sechs Wochen", "Arbeitsunfaehigkeit"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "quer-02",
+      "category": "querschnitt",
+      "difficulty": "mittel",
+      "question": "Welche Pflichten hat ein Arbeitgeber beim Arbeitsschutz?",
+      "expected_paragraphs": ["§ 3", "§ 4", "§ 5"],
+      "expected_laws": ["ArbSchG"],
+      "verification_checks": {
+        "must_mention": ["Gefaehrdungsbeurteilung", "Arbeitgeber", "Massnahmen"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "quer-03",
+      "category": "querschnitt",
+      "difficulty": "schwer",
+      "question": "Welche gesetzlichen Grundlagen gibt es fuer barrierefreie IT in Deutschland und der EU?",
+      "expected_paragraphs": ["§ 12a BGG", "§ 12b BGG"],
+      "expected_laws": ["BGG", "EU_BARR_RL", "BITV"],
+      "verification_checks": {
+        "must_mention": ["Barrierefreiheit", "Informationstechnik", "Webseiten"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "quer-04",
+      "category": "querschnitt",
+      "difficulty": "schwer",
+      "question": "Welche Nachteilsausgleiche gibt es fuer Schwerbehinderte in Steuer-, Sozial- und Arbeitsrecht?",
+      "expected_paragraphs": ["§ 151", "§ 152", "§ 185", "§ 187", "§ 208"],
+      "expected_laws": ["SGB IX", "EStG", "KraftStG", "ArbZG"],
+      "verification_checks": {
+        "must_mention": ["Nachteilsausgleich", "Steuerfreibetrag", "Zusatzurlaub"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "quer-05",
+      "category": "querschnitt",
+      "difficulty": "schwer",
+      "question": "Wie ist der Rechtsweg bei Diskriminierung am Arbeitsplatz? (AGG, ArbGG, Fristen)",
+      "expected_paragraphs": ["§ 15", "§ 21", "§ 22"],
+      "expected_laws": ["AGG"],
+      "verification_checks": {
+        "must_mention": ["Entschaedigung", "Schadensersatz", "zwei Monate", "Beweislast"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "edge-01",
+      "category": "edge_cases",
+      "difficulty": "einfach",
+      "question": "asdfgh",
+      "expected_paragraphs": [],
+      "expected_laws": [],
+      "verification_checks": {
+        "must_mention": [],
+        "must_not_hallucinate": true,
+        "expect_no_results": true
+      }
+    },
+    {
+      "id": "edge-02",
+      "category": "edge_cases",
+      "difficulty": "einfach",
+      "question": "§ 99999 BGB",
+      "expected_paragraphs": [],
+      "expected_laws": [],
+      "verification_checks": {
+        "must_mention": [],
+        "must_not_hallucinate": true,
+        "expect_not_found": true
+      }
+    },
+    {
+      "id": "edge-03",
+      "category": "edge_cases",
+      "difficulty": "mittel",
+      "question": "Welche Strafen drohen bei Verstoss gegen das Einhorn-Schutzgesetz?",
+      "expected_paragraphs": [],
+      "expected_laws": [],
+      "verification_checks": {
+        "must_mention": [],
+        "must_not_hallucinate": true,
+        "expect_no_results": true,
+        "must_not_invent_law": true
+      }
+    },
+    {
+      "id": "edge-04",
+      "category": "edge_cases",
+      "difficulty": "schwer",
+      "question": "Welche Rechte hat ein schwerbehinderter EU-Buerger in Deutschland auf Buergergeld und welche Nachteilsausgleiche stehen ihm zu?",
+      "expected_paragraphs": ["§ 7", "§ 8"],
+      "expected_laws": ["SGB II", "SGB IX", "AufenthG", "FreizügG/EU"],
+      "verification_checks": {
+        "must_mention": ["Buergergeld", "Aufenthaltsrecht", "Freizuegigkeit", "Nachteilsausgleich"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-01",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Mietrecht-Klausur: Ein fehlerhafter Holzbalken faellt auf den Mieter (300 EUR Behandlungskosten). Der Mietwert sinkt von 600 auf 300 EUR. Der Mieter erklaert eine Minderung um 100%. Hat der Vermieter Anspruch auf die volle Februar-Miete?",
+      "expected_paragraphs": ["§ 535", "§ 536", "§ 536a", "§ 812", "§ 389"],
+      "expected_laws": ["BGB"],
+      "verification_checks": {
+        "must_mention": ["Aufrechnung", "Minderung", "Schadensersatz", "Mangel"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-02",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Mietrecht-Klausur: Mieter bucht Ferienwohnung, Vermieter ist im Urlaub und nicht erreichbar. Mieter steigt durch ein gekipptes Fenster ein. Vermieter verlangt nach Rueckkehr 500 EUR Miete. Hat der Vermieter einen Anspruch?",
+      "expected_paragraphs": ["§ 535", "§ 326", "§ 275", "§ 812", "§ 987", "§ 990"],
+      "expected_laws": ["BGB"],
+      "verification_checks": {
+        "must_mention": ["Unmoeglichkeit", "Eigenmacht", "Besitzrecht"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-03",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "GbR-Fall: A, B und C gruenden eine Vor-GmbH, lassen sie aber nicht ins Handelsregister eintragen. B und C fuehren das Geschaeft als GbR mbH weiter. C schliesst einen Mietvertrag ab. Haften B und C persoenlich? Die Sparkasse fordert ausserdem Rueckzahlung eines Darlehens, das A aufgenommen hatte, von B und C.",
+      "expected_paragraphs": ["§ 714", "§ 535", "§ 128"],
+      "expected_laws": ["BGB", "HGB", "GmbHG"],
+      "verification_checks": {
+        "must_mention": ["GbR", "Haftung", "Gesellschafter", "Handelsregister"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-04",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Strafrecht Examensklausur (Hamburg 2016): A serviert Gaesten Betaeubungsmittel im Aperitif um einen geplanten Raub zu verhindern. Spaeter verursacht A einen Unfall und hinterlaesst nur seinen Kuenstlernamen. Danach bricht A mit B in das Haus seiner Ex-Frau ein und entwendet Schmuck im Wert von 1000 EUR, den A an einen Juwelier als 'Erbstueck' verkauft. Pruefe die Strafbarkeit des A.",
+      "expected_paragraphs": ["§ 223", "§ 224", "§ 34", "§ 142", "§ 244", "§ 263", "§ 242"],
+      "expected_laws": ["StGB"],
+      "verification_checks": {
+        "must_mention": ["Koerperverletzung", "Notstand", "Diebstahl", "Betrug"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-05",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Verwaltungsrecht Biergarten-Fall: Hirsch beantragt eine Baugenehmigung fuer den Biergarten 'Druidenquelle' (600 Gaeste) auf einem unbewaldetem Grundstueck im Aussenbereich. Die Behoerde lehnt wegen Laerm ab. Hirsch klagt nach erfolglosem Widerspruch. Ist die Klage zulaessig und begruendet?",
+      "expected_paragraphs": ["§ 42", "§ 35"],
+      "expected_laws": ["VwGO", "BauGB", "BauNVO", "BImSchG"],
+      "verification_checks": {
+        "must_mention": ["Verpflichtungsklage", "Aussenbereich", "Baugenehmigung", "schaedliche Umwelteinwirkungen"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-06",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Verwaltungsrecht Seniorenresidenz: Ein Investor plant eine 8-geschossige Seniorenresidenz in einem Wohngebiet (Bebauungsplan erlaubt max 2 Geschosse). Der Bebauungsplan wurde ohne Nachbarbeteiligung und ohne Abwaegung erlassen. Die Nachbarin beantragt Wiederherstellung der aufschiebenden Wirkung. Pruefe Zulaessigkeit und Begruendetheit.",
+      "expected_paragraphs": ["§ 80a", "§ 80"],
+      "expected_laws": ["VwGO", "BauGB", "BauNVO", "VwVfG", "GG"],
+      "verification_checks": {
+        "must_mention": ["Bebauungsplan", "Abwaegung", "Ruecksichtnahmegebot", "aufschiebende Wirkung"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-07",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Polizeirecht Drogenplatz: Der Oberbuergermeister erlasst eine Allgemeinverfuegung: Drogenverdaechtige muessen einen Park verlassen und erhalten ein 3-monatiges Betretungsverbot. Ein bekannter Dealer beantragt die Wiederherstellung der aufschiebenden Wirkung. Ist der Antrag zulaessig und begruendet?",
+      "expected_paragraphs": ["§ 80", "§ 40", "§ 42"],
+      "expected_laws": ["VwGO", "VwVfG", "GG"],
+      "verification_checks": {
+        "must_mention": ["Allgemeinverfuegung", "Verhaeltnismaessigkeit", "Erforderlichkeit", "Ermessen"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-08",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Verwaltungsvollstreckung Abgeschleppt: Eine Frau parkt rechtmaessig. Die Stadt stellt nachtraeglich ein Halteverbot auf (wegen Leitungsreparatur). Das Auto wird abgeschleppt. Sie zahlt 185 EUR und klagt auf Erstattung. Hat sie einen Erstattungsanspruch?",
+      "expected_paragraphs": ["§ 40", "§ 42"],
+      "expected_laws": ["VwGO", "StVO", "VwVfG"],
+      "verification_checks": {
+        "must_mention": ["Leistungsklage", "Erstattungsanspruch", "Ersatzvornahme", "Halteverbot"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-09",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Datenschutz: Ein Unternehmen wird gehackt, Bewerberdaten werden entwendet. Die Malware wird erst nach einem Monat entdeckt. Welche datenschutzrechtlichen Pflichten bestehen und welche Sanktionen drohen?",
+      "expected_paragraphs": ["Art. 33", "Art. 34", "Art. 83", "Art. 32"],
+      "expected_laws": ["DSGVO"],
+      "verification_checks": {
+        "must_mention": ["72 Stunden", "Meldepflicht", "Aufsichtsbehoerde", "Benachrichtigung", "Risiko"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-10",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Datenschutz: Ein unverschluesselter Laptop mit 100.000 Kundendatensaetzen wird gestohlen. Welche datenschutzrechtlichen Pflichten bestehen?",
+      "expected_paragraphs": ["Art. 32", "Art. 33", "Art. 34"],
+      "expected_laws": ["DSGVO"],
+      "verification_checks": {
+        "must_mention": ["Verschluesselung", "Meldepflicht", "Identitaetsdiebstahl", "technische Massnahmen"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-11",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Erbrecht: Ein Erbe versaeumt die Ausschlagungsfrist, will aber seinen Pflichtteil geltend machen. Welche rechtlichen Moeglichkeiten bestehen?",
+      "expected_paragraphs": ["§ 1943", "§ 1944", "§ 1956", "§ 1957", "§ 2303"],
+      "expected_laws": ["BGB"],
+      "verification_checks": {
+        "must_mention": ["Ausschlagungsfrist", "Anfechtung", "Pflichtteil"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-12",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Erbrecht: Ein Erbe nimmt das Erbe der Mutter an und fordert spaeter den Pflichtteil des Vaters. Das Testament enthaelt eine Verwirkungsklausel. Ist der Pflichtteilsanspruch verjaehrt? Greift die Verwirkungsklausel?",
+      "expected_paragraphs": ["§ 2303", "§ 2306", "§ 195", "§ 199"],
+      "expected_laws": ["BGB"],
+      "verification_checks": {
+        "must_mention": ["Pflichtteil", "Verjaehrung", "drei Jahre", "Verwirkungsklausel"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-13",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Strafrecht: A steckt im Supermarkt ein Feuerzeug in seine Jackentasche und wird vor der Kasse vom Detektiv gestoppt. Pruefe die Strafbarkeit des A.",
+      "expected_paragraphs": ["§ 242", "§ 22", "§ 23"],
+      "expected_laws": ["StGB"],
+      "verification_checks": {
+        "must_mention": ["Diebstahl", "Versuch", "Gewahrsam", "Zueignungsabsicht"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-14",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Strafrecht: T oeffnet mit einem Dietrich eine verschlossene Wohnungstuer und nimmt Bargeld mit. Pruefe die Strafbarkeit.",
+      "expected_paragraphs": ["§ 242", "§ 243", "§ 244"],
+      "expected_laws": ["StGB"],
+      "verification_checks": {
+        "must_mention": ["Diebstahl", "Einbrechen", "Dietrich", "besonders schwerer Fall"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-15",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Heilerziehungspflege: Ein Klient in einem Wohnheim lehnt eine medizinisch notwendige Massnahme ab. Wie ist rechtlich und ethisch korrekt vorzugehen?",
+      "expected_paragraphs": ["Art. 2"],
+      "expected_laws": ["GG", "SGB IX", "BGB"],
+      "verification_checks": {
+        "must_mention": ["Selbstbestimmung", "Autonomie", "Betreuer", "Einwilligung"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-16",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Heilerziehungspflege: Eltern lesen das Tagebuch eines minderjaehrigen Klienten im Wohnheim. Wie ist dies rechtlich zu bewerten?",
+      "expected_paragraphs": ["Art. 1", "Art. 2", "§ 1626"],
+      "expected_laws": ["GG", "BGB"],
+      "verification_checks": {
+        "must_mention": ["Privatsphaere", "Persoenlichkeitsrecht", "Sorgerecht"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-17",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Arbeitsrecht Sozialauswahl: Arbeitgeber kuendigt betriebsbedingt. 3 vergleichbare Arbeitnehmer: A (25 J., ledig, 2 Jahre Betriebszugehoerigkeit), B (45 J., 2 Kinder, 15 Jahre), C (55 J., schwerbehindert, 20 Jahre). Wer ist am wenigsten schutzbeduertig?",
+      "expected_paragraphs": ["§ 1"],
+      "expected_laws": ["KSchG", "SGB IX"],
+      "verification_checks": {
+        "must_mention": ["Sozialauswahl", "Betriebszugehoerigkeit", "Unterhaltspflichten", "Schwerbehinderung"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-18",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Familienrecht Zugewinnausgleich: Ehepaar trennt sich nach 10 Jahren. Mann: Anfangsvermoegen 20.000 EUR, Endvermoegen 120.000 EUR. Frau: Anfangsvermoegen 5.000 EUR, Endvermoegen 25.000 EUR. Berechne den Zugewinnausgleich.",
+      "expected_paragraphs": ["§ 1378", "§ 1374", "§ 1375", "§ 1373"],
+      "expected_laws": ["BGB"],
+      "verification_checks": {
+        "must_mention": ["Zugewinnausgleich", "Anfangsvermoegen", "Endvermoegen", "Ausgleichsforderung"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-19",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "BGB AT Willenserklaerung: A bietet B einen Gebrauchtwagen fuer 5.000 EUR an. B sagt 'Einverstanden', meint aber innerlich, nicht zahlen zu wollen (geheimer Vorbehalt). Ist der Kaufvertrag wirksam?",
+      "expected_paragraphs": ["§ 116", "§ 433"],
+      "expected_laws": ["BGB"],
+      "verification_checks": {
+        "must_mention": ["geheimer Vorbehalt", "Willenserklaerung", "Kaufvertrag"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-20",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Sachenrecht EBV: A leiht B sein Fahrrad. B verkauft es an den gutglaeubigen C. A verlangt Herausgabe von C. Hat A einen Anspruch aus § 985 BGB?",
+      "expected_paragraphs": ["§ 985", "§ 932", "§ 935", "§ 929"],
+      "expected_laws": ["BGB"],
+      "verification_checks": {
+        "must_mention": ["gutglaeubiger Erwerb", "Abhandenkommen", "Eigentum", "Herausgabe"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-21",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Buergschaftsrecht: Schuldner S kann eine Forderung von 50.000 EUR nicht bedienen. Glaeubiger G hat eine Buergschaft von B. S geht in Insolvenz. Kann G von B Zahlung verlangen?",
+      "expected_paragraphs": ["§ 765", "§ 767", "§ 768", "§ 770", "§ 771"],
+      "expected_laws": ["BGB", "InsO"],
+      "verification_checks": {
+        "must_mention": ["Buergschaft", "akzessorisch", "Insolvenz", "Einrede"],
+        "must_not_hallucinate": true
+      }
+    },
+    {
+      "id": "exam-22",
+      "category": "exam",
+      "difficulty": "schwer",
+      "question": "Querschnitt: Ein syrischer Fluechtling mit Aufenthaltsgestattung, schwerbehindert (GdB 60), alleinerziehend, beantragt: Buergergeld, Nachteilsausgleiche und einen Integrationskurs. Welche Ansprueche bestehen jeweils?",
+      "expected_paragraphs": ["§ 1", "§ 7", "§ 152", "§ 43"],
+      "expected_laws": ["AsylbLG", "SGB II", "SGB IX", "AufenthG"],
+      "verification_checks": {
+        "must_mention": ["Aufenthaltsgestattung", "Buergergeld", "Asylbewerberleistungsgesetz", "Nachteilsausgleich"],
+        "must_not_hallucinate": true
+      }
+    }
+  ]
+}
