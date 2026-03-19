@@ -15,6 +15,7 @@ export interface BackendStatus {
   state: BackendState;
   qdrant: boolean;
   backend: boolean;
+  mcp: boolean;
   error?: string;
   log: string[];
   loadingProgress: number;
@@ -42,9 +43,11 @@ export class BackendManager {
   private state: BackendState = "stopped";
   private qdrantProcess: ChildProcess | null = null;
   private pythonProcess: ChildProcess | null = null;
+  private mcpProcess: ChildProcess | null = null;
   private logs: string[] = [];
   private qdrantRunning = false;
   private backendRunning = false;
+  private mcpRunning = false;
   private error: string | undefined;
   private projectDir: string;
   private loadingProgress = 0;
@@ -53,6 +56,25 @@ export class BackendManager {
 
   constructor() {
     this.projectDir = path.resolve(__dirname, "..", "..", "..");
+  }
+
+  getProjectDir(): string {
+    return this.projectDir;
+  }
+
+  private readEnvFile(): Record<string, string> {
+    const envPath = path.join(this.projectDir, ".env");
+    const result: Record<string, string> = {};
+    if (!fs.existsSync(envPath)) return result;
+    const content = fs.readFileSync(envPath, "utf-8");
+    for (const line of content.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx === -1) continue;
+      result[trimmed.slice(0, eqIdx).trim()] = trimmed.slice(eqIdx + 1).trim();
+    }
+    return result;
   }
 
   setStateChangeHandler(handler: (status: BackendStatus) => void): void {
@@ -64,6 +86,7 @@ export class BackendManager {
       state: this.state,
       qdrant: this.qdrantRunning,
       backend: this.backendRunning,
+      mcp: this.mcpRunning,
       error: this.error,
       log: this.logs.slice(-100),
       loadingProgress: this.loadingProgress,
@@ -272,6 +295,7 @@ export class BackendManager {
     if (await this.checkBackendHealth()) {
       this.backendRunning = true;
       this.setProgress(100, "Backend bereit (bereits gestartet)");
+      this.setState("ready");
       this.log("Backend läuft bereits auf Port 8000");
       return true;
     }
@@ -287,6 +311,8 @@ export class BackendManager {
     this.setState("loading_models");
     this.setProgress(2, "Starte Python Backend...");
 
+    const envVars = this.readEnvFile();
+
     this.pythonProcess = spawn(
       uvPath,
       ["run", "python", "-m", "paragraf", "--mode", "api", "--port", "8000"],
@@ -296,9 +322,14 @@ export class BackendManager {
         env: {
           ...process.env,
           PYTHONUNBUFFERED: "1",
-          HF_HOME: process.env.HF_HOME || "E:/hf_cache",
-          TORCH_HOME: process.env.TORCH_HOME || "E:/torch_cache",
-          TMPDIR: process.env.TMPDIR || "E:/tmp",
+          HF_HOME: process.env.HF_HOME || envVars.HF_HOME || "E:/hf_cache",
+          TORCH_HOME: process.env.TORCH_HOME || envVars.TORCH_HOME || "E:/torch_cache",
+          HF_HUB_DISABLE_SYMLINKS_WARNING: "1",
+          HF_HUB_OFFLINE: "1",
+          TRANSFORMERS_OFFLINE: "1",
+          TMPDIR: "E:/tmp",
+          TEMP: "E:/tmp",
+          TMP: "E:/tmp",
           UV_CACHE_DIR: process.env.UV_CACHE_DIR || "E:/uv_cache",
         },
       },
@@ -356,6 +387,127 @@ export class BackendManager {
         resolve(false);
       });
     });
+  }
+
+  // ── MCP Server ─────────────────────────────────────────────────────
+
+  async startMcp(): Promise<boolean> {
+    if (this.mcpRunning) {
+      this.log("MCP-Server läuft bereits");
+      return true;
+    }
+
+    const uvPath = this.findUv();
+    if (!uvPath) {
+      this.log("MCP: uv nicht gefunden");
+      return false;
+    }
+
+    const envVars = this.readEnvFile();
+
+    this.log("Starte MCP-Server (streamable-http, Port 8001)...");
+    this.mcpProcess = spawn(
+      uvPath,
+      [
+        "run", "python", "-m", "paragraf",
+        "--mode", "mcp", "--port", "8001",
+      ],
+      {
+        cwd: this.projectDir,
+        stdio: ["pipe", "pipe", "pipe"],
+        env: {
+          ...process.env,
+          PYTHONUNBUFFERED: "1",
+          MCP_TRANSPORT: "streamable-http",
+          MCP_PORT: "8001",
+          HF_HOME: process.env.HF_HOME || envVars.HF_HOME || "E:/hf_cache",
+          TORCH_HOME: process.env.TORCH_HOME || envVars.TORCH_HOME || "E:/torch_cache",
+          HF_HUB_DISABLE_SYMLINKS_WARNING: "1",
+          TMPDIR: "E:/tmp",
+          TEMP: "E:/tmp",
+          TMP: "E:/tmp",
+          UV_CACHE_DIR: process.env.UV_CACHE_DIR || "E:/uv_cache",
+        },
+      },
+    );
+
+    this.mcpProcess.stdout?.on("data", (data: Buffer) => {
+      data.toString().split("\n").filter(Boolean).forEach((l) => this.log(`[MCP] ${l}`));
+    });
+
+    this.mcpProcess.stderr?.on("data", (data: Buffer) => {
+      data.toString().split("\n").filter(Boolean).forEach((l) => this.log(`[MCP] ${l}`));
+    });
+
+    this.mcpProcess.on("exit", (code) => {
+      this.log(`MCP-Prozess beendet (Code: ${code})`);
+      this.mcpRunning = false;
+      this.mcpProcess = null;
+      this.emitState();
+    });
+
+    // Give it a few seconds to start
+    for (let i = 0; i < 10; i++) {
+      await this.sleep(1000);
+      if (this.mcpProcess && !this.mcpProcess.killed) {
+        // Check if the process is still alive after a brief wait
+        if (i >= 2) {
+          this.mcpRunning = true;
+          this.log("MCP-Server gestartet");
+          this.emitState();
+          return true;
+        }
+      } else {
+        this.log("MCP-Server konnte nicht gestartet werden");
+        return false;
+      }
+    }
+
+    return false;
+  }
+
+  async stopMcp(): Promise<void> {
+    if (!this.mcpProcess) {
+      this.mcpRunning = false;
+      this.emitState();
+      return;
+    }
+
+    this.log("Stoppe MCP-Server...");
+    this.mcpProcess.kill("SIGTERM");
+    await this.sleep(2000);
+    if (this.mcpProcess && !this.mcpProcess.killed) {
+      this.mcpProcess.kill("SIGKILL");
+    }
+    this.mcpProcess = null;
+    this.mcpRunning = false;
+    this.log("MCP-Server gestoppt");
+    this.emitState();
+  }
+
+  // ── Restart ───────────────────────────────────────────────────────
+
+  async restart(): Promise<boolean> {
+    const mcpWasRunning = this.mcpRunning;
+
+    // Stop MCP if running
+    if (mcpWasRunning) {
+      await this.stopMcp();
+    }
+
+    // Stop backend
+    await this.stop();
+    await this.sleep(1000);
+
+    // Start backend
+    const ok = await this.start();
+
+    // Restart MCP if it was running
+    if (ok && mcpWasRunning) {
+      await this.startMcp();
+    }
+
+    return ok;
   }
 
   // ── Start/Stop ──────────────────────────────────────────────────────

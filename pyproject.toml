@@ -15,7 +15,7 @@ dependencies = [
     "FlagEmbedding>=1.3.0",
     "sentence-transformers>=3.0.0",
     "torch>=2.2.0",
-    "transformers>=4.36.0",
+    "transformers>=4.44.0,<5.0.0",
     # RAG & NLP
     "rank-bm25>=0.2.2",
     # HTTP & Async
@@ -40,6 +40,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+cuda = [
+    "torch>=2.2.0",
+]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
@@ -77,3 +80,13 @@ testpaths = ["tests"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
+
+[tool.uv]
+# PyTorch CUDA-Builds von PyTorch-Index holen
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }

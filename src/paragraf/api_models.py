@@ -183,3 +183,21 @@ class HealthResponse(BaseModel):
     qdrant_collection: str = ""
     qdrant_status: str = ""
     indexierte_chunks: int = 0
+
+
+class SettingsResponse(BaseModel):
+    embedding_device: str = "cpu"
+    embedding_batch_size: int = 8
+    embedding_max_length: int = 512
+    reranker_top_k: int = 5
+    retrieval_top_k: int = 20
+    similarity_threshold: float = 0.35
+    qdrant_url: str = "http://localhost:6333"
+    hf_home: str = ""
+    torch_home: str = ""
+
+
+class GpuInfoResponse(BaseModel):
+    cuda_available: bool = False
+    gpu_name: str = ""
+    vram_total_mb: int = 0

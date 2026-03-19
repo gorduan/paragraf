@@ -19,6 +19,7 @@ from paragraf.api_models import (
     CounselingItem,
     CounselingRequest,
     CounselingResponse,
+    GpuInfoResponse,
     HealthResponse,
     IndexProgressEvent,
     IndexRequest,
@@ -35,6 +36,7 @@ from paragraf.api_models import (
     SearchRequest,
     SearchResponse,
     SearchResultItem,
+    SettingsResponse,
 )
 from paragraf.config import settings
 from paragraf.models.law import (
@@ -186,6 +188,37 @@ def _register_routes(app: FastAPI) -> None:
             qdrant_status=info.get("status", "unknown"),
             indexierte_chunks=info.get("points_count", 0),
         )
+
+    # ── Settings ───────────────────────────────────────────────────────────
+
+    @app.get("/api/settings", response_model=SettingsResponse)
+    async def get_settings() -> SettingsResponse:
+        import os
+
+        return SettingsResponse(
+            embedding_device=settings.embedding_device,
+            embedding_batch_size=settings.embedding_batch_size,
+            embedding_max_length=settings.embedding_max_length,
+            reranker_top_k=settings.reranker_top_k,
+            retrieval_top_k=settings.retrieval_top_k,
+            similarity_threshold=settings.similarity_threshold,
+            qdrant_url=settings.qdrant_url,
+            hf_home=os.environ.get("HF_HOME", ""),
+            torch_home=os.environ.get("TORCH_HOME", ""),
+        )
+
+    @app.get("/api/settings/gpu", response_model=GpuInfoResponse)
+    async def get_gpu_info() -> GpuInfoResponse:
+        try:
+            import torch
+
+            if torch.cuda.is_available():
+                name = torch.cuda.get_device_name(0)
+                vram = int(torch.cuda.get_device_properties(0).total_memory / 1024 / 1024)
+                return GpuInfoResponse(cuda_available=True, gpu_name=name, vram_total_mb=vram)
+        except Exception:
+            pass
+        return GpuInfoResponse()
 
     # ── Semantische Suche ─────────────────────────────────────────────────
 

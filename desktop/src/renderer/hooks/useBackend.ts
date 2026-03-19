@@ -4,6 +4,7 @@ interface BackendStatus {
   state: string;
   qdrant: boolean;
   backend: boolean;
+  mcp: boolean;
   error?: string;
   log: string[];
   loadingProgress: number;
@@ -14,6 +15,7 @@ const DEFAULT_STATUS: BackendStatus = {
   state: "stopped",
   qdrant: false,
   backend: false,
+  mcp: false,
   log: [],
   loadingProgress: 0,
   loadingStage: "",

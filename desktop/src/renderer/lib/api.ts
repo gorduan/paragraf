@@ -170,6 +170,24 @@ export interface HealthResponse {
   indexierte_chunks: number;
 }
 
+export interface SettingsResponse {
+  embedding_device: string;
+  embedding_batch_size: number;
+  embedding_max_length: number;
+  reranker_top_k: number;
+  retrieval_top_k: number;
+  similarity_threshold: number;
+  qdrant_url: string;
+  hf_home: string;
+  torch_home: string;
+}
+
+export interface GpuInfoResponse {
+  cuda_available: boolean;
+  gpu_name: string;
+  vram_total_mb: number;
+}
+
 // ── API Client ───────────────────────────────────────────────────────────────
 
 async function fetchJson<T>(
@@ -188,6 +206,10 @@ async function fetchJson<T>(
 
 export const api = {
   health: () => fetchJson<HealthResponse>("/api/health"),
+
+  settings: () => fetchJson<SettingsResponse>("/api/settings"),
+
+  gpuInfo: () => fetchJson<GpuInfoResponse>("/api/settings/gpu"),
 
   search: (body: SearchRequest) =>
     fetchJson<SearchResponse>("/api/search", {
