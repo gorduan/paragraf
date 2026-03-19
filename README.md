@@ -59,7 +59,7 @@ Jede Antwort enthaelt automatisch einen **Rechtshinweis**, dass es sich um allge
 | Komponente | Technologie |
 |---|---|
 | MCP SDK | `mcp` (Official Python SDK) mit FastMCP |
-| Vektordatenbank | Qdrant (Docker) |
+| Vektordatenbank | Qdrant (nativ) |
 | Embedding | BAAI/bge-m3 (Dense + Sparse, 1024-dim) |
 | Reranking | BAAI/bge-reranker-v2-m3 (Cross-Encoder) |
 | XML-Parsing | lxml + BeautifulSoup4 |
@@ -70,7 +70,7 @@ Jede Antwort enthaelt automatisch einen **Rechtshinweis**, dass es sich um allge
 ### Voraussetzungen
 
 - **Python 3.12+**
-- **Docker** (fuer die Qdrant-Vektordatenbank)
+- **Qdrant** (Vektordatenbank, nativ) – [Download](https://github.com/qdrant/qdrant/releases) nach `E:\qdrant\` entpacken
 - **~8 GB RAM** (Embedding-Modell + Reranker + Qdrant)
 - **uv** als Package-Manager (empfohlen) – [Installation](https://docs.astral.sh/uv/getting-started/installation/)
 - **Git** (zum Klonen des Projekts)
@@ -108,10 +108,14 @@ pip install -e ".[dev]"
 ### Schritt 2: Qdrant-Datenbank starten
 
 ```bash
-docker compose up -d qdrant
+# Windows:
+E:\qdrant\qdrant.exe
+
+# macOS/Linux:
+./qdrant
 ```
 
-Dies startet die Qdrant-Vektordatenbank auf `http://localhost:6333`. Sie koennen pruefen, ob Qdrant laeuft:
+Dies startet die Qdrant-Vektordatenbank auf `http://localhost:6333`. Pruefen ob Qdrant laeuft:
 
 ```bash
 curl http://localhost:6333/healthz
@@ -137,13 +141,6 @@ uv run python -m paragraf
 
 # HTTP-Modus (fuer Remote-Zugriff)
 MCP_TRANSPORT=streamable-http uv run python -m paragraf
-```
-
-### Alternative: Alles mit Docker
-
-```bash
-# Startet Qdrant + MCP-Server zusammen (HTTP-Modus auf Port 8000)
-docker compose up -d
 ```
 
 ---
@@ -307,8 +304,6 @@ paragraf/
 │   └── ingest_gesetze.py     # Standalone-Indexierung
 ├── tests/
 ├── data/                     # Heruntergeladene Gesetze (gitignored)
-├── docker-compose.yml        # Qdrant + MCP-Server
-├── Dockerfile                # Container-Build
 ├── CLAUDE.md                 # Projekt-Konventionen
 ├── pyproject.toml
 └── .env.example

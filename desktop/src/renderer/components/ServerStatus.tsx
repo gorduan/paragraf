@@ -7,7 +7,7 @@ interface ServerStatusProps {
 const STATE_CONFIG: Record<string, { color: string; label: string }> = {
   ready: { color: "bg-green-500", label: "Bereit" },
   stopped: { color: "bg-slate-400", label: "Gestoppt" },
-  starting_docker: { color: "bg-yellow-500 animate-pulse", label: "Docker startet..." },
+  starting_qdrant: { color: "bg-yellow-500 animate-pulse", label: "Qdrant startet..." },
   starting_backend: { color: "bg-yellow-500 animate-pulse", label: "Backend startet..." },
   loading_models: { color: "bg-yellow-500 animate-pulse", label: "Modelle laden..." },
   error: { color: "bg-red-500", label: "Fehler" },
