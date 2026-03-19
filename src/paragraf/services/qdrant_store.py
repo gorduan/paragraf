@@ -140,6 +140,7 @@ class QdrantStore:
             await self.client.upsert(
                 collection_name=self.collection_name,
                 points=batch,
+                wait=True,
             )
             logger.debug("Upsert Batch %d–%d", start, start + len(batch))
 

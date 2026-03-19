@@ -247,9 +247,11 @@ export const api = {
 
   indexGesetze: (
     body: IndexRequest,
-    onProgress: (event: IndexProgressEvent) => void
+    onProgress: (event: IndexProgressEvent) => void,
+    onStreamEnd?: (lastEvent: IndexProgressEvent | null) => void,
   ): { cancel: () => void } => {
     const controller = new AbortController();
+    let lastEvent: IndexProgressEvent | null = null;
 
     (async () => {
       try {
@@ -261,7 +263,10 @@ export const api = {
         });
 
         const reader = res.body?.getReader();
-        if (!reader) return;
+        if (!reader) {
+          onStreamEnd?.(null);
+          return;
+        }
 
         const decoder = new TextDecoder();
         let buffer = "";
@@ -278,6 +283,7 @@ export const api = {
             if (line.startsWith("data: ")) {
               try {
                 const event = JSON.parse(line.slice(6)) as IndexProgressEvent;
+                lastEvent = event;
                 onProgress(event);
               } catch {}
             }
@@ -287,6 +293,8 @@ export const api = {
         if (e.name !== "AbortError") {
           console.error("Index-Stream Fehler:", e);
         }
+      } finally {
+        onStreamEnd?.(lastEvent);
       }
     })();
 

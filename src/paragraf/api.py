@@ -38,6 +38,8 @@ from paragraf.api_models import (
     SearchResultItem,
     SettingsResponse,
 )
+from qdrant_client import models as qdrant_models
+
 from paragraf.config import settings
 from paragraf.models.law import (
     BESCHREIBUNGEN,
@@ -514,14 +516,18 @@ def _register_routes(app: FastAPI) -> None:
             try:
                 count_result = await ctx.qdrant.client.count(
                     collection_name=ctx.qdrant.collection_name,
-                    count_filter={
-                        "must": [
-                            {"key": "gesetz", "match": {"value": abk}}
+                    count_filter=qdrant_models.Filter(
+                        must=[
+                            qdrant_models.FieldCondition(
+                                key="gesetz",
+                                match=qdrant_models.MatchValue(value=abk),
+                            )
                         ]
-                    },
+                    ),
                 )
                 chunks = count_result.count
-            except Exception:
+            except Exception as e:
+                logger.warning("Count-Abfrage fuer %s fehlgeschlagen: %s", abk, e)
                 chunks = 0
 
             gesetze_status.append(IndexStatusItem(

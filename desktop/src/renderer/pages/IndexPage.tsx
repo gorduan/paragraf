@@ -32,6 +32,7 @@ export function IndexPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [queue, setQueue] = useState<string[]>([]);
   const [queuePos, setQueuePos] = useState(0);
+  const [indexLog, setIndexLog] = useState<string[]>([]);
   const cancelRef = useRef<(() => void) | null>(null);
 
   const loadStatus = async () => {
@@ -57,12 +58,18 @@ export function IndexPage() {
   }, []);
 
   // Process queue: index one law at a time
+  const addLog = useCallback((msg: string) => {
+    const ts = new Date().toLocaleTimeString();
+    setIndexLog((prev) => [...prev, `[${ts}] ${msg}`]);
+  }, []);
+
   const indexNext = useCallback((q: string[], pos: number) => {
     if (pos >= q.length) {
       setIndexing(false);
       setIndexingGesetz(null);
       setQueue([]);
       setQueuePos(0);
+      addLog(`=== Indexierung abgeschlossen (${q.length} Gesetze) ===`);
       loadStatus();
       return;
     }
@@ -70,22 +77,43 @@ export function IndexPage() {
     const name = q[pos];
     setIndexingGesetz(name);
     setProgress(null);
+    addLog(`[${pos + 1}/${q.length}] Starte ${name}...`);
+
+    let gotTerminalEvent = false;
 
     const { cancel } = api.indexGesetze(
       { gesetzbuch: name },
       (event) => {
         setProgress({ ...event, fortschritt: pos, gesamt: q.length });
+
+        if (event.schritt === "embedding") {
+          addLog(`${name}: ${event.nachricht}`);
+        }
         if (event.schritt === "error") {
+          gotTerminalEvent = true;
+          addLog(`${name}: FEHLER – ${event.nachricht}`);
           setError((prev) => {
             const msg = `${name}: ${event.nachricht}`;
             return prev ? `${prev}\n${msg}` : msg;
           });
         }
-        if (event.schritt === "done" || event.schritt === "error") {
-          setQueuePos(pos + 1);
-          indexNext(q, pos + 1);
+        if (event.schritt === "done") {
+          gotTerminalEvent = true;
+          addLog(`${name}: ${event.nachricht}`);
         }
-      }
+      },
+      // onStreamEnd: called when SSE stream closes (even without done/error)
+      (_lastEvent) => {
+        if (!gotTerminalEvent) {
+          addLog(`${name}: Stream unerwartet beendet (kein done/error Event)`);
+          setError((prev) => {
+            const msg = `${name}: Stream abgebrochen`;
+            return prev ? `${prev}\n${msg}` : msg;
+          });
+        }
+        setQueuePos(pos + 1);
+        indexNext(q, pos + 1);
+      },
     );
     cancelRef.current = cancel;
   }, []);
@@ -97,6 +125,7 @@ export function IndexPage() {
     setQueuePos(0);
     setIndexing(true);
     setError(null);
+    setIndexLog([]);
     setSelected(new Set());
     indexNext(q, 0);
   };
@@ -270,6 +299,30 @@ export function IndexPage() {
           >
             Schliessen
           </button>
+        </div>
+      )}
+
+      {/* Index Log */}
+      {indexLog.length > 0 && (
+        <div className="mb-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
+            <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+              Indexierungs-Log ({indexLog.length} Einträge)
+            </h3>
+            {!indexing && (
+              <button
+                onClick={() => setIndexLog([])}
+                className="text-xs text-slate-400 hover:text-slate-600"
+              >
+                Leeren
+              </button>
+            )}
+          </div>
+          <div className="p-3 max-h-48 overflow-auto">
+            <pre className="text-xs text-slate-500 dark:text-slate-400 font-mono whitespace-pre-wrap">
+              {indexLog.join("\n")}
+            </pre>
+          </div>
         </div>
       )}
 
