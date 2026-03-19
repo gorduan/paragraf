@@ -1,3 +1,8 @@
+---
+name: paragraf-bench
+description: Benchmark fuer Paragraf-Rechtsrecherche – vergleicht 4 Agenten gegen 50 juristische Testfaelle
+---
+
 # Paragraf-Bench
 
 Benchmark-Skill fuer das Paragraf-Rechtsrecherche-System. Vergleicht 4 Agenten mit unterschiedlichen Werkzeugen gegen einen standardisierten Testkatalog von 50 juristischen Fragen (28 Basis + 22 Pruefungsfragen).
