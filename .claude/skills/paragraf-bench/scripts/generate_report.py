@@ -3,11 +3,13 @@
 
 import argparse
 import json
+import subprocess
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
+PROJECT_DIR = SKILL_DIR.parent.parent.parent
 
 
 def load_grading(workspace: Path) -> dict:
@@ -85,6 +87,99 @@ def difficulty_scores(gradings: list[dict]) -> dict[str, dict[str, float]]:
         for agent, scores in agents.items():
             result[diff][agent] = round(sum(scores) / len(scores), 2)
     return result
+
+
+def load_api_bewertungen(workspace: Path) -> list[dict]:
+    """Laedt alle api_bewertung JSON-Dateien aus dem Workspace."""
+    bewertungen = []
+    for f in workspace.rglob("*_api_bewertung.json"):
+        try:
+            with open(f, "r", encoding="utf-8") as fh:
+                data = json.load(fh)
+                data["_agent"] = f.stem.replace("_api_bewertung", "")
+                data["_test_id"] = f.parent.name
+                bewertungen.append(data)
+        except (json.JSONDecodeError, OSError):
+            pass
+    return bewertungen
+
+
+def aggregate_api_feedback(bewertungen: list[dict]) -> dict:
+    """Aggregiert API-Bewertungen: haeufigste Staerken/Schwaechen, Top-Ideen, Durchschnittsnote."""
+    if not bewertungen:
+        return {}
+
+    staerken = Counter()
+    schwaechen = Counter()
+    feature_ideen = Counter()
+    einstellungen = Counter()
+    fehler = Counter()
+    noten = []
+
+    for b in bewertungen:
+        for s in b.get("staerken", []):
+            staerken[s] += 1
+        for s in b.get("schwaechen", []):
+            schwaechen[s] += 1
+        for s in b.get("feature_ideen", []):
+            feature_ideen[s] += 1
+        for s in b.get("einstellungen", []):
+            einstellungen[s] += 1
+        for s in b.get("fehler", []):
+            fehler[s] += 1
+        if "gesamtnote" in b:
+            noten.append(b["gesamtnote"])
+
+    return {
+        "anzahl_bewertungen": len(bewertungen),
+        "durchschnittsnote": round(sum(noten) / len(noten), 1) if noten else None,
+        "top_staerken": staerken.most_common(10),
+        "top_schwaechen": schwaechen.most_common(10),
+        "top_feature_ideen": feature_ideen.most_common(10),
+        "top_einstellungen": einstellungen.most_common(10),
+        "fehler": fehler.most_common(10),
+    }
+
+
+def load_history(history_path: Path) -> dict:
+    """Laedt die Run-History."""
+    if history_path.exists():
+        try:
+            with open(history_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {"runs": []}
+
+
+def append_to_history(history_path: Path, run_entry: dict):
+    """Haengt einen Run an die History an."""
+    history = load_history(history_path)
+    history["runs"].append(run_entry)
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(history_path, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+
+
+def get_git_info() -> dict:
+    """Sammelt Git-Informationen."""
+    info = {}
+    try:
+        info["commit"] = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, timeout=5, cwd=str(PROJECT_DIR),
+        ).stdout.strip()
+        info["branch"] = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True, text=True, timeout=5, cwd=str(PROJECT_DIR),
+        ).stdout.strip()
+        info["dirty"] = bool(subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True, text=True, timeout=5, cwd=str(PROJECT_DIR),
+        ).stdout.strip())
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        info = {"commit": "unknown", "branch": "unknown", "dirty": False}
+    return info
 
 
 def find_failures(gradings: list[dict]) -> list[dict]:
@@ -260,6 +355,85 @@ def generate_markdown(grading_data: dict, workspace: Path) -> str:
 
     lines.append("")
 
+    # === API-Feedback ===
+    bewertungen = load_api_bewertungen(workspace)
+    if bewertungen:
+        feedback = aggregate_api_feedback(bewertungen)
+        lines.append("## API-Feedback (Selbstbewertung durch Agenten)")
+        lines.append("")
+        if feedback.get("durchschnittsnote") is not None:
+            lines.append(f"**Durchschnittsnote:** {feedback['durchschnittsnote']}/5 "
+                         f"({feedback['anzahl_bewertungen']} Bewertungen)")
+            lines.append("")
+
+        if feedback.get("top_staerken"):
+            lines.append("### Staerken")
+            lines.append("")
+            for item, count in feedback["top_staerken"]:
+                lines.append(f"- {item} ({count}x)")
+            lines.append("")
+
+        if feedback.get("top_schwaechen"):
+            lines.append("### Schwaechen")
+            lines.append("")
+            for item, count in feedback["top_schwaechen"]:
+                lines.append(f"- {item} ({count}x)")
+            lines.append("")
+
+        if feedback.get("top_feature_ideen"):
+            lines.append("### Feature-Ideen")
+            lines.append("")
+            for item, count in feedback["top_feature_ideen"]:
+                lines.append(f"- {item} ({count}x)")
+            lines.append("")
+
+        if feedback.get("top_einstellungen"):
+            lines.append("### Einstellungsvorschlaege")
+            lines.append("")
+            for item, count in feedback["top_einstellungen"]:
+                lines.append(f"- {item} ({count}x)")
+            lines.append("")
+
+        if feedback.get("fehler"):
+            lines.append("### Aufgetretene Fehler")
+            lines.append("")
+            for item, count in feedback["fehler"]:
+                lines.append(f"- {item} ({count}x)")
+            lines.append("")
+
+    # === Vergleich mit letztem Run ===
+    history_path = PROJECT_DIR / "workspace" / "history.json"
+    history = load_history(history_path)
+    if history["runs"]:
+        last_run = history["runs"][-1]
+        lines.append(f"## Vergleich mit letztem Run ({last_run['run_id']}, commit {last_run.get('git_commit', '?')})")
+        lines.append("")
+        cmp_agents = sorted(set(agents) & set(last_run.get("scores", {}).keys()))
+        if cmp_agents:
+            header = "| Agent | Gesamt | Delta | Korrektheit | Delta | Vollst. | Delta |"
+            sep = "|---|---|---|---|---|---|---|"
+            lines.append(header)
+            lines.append(sep)
+            for a in cmp_agents:
+                cur = averages[a]["scores"]
+                prev = last_run["scores"].get(a, {})
+                g_cur = cur.get("gesamt", 0)
+                g_prev = prev.get("gesamt", 0)
+                k_cur = cur.get("korrektheit", 0)
+                k_prev = prev.get("korrektheit", 0)
+                v_cur = cur.get("vollstaendigkeit", 0)
+                v_prev = prev.get("vollstaendigkeit", 0)
+                g_delta = g_cur - g_prev
+                k_delta = k_cur - k_prev
+                v_delta = v_cur - v_prev
+                lines.append(
+                    f"| {a} | {g_cur:.2f} | {g_delta:+.2f} | {k_cur:.2f} | {k_delta:+.2f} | {v_cur:.2f} | {v_delta:+.2f} |"
+                )
+            lines.append("")
+        else:
+            lines.append("*Keine ueberlappenden Agenten mit letztem Run.*")
+            lines.append("")
+
     # === Einzelergebnisse ===
     lines.append("## Einzelergebnisse")
     lines.append("")
@@ -329,8 +503,40 @@ def main():
         json.dump(benchmark, f, ensure_ascii=False, indent=2)
     print(f"JSON: {json_file}")
 
-    # Print summary
+    # Append to history
     averages = agent_averages(grading_data["gradings"])
+    git_info = get_git_info()
+
+    # Load meta.json for filter info
+    meta_path = workspace / "meta.json"
+    meta = {}
+    if meta_path.exists():
+        with open(meta_path, "r", encoding="utf-8") as f:
+            meta = json.load(f)
+
+    history_entry = {
+        "run_id": grading_data["run_id"],
+        "timestamp": grading_data["timestamp"],
+        "git_commit": git_info.get("commit", "unknown"),
+        "git_branch": git_info.get("branch", "unknown"),
+        "git_dirty": git_info.get("dirty", False),
+        "tests_count": grading_data["summary"]["total_tests"],
+        "agents_count": grading_data["summary"]["total_agents"],
+        "filter": meta.get("filter", {"category": None, "difficulty": None}),
+        "scores": {
+            agent: data["scores"]
+            for agent, data in averages.items()
+        },
+        "performance": {
+            agent: data["performance"]
+            for agent, data in averages.items()
+        },
+    }
+    history_path = PROJECT_DIR / "workspace" / "history.json"
+    append_to_history(history_path, history_entry)
+    print(f"History: {history_path}")
+
+    # Print summary
     print(f"\n{'=' * 50}")
     print("Zusammenfassung:")
     for agent in sorted(averages.keys()):

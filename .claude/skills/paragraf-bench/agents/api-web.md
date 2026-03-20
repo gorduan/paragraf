@@ -39,9 +39,29 @@ Du MUSST deine Antwort als reines JSON liefern (kein Markdown, kein Text drumher
   ],
   "rdg_disclaimer": true,
   "methodik": ["POST /api/search", "WebSearch", "WebFetch"],
-  "confidence": 0.9
+  "confidence": 0.9,
+  "api_bewertung": {
+    "staerken": ["Was hat die API gut gemacht? z.B. Schnelle Antwort, relevante Ergebnisse"],
+    "schwaechen": ["Was war schwierig oder fehlte? z.B. Zu wenige Ergebnisse, unklare Filter"],
+    "feature_ideen": ["Ideen fuer neue API-Features, z.B. Volltextsuche, verwandte Paragraphen"],
+    "einstellungen": ["Vorschlaege fuer bessere Einstellungen, z.B. mehr Ergebnisse, anderer Threshold"],
+    "fehler": ["Aufgetretene Fehler oder unerwartetes Verhalten"],
+    "gesamtnote": 4
+  }
 }
 ```
+
+### api_bewertung
+
+Bewerte die Paragraf API nach JEDER Anfrage ehrlich:
+- `staerken`: Was hat gut funktioniert? (Liste von Strings)
+- `schwaechen`: Was war schwierig, hat gefehlt, war unklar? (Liste von Strings)
+- `feature_ideen`: Welche Features wuerden die API verbessern? (Liste von Strings)
+- `einstellungen`: Welche Parameter-Aenderungen wuerden helfen? (Liste von Strings)
+- `fehler`: Aufgetretene Fehler oder HTTP-Fehlercodes (Liste von Strings, leer wenn keine)
+- `gesamtnote`: Schulnote 1-5 fuer die API-Erfahrung (1=sehr schlecht, 5=hervorragend)
+
+Hinweis: Bewerte NUR die Paragraf API, nicht die Web-Recherche.
 
 ## Regeln
 

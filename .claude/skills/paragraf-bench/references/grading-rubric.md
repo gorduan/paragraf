@@ -105,3 +105,30 @@ effizienz = gesamt_score / (tokens / 1000)
 ```
 
 Hoehere Werte = besseres Qualitaet-pro-Token-Verhaeltnis.
+
+## Kategorien
+
+| Kategorie | Prefix | Beschreibung |
+|---|---|---|
+| semantische_suche | sem- | Semantische Suche nach Rechtsbegriffen |
+| paragraph_nachschlagen | lkp- | Direktes Nachschlagen von Paragraphen |
+| vergleich | cmp- | Vergleich von Paragraphen/Gesetzen |
+| gesetzesbrowser | brw- | Gesetzesbrowser-Abfragen |
+| eutb_beratung | eutb- | EUTB-Beratungsstellensuche |
+| leichte_sprache | ls- | Erklaerungen in einfacher Sprache |
+| querschnitt | quer- | Querschnittsthemen ueber mehrere Gesetze |
+| edge_cases | edge- | Randfaelle und Fehlerbehandlung |
+| exam | exam- | Echte Pruefungsfragen (alle schwer) |
+
+### Kategorie: exam (Pruefungsfragen)
+
+Quellenverifizierte Pruefungsfragen aus veroeffentlichten Universitaetsklausuren und juristischen Fachquellen. Alle Tests haben Schwierigkeit "schwer". Rechtsgebiete: Mietrecht, Gesellschaftsrecht, Strafrecht, Verwaltungsrecht, Datenschutz, Erbrecht, Heilerziehungspflege, Arbeitsrecht, Familienrecht, BGB AT, Sachenrecht, Buergschaftsrecht, Querschnitt.
+
+## API-Selbstbewertung
+
+Agenten die die Paragraf API nutzen (api-only, api-web) bewerten die API nach jeder Anfrage. Das Feld `api_bewertung` im JSON-Output enthaelt:
+- `staerken` / `schwaechen` – Was gut/schlecht funktioniert hat
+- `feature_ideen` – Vorschlaege fuer neue Features
+- `einstellungen` – Parameter-Optimierungen
+- `fehler` – Aufgetretene Fehler
+- `gesamtnote` – Schulnote 1-5 (5=hervorragend)

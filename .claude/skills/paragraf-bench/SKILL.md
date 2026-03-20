@@ -5,7 +5,7 @@ description: Benchmark fuer Paragraf-Rechtsrecherche – vergleicht 4 Agenten ge
 
 # Paragraf-Bench
 
-Benchmark-Skill fuer das Paragraf-Rechtsrecherche-System. Vergleicht 4 Agenten mit unterschiedlichen Werkzeugen gegen einen standardisierten Testkatalog von 28 juristischen Fragen.
+Benchmark-Skill fuer das Paragraf-Rechtsrecherche-System. Vergleicht 4 Agenten mit unterschiedlichen Werkzeugen gegen einen standardisierten Testkatalog von 50 juristischen Fragen (28 Basis + 22 Pruefungsfragen).
 
 ## Zweck
 
@@ -87,6 +87,26 @@ Alle Agenten muessen JSON im folgenden Format liefern:
 }
 ```
 
+API-nutzende Agenten (api-only, api-web) liefern zusaetzlich ein `api_bewertung`-Feld mit Staerken, Schwaechen, Feature-Ideen, Einstellungsvorschlaegen und einer Gesamtnote (1-5).
+
+## Testkategorien
+
+| Kategorie | Tests | Schwierigkeit |
+|---|---|---|
+| semantische_suche (sem-) | 5 | einfach-schwer |
+| paragraph_nachschlagen (lkp-) | 4 | einfach-mittel |
+| vergleich (cmp-) | 3 | mittel-schwer |
+| gesetzesbrowser (brw-) | 3 | einfach-mittel |
+| eutb_beratung (eutb-) | 2 | einfach-mittel |
+| leichte_sprache (ls-) | 2 | einfach-mittel |
+| querschnitt (quer-) | 5 | mittel-schwer |
+| edge_cases (edge-) | 4 | einfach-schwer |
+| exam (exam-) | 22 | alle schwer |
+
+## Run-History
+
+Jeder Benchmark-Run wird in `workspace/history.json` gespeichert. Enthaelt Git-Commit, Scores pro Agent, Performance-Metriken. Ermoeglicht historischen Vergleich nach Code-Aenderungen.
+
 ## Voraussetzungen
 
 - Paragraf API muss laufen (`GET /api/health` erreichbar)
@@ -95,7 +115,7 @@ Alle Agenten muessen JSON im folgenden Format liefern:
 
 ## Dateien
 
-- `references/test-catalog.json` – 28 Testfaelle mit erwarteten Antworten
+- `references/test-catalog.json` – 50 Testfaelle mit erwarteten Antworten (28 Basis + 22 exam)
 - `references/grading-rubric.md` – Bewertungskriterien im Detail
 - `references/api-reference.md` – API-Referenz fuer Agenten
 - `agents/*.md` – System-Prompts der 4 Agenten

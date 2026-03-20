@@ -131,12 +131,13 @@ def run_single(test: dict, agent_name: str, workspace: Path) -> dict:
         total_input_tokens = 0
         total_output_tokens = 0
 
-        # claude -p --output-format json returns JSON with result field
+        # claude -p --output-format json returns JSON with usage nested
         try:
             claude_result = json.loads(raw_output)
             response_text = claude_result.get("result", raw_output)
-            total_input_tokens = claude_result.get("input_tokens", 0)
-            total_output_tokens = claude_result.get("output_tokens", 0)
+            usage = claude_result.get("usage", {})
+            total_input_tokens = usage.get("input_tokens", 0) + usage.get("cache_creation_input_tokens", 0)
+            total_output_tokens = usage.get("output_tokens", 0)
         except json.JSONDecodeError:
             response_text = raw_output
 
@@ -154,8 +155,14 @@ def run_single(test: dict, agent_name: str, workspace: Path) -> dict:
         }
 
         if agent_response:
+            # Extract api_bewertung separately for API-using agents
+            api_bewertung = agent_response.pop("api_bewertung", None)
             with open(result_file, "w", encoding="utf-8") as f:
                 json.dump(agent_response, f, ensure_ascii=False, indent=2)
+            if api_bewertung and agent_name in ("api-only", "api-web"):
+                bewertung_file = result_dir / f"{agent_name}_api_bewertung.json"
+                with open(bewertung_file, "w", encoding="utf-8") as f:
+                    json.dump(api_bewertung, f, ensure_ascii=False, indent=2)
         else:
             # Save raw output for debugging
             error_result = {
@@ -304,6 +311,24 @@ def main():
     workspace = Path(args.workspace) if args.workspace else PROJECT_DIR / "workspace" / "results" / run_id
     workspace.mkdir(parents=True, exist_ok=True)
 
+    # Collect git info
+    git_info = {}
+    try:
+        git_info["commit"] = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, timeout=5, cwd=str(PROJECT_DIR),
+        ).stdout.strip()
+        git_info["branch"] = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True, text=True, timeout=5, cwd=str(PROJECT_DIR),
+        ).stdout.strip()
+        git_info["dirty"] = bool(subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True, text=True, timeout=5, cwd=str(PROJECT_DIR),
+        ).stdout.strip())
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        git_info = {"commit": "unknown", "branch": "unknown", "dirty": False}
+
     # Save run metadata
     meta = {
         "run_id": run_id,
@@ -313,6 +338,7 @@ def main():
         "parallel": args.parallel,
         "total_runs": len(tests) * len(agents),
         "api_base": API_BASE,
+        "git": git_info,
     }
     with open(workspace / "meta.json", "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
