@@ -1,0 +1,60 @@
+services:
+  # ── Qdrant Vektordatenbank ──────────────────────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:v1.13.2
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6333/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── Python Backend (FastAPI + ML-Modelle) ──────────────────────────────────
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - model_cache:/models
+      - law_data:/data
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_COLLECTION=paragraf
+      - EMBEDDING_MODEL=BAAI/bge-m3
+      - EMBEDDING_DEVICE=cpu
+      - EMBEDDING_BATCH_SIZE=8
+      - EMBEDDING_MAX_LENGTH=512
+      - RERANKER_MODEL=BAAI/bge-reranker-v2-m3
+      - RERANKER_TOP_K=5
+      - RETRIEVAL_TOP_K=20
+      - FINAL_TOP_K=5
+      - SIMILARITY_THRESHOLD=0.35
+      - LOG_LEVEL=INFO
+      - HF_HOME=/models
+      - TORCH_HOME=/models/torch
+      - DATA_DIR=/data
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8000
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── React Frontend (nginx) ─────────────────────────────────────────────────
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:
+  model_cache:
+  law_data:

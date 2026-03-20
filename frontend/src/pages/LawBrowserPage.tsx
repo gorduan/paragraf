@@ -1,0 +1,229 @@
+import React, { useState, useEffect } from "react";
+import {
+  api,
+  type LawInfo,
+  type LawStructureEntry,
+  type SearchResultItem,
+} from "../lib/api";
+import { Loader, ChevronRight, ChevronDown, Library } from "lucide-react";
+
+interface TreeNode {
+  label: string;
+  children: TreeNode[];
+  entry?: LawStructureEntry;
+  fullText?: string;
+}
+
+function buildTree(entries: LawStructureEntry[]): TreeNode[] {
+  // Group by abschnitt
+  const groups = new Map<string, LawStructureEntry[]>();
+  for (const e of entries) {
+    const key = e.abschnitt || "Sonstige";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(e);
+  }
+
+  return Array.from(groups.entries()).map(([abschnitt, entries]) => ({
+    label: abschnitt,
+    children: entries.map((e) => ({
+      label: `${e.paragraph}${e.titel ? ` – ${e.titel}` : ""}`,
+      children: [],
+      entry: e,
+    })),
+  }));
+}
+
+function TreeItem({
+  node,
+  onSelect,
+  depth = 0,
+}: {
+  node: TreeNode;
+  onSelect: (entry: LawStructureEntry) => void;
+  depth?: number;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hasChildren = node.children.length > 0;
+  const isLeaf = !!node.entry;
+
+  return (
+    <div>
+      <button
+        onClick={() => {
+          if (isLeaf && node.entry) onSelect(node.entry);
+          else setExpanded(!expanded);
+        }}
+        className={`w-full flex items-center gap-1.5 px-3 py-1.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${
+          isLeaf ? "text-primary-600 dark:text-primary-400" : "font-medium text-slate-700 dark:text-slate-300"
+        }`}
+        style={{ paddingLeft: `${depth * 16 + 12}px` }}
+      >
+        {hasChildren &&
+          (expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
+        {!hasChildren && <span className="w-3.5" />}
+        <span className="text-left flex-1 truncate">{node.label}</span>
+      </button>
+      {expanded &&
+        node.children.map((child, i) => (
+          <TreeItem
+            key={i}
+            node={child}
+            onSelect={onSelect}
+            depth={depth + 1}
+          />
+        ))}
+    </div>
+  );
+}
+
+export function LawBrowserPage() {
+  const [laws, setLaws] = useState<LawInfo[]>([]);
+  const [selectedLaw, setSelectedLaw] = useState<string | null>(null);
+  const [tree, setTree] = useState<TreeNode[]>([]);
+  const [selectedParagraph, setSelectedParagraph] = useState<SearchResultItem | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingParagraph, setLoadingParagraph] = useState(false);
+
+  useEffect(() => {
+    api.laws().then((res) => setLaws(res.gesetze)).catch(() => {});
+  }, []);
+
+  const loadStructure = async (gesetz: string) => {
+    setSelectedLaw(gesetz);
+    setSelectedParagraph(null);
+    setLoading(true);
+    try {
+      const res = await api.lawStructure(gesetz);
+      setTree(buildTree(res.paragraphen));
+    } catch {
+      setTree([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadParagraph = async (entry: LawStructureEntry) => {
+    setLoadingParagraph(true);
+    try {
+      const res = await api.lookup({
+        gesetz: selectedLaw!,
+        paragraph: entry.paragraph,
+      });
+      if (res.found) {
+        setSelectedParagraph({
+          paragraph: res.paragraph,
+          gesetz: res.gesetz,
+          titel: res.titel,
+          text: res.text,
+          score: 0,
+          abschnitt: res.abschnitt,
+          hierarchie_pfad: res.hierarchie_pfad,
+          quelle: res.quelle,
+          chunk_typ: "paragraph",
+          absatz: null,
+        });
+      }
+    } catch {}
+    setLoadingParagraph(false);
+  };
+
+  return (
+    <div className="flex h-full">
+      {/* Left: Law list + tree */}
+      <div className="w-72 flex-shrink-0 border-r border-slate-200 dark:border-slate-700 overflow-auto">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+          <h2 className="font-bold flex items-center gap-2">
+            <Library size={18} />
+            Gesetze
+          </h2>
+        </div>
+
+        {!selectedLaw ? (
+          <div className="py-1">
+            {laws.map((law) => (
+              <button
+                key={law.abkuerzung}
+                onClick={() => loadStructure(law.abkuerzung)}
+                className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <span className="font-medium text-primary-600 dark:text-primary-400">
+                  {law.abkuerzung}
+                </span>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  {law.beschreibung}
+                </p>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div>
+            <button
+              onClick={() => {
+                setSelectedLaw(null);
+                setTree([]);
+                setSelectedParagraph(null);
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-slate-100 dark:hover:bg-slate-700 border-b border-slate-200 dark:border-slate-700"
+            >
+              &larr; Alle Gesetze
+            </button>
+            <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+              <span className="font-bold text-sm">{selectedLaw}</span>
+            </div>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <Loader className="animate-spin text-primary-500" size={20} />
+              </div>
+            ) : (
+              <div className="py-1">
+                {tree.map((node, i) => (
+                  <TreeItem
+                    key={i}
+                    node={node}
+                    onSelect={loadParagraph}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Right: Content */}
+      <div className="flex-1 overflow-auto p-6">
+        {loadingParagraph && (
+          <div className="flex justify-center py-12">
+            <Loader className="animate-spin text-primary-500" size={24} />
+          </div>
+        )}
+
+        {selectedParagraph && !loadingParagraph && (
+          <div>
+            <h2 className="text-lg font-bold mb-1">
+              {selectedParagraph.paragraph} {selectedParagraph.gesetz}
+              {selectedParagraph.titel && (
+                <span className="font-normal text-slate-500 dark:text-slate-400">
+                  {" "}&ndash; {selectedParagraph.titel}
+                </span>
+              )}
+            </h2>
+            {selectedParagraph.hierarchie_pfad && (
+              <p className="text-xs text-slate-400 mb-4">
+                {selectedParagraph.hierarchie_pfad}
+              </p>
+            )}
+            <pre className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-sans leading-relaxed">
+              {selectedParagraph.text}
+            </pre>
+          </div>
+        )}
+
+        {!selectedParagraph && !loadingParagraph && (
+          <div className="flex items-center justify-center h-full text-slate-400">
+            <p>Wählen Sie ein Gesetz und einen Paragraphen aus der Seitenleiste.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
