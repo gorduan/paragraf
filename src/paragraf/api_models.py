@@ -12,7 +12,7 @@ class SearchRequest(BaseModel):
     anfrage: str = Field(description="Suchanfrage in natuerlicher Sprache")
     gesetzbuch: str | None = Field(None, description="Filter nach Gesetzbuch")
     abschnitt: str | None = Field(None, description="Filter nach Abschnitt")
-    max_ergebnisse: int = Field(5, ge=1, le=10, description="Anzahl Ergebnisse")
+    max_ergebnisse: int = Field(5, ge=1, le=20, description="Anzahl Ergebnisse")
 
 
 class LookupRequest(BaseModel):
@@ -98,6 +98,7 @@ class LawInfo(BaseModel):
     slug: str | None = None
     rechtsgebiet: str = ""
     quelle: str = "gesetze-im-internet.de"
+    tags: list[str] = Field(default_factory=list)
 
 
 class LawsResponse(BaseModel):

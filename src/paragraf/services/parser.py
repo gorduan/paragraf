@@ -21,6 +21,31 @@ logger = logging.getLogger(__name__)
 BASE_URL = "https://www.gesetze-im-internet.de"
 TOC_URL = f"{BASE_URL}/gii-toc.xml"
 
+# Fallback-Titel fuer GG-Artikel (wenn XML keinen Titel liefert)
+_GG_ARTIKEL_TITEL: dict[str, str] = {
+    "Art 1": "Menschenwuerde, Grundrechtsbindung",
+    "Art 2": "Freie Entfaltung, koerperliche Unversehrtheit",
+    "Art 3": "Gleichheit vor dem Gesetz, Diskriminierungsverbot",
+    "Art 4": "Glaubens- und Gewissensfreiheit",
+    "Art 5": "Meinungs-, Informations- und Pressefreiheit",
+    "Art 6": "Ehe und Familie",
+    "Art 7": "Schulwesen",
+    "Art 8": "Versammlungsfreiheit",
+    "Art 9": "Vereinigungsfreiheit",
+    "Art 10": "Brief-, Post- und Fernmeldegeheimnis",
+    "Art 11": "Freizuegigkeit",
+    "Art 12": "Berufsfreiheit",
+    "Art 13": "Unverletzlichkeit der Wohnung",
+    "Art 14": "Eigentum, Erbrecht, Enteignung",
+    "Art 16": "Staatsangehoerigkeit, Auslieferung",
+    "Art 16a": "Asylrecht",
+    "Art 19": "Einschraenkung von Grundrechten, Wesensgehaltsgarantie",
+    "Art 20": "Staatsstrukturprinzipien, Widerstandsrecht",
+    "Art 21": "Parteien",
+    "Art 23": "Europaeische Union",
+    "Art 28": "Landesverfassungen, kommunale Selbstverwaltung",
+}
+
 
 class GesetzParser:
     """Parst deutsche Gesetze von gesetze-im-internet.de (XML-Format).
@@ -140,14 +165,12 @@ class GesetzParser:
         if enbez.startswith("Anlage"):
             return self._parse_anlage(norm, gesetz_abk, current_abschnitt)
 
+        # Eingangsformel / Praeambel als eigenen Chunk speichern
+        if enbez in ("Eingangsformel", "Präambel", "Praeambel"):
+            return self._parse_preamble(norm, gesetz_abk, enbez)
+
         if not (enbez.startswith("§") or enbez.startswith("Art")):
             return []
-
-        # Titel extrahieren
-        titel_tag = meta.find("titel", attrs={"format": "parat"})
-        if not titel_tag:
-            titel_tag = meta.find("titel")
-        titel = titel_tag.get_text(strip=True) if titel_tag else ""
 
         # Norm-ID
         norm_id = norm.get("doknr", "")
@@ -157,6 +180,16 @@ class GesetzParser:
         norm_abk = gesetz_abk
         if norm_jurabk_tag:
             norm_abk = self._normalize_abkuerzung(norm_jurabk_tag.get_text(strip=True))
+
+        # Titel extrahieren
+        titel_tag = meta.find("titel", attrs={"format": "parat"})
+        if not titel_tag:
+            titel_tag = meta.find("titel")
+        titel = titel_tag.get_text(strip=True) if titel_tag else ""
+
+        # GG-Artikel: Fallback-Titel wenn XML keinen hat
+        if not titel and norm_abk == "GG" and enbez.startswith("Art"):
+            titel = _GG_ARTIKEL_TITEL.get(enbez, "")
 
         # Gesetzestext extrahieren
         textdaten = norm.find("textdaten")
@@ -230,6 +263,43 @@ class GesetzParser:
                 chunks.append(abs_chunk)
 
         return chunks
+
+    def _parse_preamble(
+        self, norm: Tag, gesetz_abk: str, enbez: str
+    ) -> list[LawChunk]:
+        """Parst eine Eingangsformel oder Praeambel als Chunk."""
+        textdaten = norm.find("textdaten")
+        if not textdaten:
+            return []
+        text_tag = textdaten.find("text")
+        if not text_tag:
+            return []
+        content = text_tag.find("Content")
+        if not content:
+            return []
+
+        full_text = self._tag_to_text(content)
+        if not full_text or len(full_text.strip()) < 10:
+            return []
+
+        norm_id = norm.get("doknr", "")
+        chunk_id = f"{gesetz_abk}_Praeambel".replace(" ", "_")
+
+        return [LawChunk(
+            id=chunk_id,
+            text=f"Präambel {gesetz_abk}\n\n{full_text}",
+            metadata=ChunkMetadata(
+                gesetz=gesetz_abk,
+                paragraph="Präambel",
+                absatz=None,
+                titel="Präambel",
+                abschnitt="",
+                hierarchie_pfad=f"{gesetz_abk} > Präambel",
+                norm_id=norm_id,
+                quelle="gesetze-im-internet.de",
+                chunk_typ="paragraph",
+            ),
+        )]
 
     def _parse_anlage(
         self, norm: Tag, gesetz_abk: str, current_abschnitt: str

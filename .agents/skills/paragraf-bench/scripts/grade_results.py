@@ -4,6 +4,7 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -49,12 +50,63 @@ def verify_paragraph_exists(gesetz: str, paragraph: str) -> bool:
         return True  # Bei Fehler nicht als Halluzination werten
 
 
+GESETZ_ALIASE: dict[str, str] = {
+    "BDSG 2018": "BDSG",
+    "Grundgesetz": "GG",
+    "Buergerliches Gesetzbuch": "BGB",
+    "Strafgesetzbuch": "StGB",
+    "SGB 9": "SGB IX",
+    "SGB 12": "SGB XII",
+    "SGB 11": "SGB XI",
+    "SGB 5": "SGB V",
+    "SGB 2": "SGB II",
+    "SGB 3": "SGB III",
+    "SGB 1": "SGB I",
+    "SGB 8": "SGB VIII",
+}
+
+
+def normalize_paragraph_ref(ref: str) -> str:
+    """Normalisiert Paragraph-Referenzen fuer besseres Matching.
+
+    - 'Art 1' -> 'Art. 1'
+    - '§152' -> '§ 152'
+    - 'Artikel 1' -> 'Art. 1'
+    """
+    ref = ref.strip()
+    # 'Artikel 1' -> 'Art. 1'
+    ref = re.sub(r'^Artikel\s+', 'Art. ', ref)
+    # 'Art 1' -> 'Art. 1' (Punkt ergaenzen)
+    ref = re.sub(r'^Art\s+(\d)', r'Art. \1', ref)
+    # '§152' -> '§ 152' (Leerzeichen ergaenzen)
+    ref = re.sub(r'^§(\d)', r'§ \1', ref)
+    return ref
+
+
+def normalize_gesetz_name(name: str) -> str:
+    """Normalisiert Gesetz-Namen ueber Alias-Dict."""
+    return GESETZ_ALIASE.get(name, name)
+
+
+def _is_edge_case_no_results(test: dict) -> bool:
+    """Prueft ob der Test keine Ergebnisse erwartet (expect_no_results ODER expect_not_found)."""
+    checks = test.get("verification_checks", {})
+    return bool(checks.get("expect_no_results") or checks.get("expect_not_found"))
+
+
 def grade_korrektheit(result: dict, test: dict) -> tuple[int, list[str]]:
     """Bewertet Korrektheit der zitierten Paragraphen (0-5)."""
+    # EUTB-Tests: Paragraph-Verifikation nicht anwendbar
+    if test.get("verification_checks", {}).get("requires_counseling_api"):
+        quellen = result.get("quellen", [])
+        if quellen:
+            return 4, ["EUTB: Paragraph-Verifikation nicht anwendbar"]
+        return 3, ["Keine EUTB-Stellen gefunden"]
+
     quellen = result.get("quellen", [])
     if not quellen:
         # Keine Quellen: bei Edge Cases OK, sonst schlecht
-        if test["verification_checks"].get("expect_no_results"):
+        if _is_edge_case_no_results(test):
             return 5, ["Korrekt: keine Quellen bei Nonsense-Anfrage"]
         return 0, ["Keine Quellen angegeben"]
 
@@ -94,42 +146,45 @@ def grade_vollstaendigkeit(result: dict, test: dict) -> tuple[int, list[str]]:
 
         # Pruefe ob erwartete Gesetze erwaehnt werden
         quellen = result.get("quellen", [])
-        found_laws = {q.get("gesetz", "") for q in quellen}
+        found_laws = {normalize_gesetz_name(q.get("gesetz", "")) for q in quellen}
         antwort = result.get("antwort", "")
+        normalized_expected = {normalize_gesetz_name(law) for law in expected_laws}
         for law in expected_laws:
-            if law in antwort:
-                found_laws.add(law)
+            if law in antwort or normalize_gesetz_name(law) in antwort:
+                found_laws.add(normalize_gesetz_name(law))
 
-        matched = len(found_laws.intersection(expected_laws))
-        ratio = matched / len(expected_laws) if expected_laws else 1
+        matched = len(found_laws.intersection(normalized_expected))
+        ratio = matched / len(normalized_expected) if normalized_expected else 1
         score = round(ratio * 5)
-        return score, [f"{matched}/{len(expected_laws)} erwartete Gesetze gefunden"]
+        return score, [f"{matched}/{len(normalized_expected)} erwartete Gesetze gefunden"]
 
     quellen = result.get("quellen", [])
     found_paragraphs = set()
     for q in quellen:
-        p = q.get("paragraph", "")
+        p = normalize_paragraph_ref(q.get("paragraph", ""))
         found_paragraphs.add(p)
 
     # Also check answer text for paragraph mentions
     antwort = result.get("antwort", "")
     for exp in expected:
-        if exp in antwort:
-            found_paragraphs.add(exp)
+        norm_exp = normalize_paragraph_ref(exp)
+        if exp in antwort or norm_exp in antwort:
+            found_paragraphs.add(norm_exp)
 
-    matched = sum(1 for exp in expected if any(exp in fp for fp in found_paragraphs))
-    ratio = matched / len(expected) if expected else 1
+    normalized_expected = [normalize_paragraph_ref(exp) for exp in expected]
+    matched = sum(1 for exp in normalized_expected if any(exp in fp for fp in found_paragraphs))
+    ratio = matched / len(normalized_expected) if normalized_expected else 1
     score = round(ratio * 5)
-    return score, [f"{matched}/{len(expected)} erwartete Paragraphen gefunden"]
+    return score, [f"{matched}/{len(normalized_expected)} erwartete Paragraphen gefunden"]
 
 
 def grade_relevanz(result: dict, test: dict) -> tuple[int, list[str]]:
     """Bewertet Relevanz der Ergebnisse (0-5)."""
-    expected_laws = set(test.get("expected_laws", []))
+    expected_laws = {normalize_gesetz_name(law) for law in test.get("expected_laws", [])}
     quellen = result.get("quellen", [])
 
     if not quellen:
-        if test["verification_checks"].get("expect_no_results"):
+        if _is_edge_case_no_results(test):
             return 5, ["Korrekt: keine Ergebnisse bei Edge Case"]
         if not expected_laws:
             return 3, ["Keine Quellen, aber auch keine spezifischen Erwartungen"]
@@ -138,7 +193,7 @@ def grade_relevanz(result: dict, test: dict) -> tuple[int, list[str]]:
     if not expected_laws:
         return 3, ["Keine erwarteten Gesetze definiert, Relevanz nicht pruefbar"]
 
-    relevant = sum(1 for q in quellen if q.get("gesetz", "") in expected_laws)
+    relevant = sum(1 for q in quellen if normalize_gesetz_name(q.get("gesetz", "")) in expected_laws)
     ratio = relevant / len(quellen) if quellen else 0
     score = round(ratio * 5)
     return score, [f"{relevant}/{len(quellen)} Quellen aus erwarteten Gesetzen"]
@@ -146,10 +201,17 @@ def grade_relevanz(result: dict, test: dict) -> tuple[int, list[str]]:
 
 def grade_quellenangabe(result: dict, test: dict) -> tuple[int, list[str]]:
     """Bewertet Qualitaet der Quellenangaben (0-5)."""
+    # EUTB-Tests: Quellenangabe anders bewerten
+    if test.get("verification_checks", {}).get("requires_counseling_api"):
+        quellen = result.get("quellen", [])
+        if quellen:
+            return 4, ["EUTB: Paragraph-Verifikation nicht anwendbar"]
+        return 3, ["Keine EUTB-Stellen gefunden"]
+
     quellen = result.get("quellen", [])
 
     if not quellen:
-        if test["verification_checks"].get("expect_no_results"):
+        if _is_edge_case_no_results(test):
             return 5, ["Edge Case: keine Quellen erwartet"]
         return 0, ["Keine Quellen"]
 

@@ -21,6 +21,7 @@ class LawDefinition:
     beschreibung: str  # "Buergerliches Gesetzbuch"
     rechtsgebiet: str  # "Buergerliches Recht"
     quelle: str  # "gesetze-im-internet.de" | "eur-lex.europa.eu"
+    tags: tuple[str, ...] = ()  # Zusaetzliche Rechtsgebiet-Tags
 
 
 LAW_REGISTRY: dict[str, LawDefinition] = {
@@ -33,9 +34,9 @@ LAW_REGISTRY: dict[str, LawDefinition] = {
     "SGB VI": LawDefinition("SGB VI", "sgb_6", "Gesetzliche Rentenversicherung", "Sozialrecht", "gesetze-im-internet.de"),
     "SGB VII": LawDefinition("SGB VII", "sgb_7", "Gesetzliche Unfallversicherung", "Sozialrecht", "gesetze-im-internet.de"),
     "SGB VIII": LawDefinition("SGB VIII", "sgb_8", "Kinder- und Jugendhilfe", "Sozialrecht", "gesetze-im-internet.de"),
-    "SGB IX": LawDefinition("SGB IX", "sgb_9_2018", "Rehabilitation und Teilhabe von Menschen mit Behinderungen", "Sozialrecht", "gesetze-im-internet.de"),
+    "SGB IX": LawDefinition("SGB IX", "sgb_9_2018", "Rehabilitation und Teilhabe von Menschen mit Behinderungen", "Sozialrecht", "gesetze-im-internet.de", tags=("Behindertenrecht", "Teilhaberecht")),
     "SGB X": LawDefinition("SGB X", "sgb_10", "Sozialverwaltungsverfahren und Sozialdatenschutz", "Sozialrecht", "gesetze-im-internet.de"),
-    "SGB XI": LawDefinition("SGB XI", "sgb_11", "Soziale Pflegeversicherung", "Sozialrecht", "gesetze-im-internet.de"),
+    "SGB XI": LawDefinition("SGB XI", "sgb_11", "Soziale Pflegeversicherung", "Sozialrecht", "gesetze-im-internet.de", tags=("Pflegerecht",)),
     "SGB XII": LawDefinition("SGB XII", "sgb_12", "Sozialhilfe", "Sozialrecht", "gesetze-im-internet.de"),
     "SGB XIV": LawDefinition("SGB XIV", "sgb_14", "Soziale Entschaedigung", "Sozialrecht", "gesetze-im-internet.de"),
     # ── Sozialrecht (Ergaenzung) ─────────────────────────────────────────
@@ -44,9 +45,9 @@ LAW_REGISTRY: dict[str, LawDefinition] = {
     "BKGG": LawDefinition("BKGG", "bkgg_1996", "Bundeskindergeldgesetz", "Sozialrecht", "gesetze-im-internet.de"),
     "AsylbLG": LawDefinition("AsylbLG", "asylblg", "Asylbewerberleistungsgesetz", "Sozialrecht", "gesetze-im-internet.de"),
     # ── Behindertenrecht ─────────────────────────────────────────────────
-    "BGG": LawDefinition("BGG", "bgg", "Behindertengleichstellungsgesetz", "Behindertenrecht", "gesetze-im-internet.de"),
-    "AGG": LawDefinition("AGG", "agg", "Allgemeines Gleichbehandlungsgesetz", "Behindertenrecht", "gesetze-im-internet.de"),
-    "VersMedV": LawDefinition("VersMedV", "versmedv", "Versorgungsmedizin-Verordnung (GdB-Feststellung)", "Behindertenrecht", "gesetze-im-internet.de"),
+    "BGG": LawDefinition("BGG", "bgg", "Behindertengleichstellungsgesetz", "Behindertenrecht", "gesetze-im-internet.de", tags=("Barrierefreiheit",)),
+    "AGG": LawDefinition("AGG", "agg", "Allgemeines Gleichbehandlungsgesetz", "Behindertenrecht", "gesetze-im-internet.de", tags=("Arbeitsrecht", "Antidiskriminierung")),
+    "VersMedV": LawDefinition("VersMedV", "versmedv", "Versorgungsmedizin-Verordnung (GdB-Feststellung)", "Behindertenrecht", "gesetze-im-internet.de", tags=("Schwerbehindertenrecht",)),
     # ── Steuerrecht ──────────────────────────────────────────────────────
     "EStG": LawDefinition("EStG", "estg", "Einkommensteuergesetz", "Steuerrecht", "gesetze-im-internet.de"),
     "KraftStG": LawDefinition("KraftStG", "kraftstg", "Kraftfahrzeugsteuergesetz", "Steuerrecht", "gesetze-im-internet.de"),
@@ -73,7 +74,7 @@ LAW_REGISTRY: dict[str, LawDefinition] = {
     "VwVfG": LawDefinition("VwVfG", "vwvfg", "Verwaltungsverfahrensgesetz", "Verwaltungsrecht", "gesetze-im-internet.de"),
     # ── Arbeitsrecht ─────────────────────────────────────────────────────
     "BetrVG": LawDefinition("BetrVG", "betrvg", "Betriebsverfassungsgesetz", "Arbeitsrecht", "gesetze-im-internet.de"),
-    "KSchG": LawDefinition("KSchG", "kschg", "Kuendigungsschutzgesetz", "Arbeitsrecht", "gesetze-im-internet.de"),
+    "KSchG": LawDefinition("KSchG", "kschg", "Kuendigungsschutzgesetz", "Arbeitsrecht", "gesetze-im-internet.de", tags=("Kuendigungsschutz",)),
     "ArbZG": LawDefinition("ArbZG", "arbzg", "Arbeitszeitgesetz", "Arbeitsrecht", "gesetze-im-internet.de"),
     "MuSchG": LawDefinition("MuSchG", "muschg_2018", "Mutterschutzgesetz", "Arbeitsrecht", "gesetze-im-internet.de"),
     "BEEG": LawDefinition("BEEG", "beeg", "Bundeselterngeld- und Elternzeitgesetz", "Arbeitsrecht", "gesetze-im-internet.de"),
@@ -109,7 +110,7 @@ LAW_REGISTRY: dict[str, LawDefinition] = {
     "BauGB": LawDefinition("BauGB", "bbaug", "Baugesetzbuch", "Immobilienrecht", "gesetze-im-internet.de"),
     "BauNVO": LawDefinition("BauNVO", "baunvo", "Baunutzungsverordnung", "Immobilienrecht", "gesetze-im-internet.de"),
     # ── Datenschutz ──────────────────────────────────────────────────────
-    "BDSG": LawDefinition("BDSG", "bdsg_2018", "Bundesdatenschutzgesetz", "Datenschutz", "gesetze-im-internet.de"),
+    "BDSG": LawDefinition("BDSG", "bdsg_2018", "Bundesdatenschutzgesetz", "Datenschutz", "gesetze-im-internet.de", tags=("DSGVO-Ergaenzung",)),
     # ── Geistiges Eigentum ───────────────────────────────────────────────
     "UrhG": LawDefinition("UrhG", "urhg", "Urheberrechtsgesetz", "Geistiges Eigentum", "gesetze-im-internet.de"),
     "MarkenG": LawDefinition("MarkenG", "markeng", "Markengesetz", "Geistiges Eigentum", "gesetze-im-internet.de"),

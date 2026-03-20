@@ -9,8 +9,9 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from paragraf.api_models import (
     CompareItem,
@@ -143,6 +144,23 @@ def create_api() -> FastAPI:
         allow_headers=["*"],
     )
 
+    @app.exception_handler(RequestValidationError)
+    async def validation_error_handler(
+        request: Request, exc: RequestValidationError,
+    ) -> JSONResponse:
+        errors = []
+        for err in exc.errors():
+            field = " -> ".join(str(loc) for loc in err.get("loc", []))
+            msg = err.get("msg", "Validierungsfehler")
+            errors.append(f"{field}: {msg}")
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": "Ungueltige Anfrage",
+                "errors": errors,
+            },
+        )
+
     _register_routes(app)
     return app
 
@@ -152,6 +170,15 @@ def create_api() -> FastAPI:
 
 def _get_ctx(request: Request) -> AppContext:
     return request.app.state.ctx
+
+
+def _normalize_paragraph_input(text: str) -> str:
+    """Normalisiert §-Zeichen-Varianten in Benutzereingaben."""
+    # Unicode \u00a7 ist das normale §, aber manchmal kommen andere Varianten
+    text = text.replace("\u00a7", "§")
+    # '§152' -> '§ 152'
+    text = re.sub(r"§(\d)", r"§ \1", text)
+    return text
 
 
 def _result_to_item(r) -> SearchResultItem:  # noqa: ANN001
@@ -227,7 +254,7 @@ def _register_routes(app: FastAPI) -> None:
     @app.post("/api/search", response_model=SearchResponse)
     async def search(body: SearchRequest, request: Request) -> SearchResponse:
         ctx = _get_ctx(request)
-        max_ergebnisse = max(1, min(10, body.max_ergebnisse))
+        max_ergebnisse = max(1, min(20, body.max_ergebnisse))
 
         search_filter = SearchFilter(
             gesetz=body.gesetzbuch,
@@ -276,15 +303,16 @@ def _register_routes(app: FastAPI) -> None:
     @app.post("/api/lookup", response_model=LookupResponse)
     async def lookup(body: LookupRequest, request: Request) -> LookupResponse:
         ctx = _get_ctx(request)
+        paragraph = _normalize_paragraph_input(body.paragraph)
 
         search_filter = SearchFilter(
             gesetz=body.gesetz,
-            paragraph=body.paragraph,
+            paragraph=paragraph,
             chunk_typ="paragraph",
         )
 
         results = await ctx.qdrant.dense_search(
-            query=f"{body.paragraph} {body.gesetz}",
+            query=f"{paragraph} {body.gesetz}",
             top_k=3,
             search_filter=search_filter,
         )
@@ -292,19 +320,19 @@ def _register_routes(app: FastAPI) -> None:
         if not results:
             fallback_filter = SearchFilter(gesetz=body.gesetz)
             results = await ctx.qdrant.hybrid_search(
-                query=f"{body.paragraph} {body.gesetz}",
+                query=f"{paragraph} {body.gesetz}",
                 top_k=3,
                 search_filter=fallback_filter,
             )
 
         if not results:
             return LookupResponse(
-                paragraph=body.paragraph,
+                paragraph=paragraph,
                 gesetz=body.gesetz,
                 titel="",
                 text="",
                 found=False,
-                error=f"Der Paragraph {body.paragraph} {body.gesetz} wurde nicht gefunden.",
+                error=f"Der Paragraph {paragraph} {body.gesetz} wurde nicht gefunden.",
             )
 
         best = results[0]
@@ -328,7 +356,8 @@ def _register_routes(app: FastAPI) -> None:
         items: list[CompareItem] = []
 
         for ref in body.paragraphen[:5]:
-            match = re.match(r"(§\s*\d+\w*)\s+(.+)", ref.strip())
+            ref_normalized = _normalize_paragraph_input(ref.strip())
+            match = re.match(r"(§\s*\d+\w*)\s+(.+)", ref_normalized)
             if match:
                 paragraph = match.group(1)
                 gesetz = match.group(2).strip()
@@ -370,20 +399,28 @@ def _register_routes(app: FastAPI) -> None:
     # ── Gesetze auflisten ─────────────────────────────────────────────────
 
     @app.get("/api/laws", response_model=LawsResponse)
-    async def laws(request: Request) -> LawsResponse:
+    async def laws(request: Request, rechtsgebiet: str | None = None) -> LawsResponse:
         ctx = _get_ctx(request)
         info = await ctx.qdrant.get_collection_info()
 
-        gesetze = [
-            LawInfo(
+        gesetze = []
+        for abk, law_def in LAW_REGISTRY.items():
+            # Filter nach Rechtsgebiet (case-insensitive, matcht auch tags)
+            if rechtsgebiet:
+                rg_lower = rechtsgebiet.lower()
+                matches_rechtsgebiet = rg_lower in law_def.rechtsgebiet.lower()
+                matches_tags = any(rg_lower in t.lower() for t in law_def.tags)
+                if not matches_rechtsgebiet and not matches_tags:
+                    continue
+
+            gesetze.append(LawInfo(
                 abkuerzung=abk,
                 beschreibung=law_def.beschreibung,
                 slug=law_def.slug,
                 rechtsgebiet=law_def.rechtsgebiet,
                 quelle=law_def.quelle,
-            )
-            for abk, law_def in LAW_REGISTRY.items()
-        ]
+                tags=list(law_def.tags),
+            ))
 
         return LawsResponse(
             gesetze=gesetze,
@@ -417,6 +454,13 @@ def _register_routes(app: FastAPI) -> None:
                     abschnitt=meta.abschnitt,
                     hierarchie_pfad=meta.hierarchie_pfad,
                 ))
+
+        # Sortierung nach Paragraphen-Nummer (numerisch)
+        def _sort_key(entry: LawStructureEntry) -> tuple[int, str]:
+            match = re.search(r"(\d+)", entry.paragraph)
+            return (int(match.group(1)) if match else 9999, entry.paragraph)
+
+        entries.sort(key=_sort_key)
 
         return LawStructureResponse(
             gesetz=gesetz,
