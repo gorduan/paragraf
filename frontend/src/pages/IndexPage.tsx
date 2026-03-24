@@ -6,6 +6,7 @@ import {
   type LawInfo,
 } from "../lib/api";
 import { ProgressBar } from "../components/ProgressBar";
+import { IndexDashboard } from "../components/IndexDashboard";
 import {
   Loader,
   Database,
@@ -16,7 +17,132 @@ import {
   Square,
   CheckSquare,
   MinusSquare,
+  AlertTriangle,
+  ArrowDown,
+  Play,
+  CloudDownload,
+  FileCode,
+  Cpu,
+  Zap,
+  Ban,
+  Clock,
 } from "lucide-react";
+
+type LogType = "start" | "download" | "parse" | "embedding" | "done" | "error" | "cancel" | "system";
+
+interface LogEntry {
+  time: string;
+  gesetz: string;
+  schritt: string;
+  nachricht: string;
+  type: LogType;
+}
+
+/* ── Visual config per log type ─────────────────────────────────────────── */
+const LOG_STYLE: Record<LogType, {
+  icon: React.ElementType;
+  badge: string;
+  badgeCss: string;
+  rowCss: string;
+  timeCss: string;
+  gesetzCss: string;
+  msgCss: string;
+  label: string;
+}> = {
+  start: {
+    icon: Play,
+    badge: "START",
+    badgeCss: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800",
+    rowCss: "bg-indigo-50/50 dark:bg-indigo-950/20 border-l-4 border-l-indigo-400",
+    timeCss: "text-indigo-400 dark:text-indigo-500",
+    gesetzCss: "text-indigo-700 dark:text-indigo-300 font-bold",
+    msgCss: "text-indigo-600 dark:text-indigo-400 font-medium",
+    label: "START",
+  },
+  download: {
+    icon: CloudDownload,
+    badge: "DOWNLOAD",
+    badgeCss: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-200 dark:border-sky-800",
+    rowCss: "border-l-4 border-l-sky-400",
+    timeCss: "text-slate-400",
+    gesetzCss: "text-sky-700 dark:text-sky-300 font-semibold",
+    msgCss: "text-sky-600 dark:text-sky-400 italic",
+    label: "DOWNLOAD",
+  },
+  parse: {
+    icon: FileCode,
+    badge: "PARSE",
+    badgeCss: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300 border border-violet-200 dark:border-violet-800",
+    rowCss: "border-l-4 border-l-violet-400",
+    timeCss: "text-slate-400",
+    gesetzCss: "text-violet-700 dark:text-violet-300 font-semibold",
+    msgCss: "text-violet-600 dark:text-violet-400 italic",
+    label: "PARSE",
+  },
+  embedding: {
+    icon: Cpu,
+    badge: "EMBED",
+    badgeCss: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800",
+    rowCss: "border-l-4 border-l-amber-400",
+    timeCss: "text-slate-400",
+    gesetzCss: "text-amber-700 dark:text-amber-300 font-semibold",
+    msgCss: "text-amber-600 dark:text-amber-400",
+    label: "EMBED",
+  },
+  done: {
+    icon: CheckCircle,
+    badge: "DONE",
+    badgeCss: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800",
+    rowCss: "bg-emerald-50/50 dark:bg-emerald-950/20 border-l-4 border-l-emerald-500",
+    timeCss: "text-emerald-500 dark:text-emerald-600",
+    gesetzCss: "text-emerald-700 dark:text-emerald-300 font-bold",
+    msgCss: "text-emerald-600 dark:text-emerald-400 font-bold",
+    label: "DONE",
+  },
+  error: {
+    icon: AlertTriangle,
+    badge: "ERROR",
+    badgeCss: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border border-red-200 dark:border-red-800",
+    rowCss: "bg-red-50/50 dark:bg-red-950/20 border-l-4 border-l-red-500",
+    timeCss: "text-red-400 dark:text-red-500",
+    gesetzCss: "text-red-700 dark:text-red-300 font-bold",
+    msgCss: "text-red-600 dark:text-red-400 font-semibold italic",
+    label: "ERROR",
+  },
+  cancel: {
+    icon: Ban,
+    badge: "CANCEL",
+    badgeCss: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 border border-orange-200 dark:border-orange-800",
+    rowCss: "bg-orange-50/50 dark:bg-orange-950/20 border-l-4 border-l-orange-500",
+    timeCss: "text-orange-400 dark:text-orange-500",
+    gesetzCss: "text-orange-700 dark:text-orange-300 font-bold",
+    msgCss: "text-orange-600 dark:text-orange-400 font-semibold italic",
+    label: "CANCEL",
+  },
+  system: {
+    icon: Zap,
+    badge: "SYSTEM",
+    badgeCss: "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600",
+    rowCss: "bg-slate-50/50 dark:bg-slate-800/50 border-l-4 border-l-slate-400",
+    timeCss: "text-slate-400",
+    gesetzCss: "text-slate-600 dark:text-slate-300 font-semibold",
+    msgCss: "text-slate-500 dark:text-slate-400",
+    label: "SYSTEM",
+  },
+};
+
+function resolveLogType(entry: LogEntry): LogType {
+  if (entry.schritt === "start" && entry.gesetz === "System") return "system";
+  if (entry.schritt === "start") return "start";
+  if (entry.schritt === "download") return "download";
+  if (entry.schritt === "parse") return "parse";
+  if (entry.schritt === "embedding") return "embedding";
+  if (entry.schritt === "done" && entry.gesetz === "System") return "system";
+  if (entry.schritt === "done") return "done";
+  if (entry.schritt === "error") return "error";
+  if (entry.schritt === "cancel") return "cancel";
+  return "system";
+}
 
 export function IndexPage() {
   const [statusItems, setStatusItems] = useState<IndexStatusItem[]>([]);
@@ -25,15 +151,42 @@ export function IndexPage() {
   const [loading, setLoading] = useState(true);
   const [indexing, setIndexing] = useState(false);
   const [indexingGesetz, setIndexingGesetz] = useState<string | null>(null);
-  const [progress, setProgress] = useState<IndexProgressEvent | null>(null);
   const [eutbLoading, setEutbLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [laws, setLaws] = useState<LawInfo[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [queue, setQueue] = useState<string[]>([]);
   const [queuePos, setQueuePos] = useState(0);
-  const [indexLog, setIndexLog] = useState<string[]>([]);
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
+  const [embeddingProgress, setEmbeddingProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
+  const [completedInSession, setCompletedInSession] = useState<Set<string>>(
+    new Set()
+  );
+  const [failedInSession, setFailedInSession] = useState<Set<string>>(
+    new Set()
+  );
   const cancelRef = useRef<(() => void) | null>(null);
+  const logEndRef = useRef<HTMLDivElement>(null);
+  const logContainerRef = useRef<HTMLDivElement>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
+
+  // Auto-scroll log
+  useEffect(() => {
+    if (autoScroll && logEndRef.current) {
+      logEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [logEntries, autoScroll]);
+
+  // Detect manual scroll
+  const handleLogScroll = () => {
+    if (!logContainerRef.current) return;
+    const el = logContainerRef.current;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    setAutoScroll(atBottom);
+  };
 
   const loadStatus = async () => {
     setLoading(true);
@@ -57,66 +210,153 @@ export function IndexPage() {
     loadStatus();
   }, []);
 
-  // Process queue: index one law at a time
-  const addLog = useCallback((msg: string) => {
-    const ts = new Date().toLocaleTimeString();
-    setIndexLog((prev) => [...prev, `[${ts}] ${msg}`]);
+  const addLog = useCallback(
+    (
+      gesetz: string,
+      schritt: string,
+      nachricht: string,
+      _type?: string, // kept for call-site compat, type is derived from schritt
+    ) => {
+      const ts = new Date().toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+      const entry: LogEntry = { time: ts, gesetz, schritt, nachricht, type: schritt as LogType };
+      setLogEntries((prev) => [...prev, entry]);
+    },
+    []
+  );
+
+  // Live-update status table when a law finishes indexing
+  const markLawDone = useCallback((gesetz: string, chunks: number) => {
+    setStatusItems((prev) => {
+      const existing = prev.find((s) => s.gesetz === gesetz);
+      const oldChunks = existing?.chunks ?? 0;
+      // Update totalChunks by the difference
+      setTotalChunks((tc) => tc - oldChunks + chunks);
+
+      if (existing) {
+        return prev.map((s) =>
+          s.gesetz === gesetz
+            ? { ...s, chunks, status: "indexiert" }
+            : s
+        );
+      }
+      return [...prev, { gesetz, chunks, status: "indexiert" }];
+    });
+    setCompletedInSession((prev) => new Set(prev).add(gesetz));
   }, []);
 
-  const indexNext = useCallback((q: string[], pos: number) => {
-    if (pos >= q.length) {
-      setIndexing(false);
-      setIndexingGesetz(null);
-      setQueue([]);
-      setQueuePos(0);
-      addLog(`=== Indexierung abgeschlossen (${q.length} Gesetze) ===`);
-      loadStatus();
-      return;
-    }
-
-    const name = q[pos];
-    setIndexingGesetz(name);
-    setProgress(null);
-    addLog(`[${pos + 1}/${q.length}] Starte ${name}...`);
-
-    let gotTerminalEvent = false;
-
-    const { cancel } = api.indexGesetze(
-      { gesetzbuch: name },
-      (event) => {
-        setProgress({ ...event, fortschritt: pos, gesamt: q.length });
-
-        if (event.schritt === "embedding") {
-          addLog(`${name}: ${event.nachricht}`);
-        }
-        if (event.schritt === "error") {
-          gotTerminalEvent = true;
-          addLog(`${name}: FEHLER – ${event.nachricht}`);
-          setError((prev) => {
-            const msg = `${name}: ${event.nachricht}`;
-            return prev ? `${prev}\n${msg}` : msg;
-          });
-        }
-        if (event.schritt === "done") {
-          gotTerminalEvent = true;
-          addLog(`${name}: ${event.nachricht}`);
-        }
-      },
-      // onStreamEnd: called when SSE stream closes (even without done/error)
-      (_lastEvent) => {
-        if (!gotTerminalEvent) {
-          addLog(`${name}: Stream unerwartet beendet (kein done/error Event)`);
-          setError((prev) => {
-            const msg = `${name}: Stream abgebrochen`;
-            return prev ? `${prev}\n${msg}` : msg;
-          });
-        }
-        setQueuePos(pos + 1);
-        indexNext(q, pos + 1);
-      },
-    );
-    cancelRef.current = cancel;
+  const markLawFailed = useCallback((gesetz: string) => {
+    setFailedInSession((prev) => new Set(prev).add(gesetz));
   }, []);
+
+  // Parse chunk count from "done" message like "150 Chunks indexiert"
+  const parseChunkCount = (nachricht: string): number => {
+    const match = nachricht.match(/(\d+)\s*Chunks?\s*indexiert/i);
+    return match ? parseInt(match[1], 10) : 0;
+  };
+
+  const indexNext = useCallback(
+    (q: string[], pos: number) => {
+      if (pos >= q.length) {
+        setIndexing(false);
+        setIndexingGesetz(null);
+        setQueue([]);
+        setQueuePos(0);
+        setEmbeddingProgress(null);
+        addLog(
+          "System",
+          "done",
+          `Indexierung abgeschlossen – ${q.length} Gesetze verarbeitet`,
+          "success"
+        );
+        // Refresh to get accurate server-side counts
+        loadStatus();
+        return;
+      }
+
+      const name = q[pos];
+      setIndexingGesetz(name);
+      setEmbeddingProgress(null);
+      addLog(
+        name,
+        "start",
+        `Starte Indexierung (${pos + 1}/${q.length})`,
+        "info"
+      );
+
+      let gotTerminalEvent = false;
+
+      const { cancel } = api.indexGesetze(
+        { gesetzbuch: name },
+        (event) => {
+          if (event.schritt === "download") {
+            addLog(name, "download", "Lade herunter...", "info");
+          }
+          if (event.schritt === "parse") {
+            addLog(name, "parse", event.nachricht, "info");
+          }
+          if (event.schritt === "embedding") {
+            // Parse "42/150 Chunks eingebettet..." for progress
+            const match = event.nachricht.match(/(\d+)\/(\d+)/);
+            if (match) {
+              setEmbeddingProgress({
+                current: parseInt(match[1], 10),
+                total: parseInt(match[2], 10),
+              });
+            }
+            // Only log every ~25% to avoid log spam
+            if (match) {
+              const cur = parseInt(match[1], 10);
+              const tot = parseInt(match[2], 10);
+              if (
+                cur === tot ||
+                cur === 1 ||
+                cur % Math.max(1, Math.floor(tot / 4)) === 0
+              ) {
+                addLog(name, "embedding", event.nachricht, "progress");
+              }
+            }
+          }
+          if (event.schritt === "error") {
+            gotTerminalEvent = true;
+            addLog(name, "error", event.nachricht, "error");
+            markLawFailed(name);
+            setError((prev) => {
+              const msg = `${name}: ${event.nachricht}`;
+              return prev ? `${prev}\n${msg}` : msg;
+            });
+          }
+          if (event.schritt === "done") {
+            gotTerminalEvent = true;
+            const chunks = parseChunkCount(event.nachricht);
+            addLog(name, "done", event.nachricht, "success");
+            if (chunks > 0) {
+              markLawDone(name, chunks);
+            }
+          }
+        },
+        // onStreamEnd
+        (_lastEvent) => {
+          if (!gotTerminalEvent) {
+            addLog(
+              name,
+              "error",
+              "Stream unerwartet beendet (kein done/error Event)",
+              "error"
+            );
+            markLawFailed(name);
+          }
+          setQueuePos(pos + 1);
+          indexNext(q, pos + 1);
+        }
+      );
+      cancelRef.current = cancel;
+    },
+    [addLog, markLawDone, markLawFailed]
+  );
 
   const startSelectedIndex = () => {
     if (selected.size === 0) return;
@@ -125,8 +365,16 @@ export function IndexPage() {
     setQueuePos(0);
     setIndexing(true);
     setError(null);
-    setIndexLog([]);
+    setLogEntries([]);
+    setCompletedInSession(new Set());
+    setFailedInSession(new Set());
     setSelected(new Set());
+    addLog(
+      "System",
+      "start",
+      `Starte Indexierung von ${q.length} Gesetzen: ${q.join(", ")}`,
+      "info"
+    );
     indexNext(q, 0);
   };
 
@@ -136,18 +384,30 @@ export function IndexPage() {
     setIndexingGesetz(null);
     setQueue([]);
     setQueuePos(0);
+    setEmbeddingProgress(null);
+    addLog("System", "cancel", "Indexierung abgebrochen", "error");
     loadStatus();
   };
 
   const indexEutb = async () => {
     setEutbLoading(true);
     setError(null);
+    addLog("EUTB", "start", "Importiere EUTB-Beratungsstellen...", "info");
     try {
       const res = await api.indexEutb();
-      if (!res.erfolg) {
+      if (res.erfolg) {
+        addLog(
+          "EUTB",
+          "done",
+          `${res.total_chunks} Beratungsstellen importiert`,
+          "success"
+        );
+      } else {
+        addLog("EUTB", "error", res.fehler.join(", "), "error");
         setError(res.fehler.join(", "));
       }
     } catch (e: any) {
+      addLog("EUTB", "error", e.message, "error");
       setError(e.message);
     } finally {
       setEutbLoading(false);
@@ -194,7 +454,6 @@ export function IndexPage() {
     setSelected(new Set(notIndexed));
   };
 
-  // Build a lookup map for status items
   const statusMap = new Map(statusItems.map((s) => [s.gesetz, s]));
 
   // Group laws by rechtsgebiet
@@ -205,8 +464,13 @@ export function IndexPage() {
     return acc;
   }, {});
 
+  // Count completed/failed/remaining in queue
+  const queueDone = completedInSession.size;
+  const queueFailed = failedInSession.size;
+
   return (
     <div className="max-w-4xl mx-auto p-6">
+      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -224,7 +488,11 @@ export function IndexPage() {
             disabled={loading || indexing}
             className="flex items-center gap-1 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"
           >
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} aria-hidden="true" />
+            <RefreshCw
+              size={14}
+              className={loading ? "animate-spin" : ""}
+              aria-hidden="true"
+            />
             Aktualisieren
           </button>
         </div>
@@ -262,75 +530,179 @@ export function IndexPage() {
         </div>
       )}
 
-      {/* Progress */}
-      {indexing && progress && (
-        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium">
-              Indexierung: {indexingGesetz}
-              {queue.length > 1 && (
-                <span className="text-slate-400 font-normal ml-2">
-                  ({queuePos + 1}/{queue.length})
-                </span>
-              )}
+      {/* Dashboard – always visible when not loading, shows live data during indexing */}
+      {!loading && (
+        <IndexDashboard
+          laws={laws}
+          statusItems={statusItems}
+          totalChunks={totalChunks}
+          queue={queue}
+          queuePos={queuePos}
+          indexingGesetz={indexingGesetz}
+          completedInSession={completedInSession}
+          failedInSession={failedInSession}
+          embeddingProgress={embeddingProgress}
+        />
+      )}
+
+      {/* Compact progress bars + cancel during indexing */}
+      {indexing && (
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
+              <Loader size={12} className="animate-spin" />
+              {indexingGesetz} ({queuePos + 1}/{queue.length})
             </p>
             <button
               onClick={cancelIndex}
-              className="text-xs text-red-500 hover:text-red-700 hover:underline"
+              className="text-xs px-2 py-0.5 text-red-500 border border-red-300 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
             >
               Abbrechen
             </button>
           </div>
           <ProgressBar
-            progress={progress.fortschritt}
-            total={progress.gesamt}
-            label={progress.nachricht}
+            progress={queuePos}
+            total={queue.length}
+            label={`Queue: ${queuePos}/${queue.length}`}
           />
+          {embeddingProgress && (
+            <ProgressBar
+              progress={embeddingProgress.current}
+              total={embeddingProgress.total}
+              label={`Chunks: ${embeddingProgress.current}/${embeddingProgress.total}`}
+            />
+          )}
         </div>
       )}
 
       {/* Error */}
       {error && (
-        <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300 whitespace-pre-line">
-          {error}
+        <div
+          role="alert"
+          className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300 whitespace-pre-line flex items-start gap-2"
+        >
+          <AlertTriangle
+            size={16}
+            className="mt-0.5 shrink-0"
+            aria-hidden="true"
+          />
+          <div className="flex-1">{error}</div>
           <button
             onClick={() => setError(null)}
             aria-label="Fehlermeldung schliessen"
-            className="ml-2 text-red-400 hover:text-red-600 text-xs"
+            className="text-red-400 hover:text-red-600 text-xs shrink-0"
           >
             Schliessen
           </button>
         </div>
       )}
 
-      {/* Index Log */}
-      {indexLog.length > 0 && (
-        <div className="mb-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
-            <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-              Indexierungs-Log ({indexLog.length} Einträge)
-            </h3>
-            {!indexing && (
-              <button
-                onClick={() => setIndexLog([])}
-                className="text-xs text-slate-400 hover:text-slate-600"
-              >
-                Leeren
-              </button>
-            )}
+      {/* Live Log */}
+      {logEntries.length > 0 && (
+        <div className="mb-4 bg-slate-900 dark:bg-slate-950 border border-slate-700 rounded-lg overflow-hidden shadow-lg">
+          {/* Log header */}
+          <div className="flex items-center justify-between px-4 py-2.5 bg-slate-800 dark:bg-slate-900 border-b border-slate-700">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                <span className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+              </div>
+              <h3 className="text-sm font-semibold text-slate-300 ml-2">
+                Live-Log
+                <span className="ml-2 text-xs font-normal text-slate-500">
+                  {logEntries.length} Eintraege
+                </span>
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
+              {!autoScroll && (
+                <button
+                  onClick={() => {
+                    setAutoScroll(true);
+                    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 px-2 py-0.5 rounded bg-slate-700/50"
+                >
+                  <ArrowDown size={11} /> Auto-Scroll
+                </button>
+              )}
+              {!indexing && (
+                <button
+                  onClick={() => setLogEntries([])}
+                  className="text-xs text-slate-500 hover:text-slate-300 px-2 py-0.5 rounded bg-slate-700/50"
+                >
+                  Leeren
+                </button>
+              )}
+            </div>
           </div>
-          <div className="p-3 max-h-48 overflow-auto" role="log" aria-live="polite" aria-label="Indexierungs-Protokoll">
-            <pre className="text-xs text-slate-500 dark:text-slate-400 font-mono whitespace-pre-wrap">
-              {indexLog.join("\n")}
-            </pre>
+          {/* Log body */}
+          <div
+            ref={logContainerRef}
+            onScroll={handleLogScroll}
+            className="p-2 max-h-80 overflow-auto font-mono text-[11px] leading-relaxed space-y-0.5"
+            role="log"
+            aria-live="polite"
+            aria-label="Indexierungs-Protokoll"
+          >
+            {logEntries.map((entry, i) => {
+              const logType = resolveLogType(entry);
+              const style = LOG_STYLE[logType];
+              const Icon = style.icon;
+
+              return (
+                <div
+                  key={i}
+                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded ${style.rowCss}`}
+                >
+                  {/* Timestamp */}
+                  <span className={`shrink-0 tabular-nums ${style.timeCss}`}>
+                    {entry.time}
+                  </span>
+
+                  {/* Badge with icon */}
+                  <span
+                    className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${style.badgeCss}`}
+                  >
+                    <Icon size={10} />
+                    {style.label}
+                  </span>
+
+                  {/* Gesetz name */}
+                  <span
+                    className={`shrink-0 w-24 truncate ${style.gesetzCss}`}
+                  >
+                    {entry.gesetz}
+                  </span>
+
+                  {/* Separator */}
+                  <span className="text-slate-600 shrink-0" aria-hidden="true">|</span>
+
+                  {/* Message */}
+                  <span className={`truncate ${style.msgCss}`}>
+                    {entry.nachricht}
+                  </span>
+                </div>
+              );
+            })}
+            <div ref={logEndRef} />
           </div>
         </div>
       )}
 
       {/* Table grouped by Rechtsgebiet */}
       {loading ? (
-        <div className="flex justify-center py-12" role="status" aria-live="polite">
-          <Loader className="animate-spin text-primary-500" size={24} aria-hidden="true" />
+        <div
+          className="flex justify-center py-12"
+          role="status"
+          aria-live="polite"
+        >
+          <Loader
+            className="animate-spin text-primary-500"
+            size={24}
+            aria-hidden="true"
+          />
           <span className="sr-only">Index-Status wird geladen...</span>
         </div>
       ) : (
@@ -349,11 +721,20 @@ export function IndexPage() {
                   className="px-4 py-2 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2 cursor-pointer select-none"
                   onClick={() => !indexing && toggleGroup(groupLaws)}
                   role={!indexing ? "checkbox" : undefined}
-                  aria-checked={allGroupSelected ? true : someGroupSelected ? "mixed" : false}
+                  aria-checked={
+                    allGroupSelected
+                      ? true
+                      : someGroupSelected
+                      ? "mixed"
+                      : false
+                  }
                   aria-label={`${group} – alle ${groupLaws.length} Gesetze auswaehlen`}
                   tabIndex={!indexing ? 0 : undefined}
                   onKeyDown={(e) => {
-                    if (!indexing && (e.key === "Enter" || e.key === " ")) {
+                    if (
+                      !indexing &&
+                      (e.key === "Enter" || e.key === " ")
+                    ) {
                       e.preventDefault();
                       toggleGroup(groupLaws);
                     }
@@ -380,11 +761,23 @@ export function IndexPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 dark:border-slate-700">
-                      {!indexing && <th className="w-8 px-2 py-2"><span className="sr-only">Auswahl</span></th>}
-                      <th className="text-left px-4 py-2 font-medium text-xs text-slate-500">Gesetz</th>
-                      <th className="text-left px-4 py-2 font-medium text-xs text-slate-500">Beschreibung</th>
-                      <th className="text-left px-4 py-2 font-medium text-xs text-slate-500">Status</th>
-                      <th className="text-right px-4 py-2 font-medium text-xs text-slate-500">Chunks</th>
+                      {!indexing && (
+                        <th className="w-8 px-2 py-2">
+                          <span className="sr-only">Auswahl</span>
+                        </th>
+                      )}
+                      <th className="text-left px-4 py-2 font-medium text-xs text-slate-500">
+                        Gesetz
+                      </th>
+                      <th className="text-left px-4 py-2 font-medium text-xs text-slate-500">
+                        Beschreibung
+                      </th>
+                      <th className="text-left px-4 py-2 font-medium text-xs text-slate-500">
+                        Status
+                      </th>
+                      <th className="text-right px-4 py-2 font-medium text-xs text-slate-500">
+                        Chunks
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -393,14 +786,26 @@ export function IndexPage() {
                       const chunks = status?.chunks ?? 0;
                       const isIndexed = chunks > 0;
                       const isSelected = selected.has(law.abkuerzung);
-                      const isCurrentlyIndexing = indexing && indexingGesetz === law.abkuerzung;
+                      const isCurrentlyIndexing =
+                        indexing && indexingGesetz === law.abkuerzung;
+                      const isInQueue =
+                        indexing && queue.includes(law.abkuerzung);
+                      const justCompleted = completedInSession.has(
+                        law.abkuerzung
+                      );
+                      const justFailed = failedInSession.has(law.abkuerzung);
 
                       return (
                         <tr
                           key={law.abkuerzung}
-                          onClick={() => !indexing && toggleSelect(law.abkuerzung)}
+                          onClick={() =>
+                            !indexing && toggleSelect(law.abkuerzung)
+                          }
                           onKeyDown={(e) => {
-                            if (!indexing && (e.key === "Enter" || e.key === " ")) {
+                            if (
+                              !indexing &&
+                              (e.key === "Enter" || e.key === " ")
+                            ) {
                               e.preventDefault();
                               toggleSelect(law.abkuerzung);
                             }
@@ -409,37 +814,97 @@ export function IndexPage() {
                           role={!indexing ? "checkbox" : undefined}
                           aria-checked={isSelected}
                           aria-label={`${law.abkuerzung} – ${law.beschreibung}`}
-                          className={`border-b border-slate-50 dark:border-slate-700/50 last:border-0 ${
-                            !indexing ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30" : ""
-                          } ${isCurrentlyIndexing ? "bg-blue-50 dark:bg-blue-900/10" : ""} ${
-                            isSelected ? "bg-primary-50 dark:bg-primary-900/10" : ""
+                          className={`border-b border-slate-50 dark:border-slate-700/50 last:border-0 transition-colors duration-500 ${
+                            !indexing
+                              ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30"
+                              : ""
+                          } ${
+                            isCurrentlyIndexing
+                              ? "bg-blue-50 dark:bg-blue-900/20"
+                              : justCompleted
+                              ? "bg-green-50 dark:bg-green-900/10"
+                              : justFailed
+                              ? "bg-red-50 dark:bg-red-900/10"
+                              : isSelected
+                              ? "bg-primary-50 dark:bg-primary-900/10"
+                              : ""
                           }`}
                         >
                           {!indexing && (
                             <td className="px-2 py-2 text-center">
-                              <span className="text-slate-400" aria-hidden="true">
+                              <span
+                                className="text-slate-400"
+                                aria-hidden="true"
+                              >
                                 {isSelected ? (
-                                  <CheckSquare size={14} className="text-primary-500" />
+                                  <CheckSquare
+                                    size={14}
+                                    className="text-primary-500"
+                                  />
                                 ) : (
                                   <Square size={14} />
                                 )}
                               </span>
                             </td>
                           )}
-                          <td className="px-4 py-2 font-medium">
+                          <td className="px-4 py-2 font-medium whitespace-nowrap">
                             {isCurrentlyIndexing && (
-                              <Loader size={12} className="inline animate-spin mr-1" />
+                              <Loader
+                                size={12}
+                                className="inline animate-spin mr-1.5 text-blue-500"
+                              />
+                            )}
+                            {justCompleted && !isCurrentlyIndexing && (
+                              <CheckCircle
+                                size={12}
+                                className="inline mr-1.5 text-green-500"
+                              />
+                            )}
+                            {justFailed && !isCurrentlyIndexing && (
+                              <XCircle
+                                size={12}
+                                className="inline mr-1.5 text-red-500"
+                              />
                             )}
                             {law.abkuerzung}
+                            {isInQueue &&
+                              !isCurrentlyIndexing &&
+                              !justCompleted &&
+                              !justFailed && (
+                                <span className="ml-1.5 text-xs text-slate-400">
+                                  (wartet)
+                                </span>
+                              )}
                           </td>
                           <td className="px-4 py-2 text-slate-500 dark:text-slate-400 text-xs truncate max-w-[200px]">
                             {law.beschreibung}
                           </td>
                           <td className="px-4 py-2">
-                            {isIndexed ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full">
+                            {isCurrentlyIndexing ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs rounded-full">
+                                <Loader size={10} className="animate-spin" />
+                                Wird indexiert...
+                              </span>
+                            ) : isIndexed ? (
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full ${
+                                  justCompleted
+                                    ? "bg-green-200 dark:bg-green-800/40 text-green-800 dark:text-green-300 font-medium"
+                                    : "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                                }`}
+                              >
                                 <CheckCircle size={10} />
-                                Indexiert
+                                {justCompleted ? "Fertig!" : "Indexiert"}
+                              </span>
+                            ) : justFailed ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs rounded-full">
+                                <XCircle size={10} />
+                                Fehler
+                              </span>
+                            ) : isInQueue && !justCompleted && !justFailed ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs rounded-full">
+                                <Clock size={10} />
+                                Warte auf Indexierung
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-500 text-xs rounded-full">
@@ -448,7 +913,13 @@ export function IndexPage() {
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-2 text-right text-slate-500 text-xs">
+                          <td
+                            className={`px-4 py-2 text-right text-xs ${
+                              justCompleted
+                                ? "text-green-600 dark:text-green-400 font-semibold"
+                                : "text-slate-500"
+                            }`}
+                          >
                             {chunks.toLocaleString()}
                           </td>
                         </tr>
@@ -477,7 +948,11 @@ export function IndexPage() {
             className="flex items-center gap-1 px-3 py-2 text-sm bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg"
           >
             {eutbLoading ? (
-              <Loader size={14} className="animate-spin" aria-hidden="true" />
+              <Loader
+                size={14}
+                className="animate-spin"
+                aria-hidden="true"
+              />
             ) : (
               <Download size={14} aria-hidden="true" />
             )}

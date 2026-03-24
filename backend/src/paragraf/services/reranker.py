@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -102,6 +103,17 @@ class RerankerService:
             )
 
         return reranked
+
+    async def arerank(
+        self,
+        query: str,
+        results: list[SearchResult],
+        top_k: int | None = None,
+    ) -> list[SearchResult]:
+        """Async-Wrapper: fuehrt synchrones Reranking im Thread-Executor aus,
+        damit die asyncio Event-Loop nicht blockiert wird."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.rerank, query, results, top_k)
 
 
 def long_context_reorder(results: list[SearchResult]) -> list[SearchResult]:

@@ -85,7 +85,7 @@ def register_search_tools(mcp: FastMCP) -> None:
 
         # 3. Cross-Encoder Reranking -> Top k
         await ctx.report_progress(progress=2, total=4)
-        reranked = reranker.rerank(anfrage, raw_results, top_k=max_ergebnisse)
+        reranked = await reranker.arerank(anfrage, raw_results, top_k=max_ergebnisse)
 
         # Ergebnisse unter Schwellenwert entfernen
         reranked = [r for r in reranked if r.score >= settings.similarity_threshold]

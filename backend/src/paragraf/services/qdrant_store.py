@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from collections.abc import AsyncIterator, Callable
@@ -128,11 +129,16 @@ class QdrantStore:
 
         all_points: list[models.PointStruct] = []
 
+        loop = asyncio.get_running_loop()
+
         for start in range(0, total, embed_batch_size):
             batch_chunks = chunks[start : start + embed_batch_size]
             texts = [c.text for c in batch_chunks]
 
-            dense_vecs, sparse_vecs = self.embedding.encode_dense_and_sparse(texts)
+            # Run CPU-intensive embedding in thread executor to keep event loop free for SSE
+            dense_vecs, sparse_vecs = await loop.run_in_executor(
+                None, self.embedding.encode_dense_and_sparse, texts
+            )
 
             for i, chunk in enumerate(batch_chunks):
                 sparse_indices, sparse_values = EmbeddingService.sparse_to_qdrant(

@@ -1,0 +1,38 @@
+# Standardmaessig auto-detect
+* text=auto
+
+# Shell-Scripts MUESSEN LF haben (sonst crasht Docker/Linux mit "bad interpreter")
+*.sh text eol=lf
+
+# Dockerfiles und nginx config immer LF
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+nginx.conf text eol=lf
+docker-compose*.yml text eol=lf
+.env* text eol=lf
+
+# Python immer LF
+*.py text eol=lf
+*.toml text eol=lf
+*.cfg text eol=lf
+
+# Frontend Source
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+
+# Binaere Dateien
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary

@@ -271,8 +271,8 @@ def _register_routes(app: FastAPI) -> None:
         if not raw_results:
             return SearchResponse(query=body.anfrage, results=[], total=0)
 
-        # Reranking
-        reranked = ctx.reranker.rerank(body.anfrage, raw_results, top_k=max_ergebnisse)
+        # Reranking (async, blockiert nicht die Event-Loop)
+        reranked = await ctx.reranker.arerank(body.anfrage, raw_results, top_k=max_ergebnisse)
 
         # Schwellenwert
         reranked = [r for r in reranked if r.score >= settings.similarity_threshold]
