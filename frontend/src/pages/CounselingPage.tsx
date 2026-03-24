@@ -42,7 +42,7 @@ export function CounselingPage() {
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
-          <HeartHandshake size={24} />
+          <HeartHandshake size={24} aria-hidden="true" />
           EUTB-Beratungsstellen
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -51,33 +51,46 @@ export function CounselingPage() {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-        <input
-          type="text"
-          value={ort}
-          onChange={(e) => setOrt(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          placeholder="Stadt / Ort"
-          className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-        />
-        <select
-          value={bundesland}
-          onChange={(e) => setBundesland(e.target.value)}
-          className="px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-        >
-          {BUNDESLAENDER.map((bl) => (
-            <option key={bl} value={bl}>{bl}</option>
-          ))}
-        </select>
-        <input
-          type="text"
-          value={schwerpunkt}
-          onChange={(e) => setSchwerpunkt(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          placeholder="Schwerpunkt (z.B. Sehbehinderung)"
-          className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-        />
-      </div>
+      <fieldset className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <legend className="sr-only">Beratungsstellen filtern</legend>
+        <div>
+          <label htmlFor="eutb-ort" className="sr-only">Stadt oder Ort</label>
+          <input
+            id="eutb-ort"
+            type="text"
+            value={ort}
+            onChange={(e) => setOrt(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            placeholder="Stadt / Ort"
+            className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
+        <div>
+          <label htmlFor="eutb-bundesland" className="sr-only">Bundesland</label>
+          <select
+            id="eutb-bundesland"
+            value={bundesland}
+            onChange={(e) => setBundesland(e.target.value)}
+            className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            {BUNDESLAENDER.map((bl) => (
+              <option key={bl} value={bl}>{bl}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="eutb-schwerpunkt" className="sr-only">Schwerpunkt</label>
+          <input
+            id="eutb-schwerpunkt"
+            type="text"
+            value={schwerpunkt}
+            onChange={(e) => setSchwerpunkt(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            placeholder="Schwerpunkt (z.B. Sehbehinderung)"
+            className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </div>
+      </fieldset>
 
       <button
         onClick={handleSearch}
@@ -87,13 +100,14 @@ export function CounselingPage() {
       </button>
 
       {loading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader className="animate-spin text-primary-500" size={24} />
+        <div className="flex items-center justify-center py-12" role="status" aria-live="polite">
+          <Loader className="animate-spin text-primary-500" size={24} aria-hidden="true" />
+          <span className="sr-only">Beratungsstellen werden gesucht...</span>
         </div>
       )}
 
       {error && (
-        <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+        <div role="alert" className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
           {error}
         </div>
       )}
@@ -116,10 +130,10 @@ export function CounselingPage() {
                   Träger: {stelle.traeger}
                 </p>
               )}
-              <div className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-400">
+              <address className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-400 not-italic">
                 {(stelle.strasse || stelle.ort) && (
                   <p className="flex items-center gap-2">
-                    <MapPin size={14} className="flex-shrink-0" />
+                    <MapPin size={14} className="flex-shrink-0" aria-hidden="true" />
                     {[stelle.strasse, `${stelle.plz} ${stelle.ort}`.trim()]
                       .filter(Boolean)
                       .join(", ")}
@@ -127,23 +141,29 @@ export function CounselingPage() {
                 )}
                 {stelle.telefon && (
                   <p className="flex items-center gap-2">
-                    <Phone size={14} className="flex-shrink-0" />
-                    {stelle.telefon}
+                    <Phone size={14} className="flex-shrink-0" aria-hidden="true" />
+                    <a href={`tel:${stelle.telefon.replace(/\s/g, "")}`} className="hover:underline">
+                      {stelle.telefon}
+                    </a>
                   </p>
                 )}
                 {stelle.email && (
                   <p className="flex items-center gap-2">
-                    <Mail size={14} className="flex-shrink-0" />
-                    {stelle.email}
+                    <Mail size={14} className="flex-shrink-0" aria-hidden="true" />
+                    <a href={`mailto:${stelle.email}`} className="hover:underline">
+                      {stelle.email}
+                    </a>
                   </p>
                 )}
                 {stelle.website && (
                   <p className="flex items-center gap-2">
-                    <Globe size={14} className="flex-shrink-0" />
-                    {stelle.website}
+                    <Globe size={14} className="flex-shrink-0" aria-hidden="true" />
+                    <a href={stelle.website.startsWith("http") ? stelle.website : `https://${stelle.website}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                      {stelle.website}
+                    </a>
                   </p>
                 )}
-              </div>
+              </address>
               {stelle.schwerpunkte.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
                   {stelle.schwerpunkte.map((sp, j) => (
@@ -171,11 +191,13 @@ export function CounselingPage() {
       )}
 
       {/* Info box */}
-      <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+      <aside role="note" aria-label="Informationen zur EUTB" className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-700 dark:text-blue-300">
         Alle EUTB-Beratungen sind <strong>kostenlos und unabhängig</strong> von
         Leistungsträgern. Weitere Informationen:{" "}
-        <span className="underline">www.teilhabeberatung.de</span>
-      </div>
+        <a href="https://www.teilhabeberatung.de" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-900 dark:hover:text-blue-100">
+          www.teilhabeberatung.de
+        </a>
+      </aside>
     </div>
   );
 }

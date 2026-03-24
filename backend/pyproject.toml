@@ -2,7 +2,6 @@
 name = "paragraf"
 version = "0.2.0"
 description = "MCP-Server fuer deutsches Recht – semantische Suche ueber alle deutschen Gesetze"
-readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.12"
 

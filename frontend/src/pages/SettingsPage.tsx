@@ -41,6 +41,8 @@ export function SettingsPage() {
   const StatusDot = ({ ok }: { ok: boolean }) => (
     <div
       className={`w-3 h-3 rounded-full ${ok ? "bg-green-500" : "bg-red-500"}`}
+      aria-hidden="true"
+      title={ok ? "Verbunden" : "Nicht verbunden"}
     />
   );
 
@@ -70,7 +72,7 @@ export function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <Settings size={24} />
+        <Settings size={24} aria-hidden="true" />
         Einstellungen
       </h1>
 
@@ -83,6 +85,7 @@ export function SettingsPage() {
             <div className="flex items-center gap-3">
               <StatusDot ok={health?.qdrant_status === "ok"} />
               <span className="text-sm">Qdrant</span>
+              <span className="sr-only">({health?.qdrant_status === "ok" ? "verbunden" : "nicht verbunden"})</span>
             </div>
             <span className="text-xs text-slate-500">
               {health?.qdrant_status || "Unbekannt"}
@@ -93,6 +96,7 @@ export function SettingsPage() {
             <div className="flex items-center gap-3">
               <StatusDot ok={health?.status === "ok" || health?.status === "healthy"} />
               <span className="text-sm">Python Backend</span>
+              <span className="sr-only">({health ? "verbunden" : "nicht verbunden"})</span>
             </div>
             <span className="text-xs text-slate-500">
               {health ? "Bereit" : "Nicht erreichbar"}
@@ -159,7 +163,7 @@ export function SettingsPage() {
       {/* MCP-Server */}
       <Section>
         <h2 className="font-semibold mb-4 flex items-center gap-2">
-          <Server size={18} />
+          <Server size={18} aria-hidden="true" />
           MCP-Server (fuer Claude Desktop/Code)
         </h2>
 
@@ -179,13 +183,14 @@ export function SettingsPage() {
               <button
                 onClick={handleCopyMcpCommand}
                 className="p-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                title="Kopieren"
+                aria-label={copied ? "Befehl kopiert" : "MCP-Befehl kopieren"}
               >
                 {copied ? (
-                  <Check size={16} className="text-green-500" />
+                  <Check size={16} className="text-green-500" aria-hidden="true" />
                 ) : (
-                  <Copy size={16} />
+                  <Copy size={16} aria-hidden="true" />
                 )}
+                <span className="sr-only" aria-live="polite">{copied ? "Kopiert" : ""}</span>
               </button>
             </div>
           </div>
@@ -202,6 +207,9 @@ export function SettingsPage() {
           </div>
           <button
             onClick={toggle}
+            role="switch"
+            aria-checked={dark}
+            aria-label="Dark Mode umschalten"
             className={`w-12 h-6 rounded-full transition-colors relative ${
               dark ? "bg-primary-600" : "bg-slate-300"
             }`}
@@ -210,6 +218,7 @@ export function SettingsPage() {
               className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
                 dark ? "translate-x-6" : "translate-x-0.5"
               }`}
+              aria-hidden="true"
             />
           </button>
         </div>
@@ -218,7 +227,7 @@ export function SettingsPage() {
       {/* Keyboard Shortcuts */}
       <Section>
         <h2 className="font-semibold mb-4 flex items-center gap-2">
-          <Keyboard size={18} />
+          <Keyboard size={18} aria-hidden="true" />
           Tastenkuerzel
         </h2>
         <div className="grid grid-cols-2 gap-2 text-sm">

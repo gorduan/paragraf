@@ -71,14 +71,17 @@ export function SearchBar({
   };
 
   return (
-    <div className="relative">
+    <search className="relative" role="search" aria-label="Gesetzessuche">
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search
             size={18}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            aria-hidden="true"
           />
+          <label htmlFor="search-input" className="sr-only">Suchbegriff</label>
           <input
+            id="search-input"
             ref={inputRef}
             type="text"
             value={query}
@@ -87,6 +90,9 @@ export function SearchBar({
             onFocus={() => history.length > 0 && setShowHistory(true)}
             onBlur={() => setTimeout(() => setShowHistory(false), 200)}
             placeholder={placeholder}
+            aria-autocomplete="list"
+            aria-expanded={showHistory && history.length > 0}
+            aria-controls="search-history"
             className="w-full pl-10 pr-10 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
           {query && (
@@ -95,34 +101,43 @@ export function SearchBar({
                 setQuery("");
                 inputRef.current?.focus();
               }}
+              aria-label="Suchfeld leeren"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           )}
 
           {/* History Dropdown */}
           {showHistory && history.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg max-h-48 overflow-auto">
+            <ul
+              id="search-history"
+              role="listbox"
+              aria-label="Suchverlauf"
+              className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg max-h-48 overflow-auto"
+            >
               {history.map((item, i) => (
-                <button
-                  key={i}
-                  onMouseDown={() => {
-                    setQuery(item);
-                    doSearch(item);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
-                >
-                  {item}
-                </button>
+                <li key={i} role="option" aria-selected={false}>
+                  <button
+                    onMouseDown={() => {
+                      setQuery(item);
+                      doSearch(item);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
+                  >
+                    {item}
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </div>
 
         {showFilter && (
           <div className="relative">
+            <label htmlFor="law-filter" className="sr-only">Gesetz filtern</label>
             <select
+              id="law-filter"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               className="appearance-none h-full pl-3 pr-8 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
@@ -141,6 +156,7 @@ export function SearchBar({
             <ChevronDown
               size={14}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              aria-hidden="true"
             />
           </div>
         )}
@@ -152,6 +168,6 @@ export function SearchBar({
           Suchen
         </button>
       </div>
-    </div>
+    </search>
   );
 }

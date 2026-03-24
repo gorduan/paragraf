@@ -15,8 +15,16 @@ export function ServerStatus({ state }: ServerStatusProps) {
   const config = STATE_CONFIG[state] || STATE_CONFIG.connecting;
 
   return (
-    <div className="flex items-center gap-2">
-      <div className={`w-2.5 h-2.5 rounded-full ${config.color}`} />
+    <div
+      role="status"
+      aria-live="polite"
+      aria-label={`Server-Status: ${config.label}`}
+      className="flex items-center gap-2"
+    >
+      <div
+        className={`w-2.5 h-2.5 rounded-full ${config.color}`}
+        aria-hidden="true"
+      />
       <span className="text-xs text-slate-500 dark:text-slate-400">
         {config.label}
       </span>

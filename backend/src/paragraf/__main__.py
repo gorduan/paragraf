@@ -37,14 +37,7 @@ def _run_mcp() -> None:
     logger.info("Starte Paragraf MCP-Server (Transport: %s)", transport)
 
     try:
-        if transport == "streamable-http":
-            server.run(
-                transport="streamable-http",
-                host=settings.mcp_host,
-                port=settings.mcp_port,
-            )
-        else:
-            server.run(transport="stdio")
+        server.run(transport=transport)
     except Exception:
         logger.exception("MCP-Server-Fehler")
         sys.exit(1)

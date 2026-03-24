@@ -49,26 +49,33 @@ export function LookupPage() {
         </p>
       </div>
 
-      <div className="flex gap-3">
-        <select
-          value={gesetz}
-          onChange={(e) => setGesetz(e.target.value)}
-          className="px-3 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-        >
-          {Object.entries(groupedLaws).map(([group, groupLaws]) => (
-            <optgroup key={group} label={group}>
-              {groupLaws.map((law) => (
-                <option key={law.abkuerzung} value={law.abkuerzung}>
-                  {law.abkuerzung}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+      <fieldset className="flex gap-3">
+        <legend className="sr-only">Paragraph nachschlagen</legend>
+        <div>
+          <label htmlFor="lookup-law" className="sr-only">Gesetz auswaehlen</label>
+          <select
+            id="lookup-law"
+            value={gesetz}
+            onChange={(e) => setGesetz(e.target.value)}
+            className="px-3 py-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            {Object.entries(groupedLaws).map(([group, groupLaws]) => (
+              <optgroup key={group} label={group}>
+                {groupLaws.map((law) => (
+                  <option key={law.abkuerzung} value={law.abkuerzung}>
+                    {law.abkuerzung}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
 
         <div className="relative flex-1">
-          <BookOpen size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <BookOpen size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+          <label htmlFor="lookup-paragraph" className="sr-only">Paragraphen-Nummer</label>
           <input
+            id="lookup-paragraph"
             type="text"
             value={paragraph}
             onChange={(e) => setParagraph(e.target.value)}
@@ -81,20 +88,22 @@ export function LookupPage() {
         <button
           onClick={handleLookup}
           disabled={!paragraph.trim()}
+          aria-disabled={!paragraph.trim()}
           className="px-5 py-3 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
         >
           Nachschlagen
         </button>
-      </div>
+      </fieldset>
 
       {loading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader className="animate-spin text-primary-500" size={24} />
+        <div className="flex items-center justify-center py-12" role="status" aria-live="polite">
+          <Loader className="animate-spin text-primary-500" size={24} aria-hidden="true" />
+          <span className="sr-only">Paragraph wird geladen...</span>
         </div>
       )}
 
       {error && (
-        <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+        <div role="alert" className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
           {error}
         </div>
       )}

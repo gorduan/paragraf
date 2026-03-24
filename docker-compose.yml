@@ -8,7 +8,7 @@ services:
       - qdrant_data:/qdrant/storage
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6333/readyz"]
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/6333'"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -45,11 +45,44 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ── MCP-Server (Streamable HTTP fuer Claude Desktop/Code) ──────────────────
+  mcp:
+    build: ./backend
+    ports:
+      - "8001:8001"
+    volumes:
+      - model_cache:/models
+      - law_data:/data
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_COLLECTION=paragraf
+      - EMBEDDING_MODEL=BAAI/bge-m3
+      - EMBEDDING_DEVICE=cpu
+      - EMBEDDING_BATCH_SIZE=8
+      - EMBEDDING_MAX_LENGTH=512
+      - RERANKER_MODEL=BAAI/bge-reranker-v2-m3
+      - RERANKER_TOP_K=5
+      - RETRIEVAL_TOP_K=20
+      - FINAL_TOP_K=5
+      - SIMILARITY_THRESHOLD=0.35
+      - LOG_LEVEL=INFO
+      - HF_HOME=/models
+      - TORCH_HOME=/models/torch
+      - DATA_DIR=/data
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8001
+      - MCP_TRANSPORT=streamable-http
+    command: ["python", "-m", "paragraf", "--mode", "mcp"]
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+
   # ── React Frontend (nginx) ─────────────────────────────────────────────────
   frontend:
     build: ./frontend
     ports:
-      - "80:80"
+      - "3847:80"
     depends_on:
       - backend
     restart: unless-stopped

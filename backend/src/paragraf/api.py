@@ -628,19 +628,25 @@ def _register_routes(app: FastAPI) -> None:
                         yield _event(IndexProgressEvent(
                             gesetz=body.gesetzbuch, schritt="parse", nachricht="Parse XML...",
                         ))
-                        chunks = ctx.parser.parse_zip(path)
+                        chunks = ctx.parser.parse_zip(path, gesetz_abk=body.gesetzbuch)
 
+                    total_chunks = len(chunks)
                     yield _event(IndexProgressEvent(
                         gesetz=body.gesetzbuch, schritt="embedding",
-                        gesamt=len(chunks),
-                        nachricht=f"{len(chunks)} Chunks werden eingebettet...",
+                        fortschritt=0, gesamt=total_chunks,
+                        nachricht=f"{total_chunks} Chunks werden eingebettet...",
                     ))
-                    count = await ctx.qdrant.upsert_chunks(chunks)
+                    async for embedded, total in ctx.qdrant.upsert_chunks_stream(chunks):
+                        yield _event(IndexProgressEvent(
+                            gesetz=body.gesetzbuch, schritt="embedding",
+                            fortschritt=embedded, gesamt=total,
+                            nachricht=f"{embedded}/{total} Chunks eingebettet...",
+                        ))
 
                     yield _event(IndexProgressEvent(
                         gesetz=body.gesetzbuch, schritt="done",
-                        fortschritt=count, gesamt=count,
-                        nachricht=f"{count} Chunks indexiert",
+                        fortschritt=total_chunks, gesamt=total_chunks,
+                        nachricht=f"{total_chunks} Chunks indexiert",
                     ))
                 except Exception as e:
                     yield _event(IndexProgressEvent(
@@ -678,19 +684,25 @@ def _register_routes(app: FastAPI) -> None:
                                 fortschritt=i, gesamt=total,
                                 nachricht=f"Parse {name}...",
                             ))
-                            chunks = ctx.parser.parse_zip(path)
+                            chunks = ctx.parser.parse_zip(path, gesetz_abk=name)
 
+                        num_chunks = len(chunks)
                         yield _event(IndexProgressEvent(
                             gesetz=name, schritt="embedding",
                             fortschritt=i, gesamt=total,
-                            nachricht=f"{name}: {len(chunks)} Chunks einbetten...",
+                            nachricht=f"{name}: {num_chunks} Chunks einbetten...",
                         ))
-                        count = await ctx.qdrant.upsert_chunks(chunks)
+                        async for embedded, chunk_total in ctx.qdrant.upsert_chunks_stream(chunks):
+                            yield _event(IndexProgressEvent(
+                                gesetz=name, schritt="embedding",
+                                fortschritt=i, gesamt=total,
+                                nachricht=f"{name}: {embedded}/{chunk_total} Chunks eingebettet...",
+                            ))
 
                         yield _event(IndexProgressEvent(
                             gesetz=name, schritt="done",
                             fortschritt=i + 1, gesamt=total,
-                            nachricht=f"{name}: {count} Chunks indexiert",
+                            nachricht=f"{name}: {num_chunks} Chunks indexiert",
                         ))
                     except Exception as e:
                         yield _event(IndexProgressEvent(

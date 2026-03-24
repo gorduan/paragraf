@@ -210,7 +210,7 @@ export function IndexPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Database size={24} />
+            <Database size={24} aria-hidden="true" />
             Index-Management
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -224,7 +224,7 @@ export function IndexPage() {
             disabled={loading || indexing}
             className="flex items-center gap-1 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"
           >
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} aria-hidden="true" />
             Aktualisieren
           </button>
         </div>
@@ -250,7 +250,7 @@ export function IndexPage() {
               onClick={startSelectedIndex}
               className="flex items-center gap-1 px-4 py-1.5 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium"
             >
-              <Download size={14} />
+              <Download size={14} aria-hidden="true" />
               {selected.size} ausgewaehlte indexieren
             </button>
           )}
@@ -291,10 +291,11 @@ export function IndexPage() {
 
       {/* Error */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300 whitespace-pre-line">
+        <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300 whitespace-pre-line">
           {error}
           <button
             onClick={() => setError(null)}
+            aria-label="Fehlermeldung schliessen"
             className="ml-2 text-red-400 hover:text-red-600 text-xs"
           >
             Schliessen
@@ -318,7 +319,7 @@ export function IndexPage() {
               </button>
             )}
           </div>
-          <div className="p-3 max-h-48 overflow-auto">
+          <div className="p-3 max-h-48 overflow-auto" role="log" aria-live="polite" aria-label="Indexierungs-Protokoll">
             <pre className="text-xs text-slate-500 dark:text-slate-400 font-mono whitespace-pre-wrap">
               {indexLog.join("\n")}
             </pre>
@@ -328,8 +329,9 @@ export function IndexPage() {
 
       {/* Table grouped by Rechtsgebiet */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader className="animate-spin text-primary-500" size={24} />
+        <div className="flex justify-center py-12" role="status" aria-live="polite">
+          <Loader className="animate-spin text-primary-500" size={24} aria-hidden="true" />
+          <span className="sr-only">Index-Status wird geladen...</span>
         </div>
       ) : (
         <div className="space-y-4">
@@ -346,9 +348,19 @@ export function IndexPage() {
                 <div
                   className="px-4 py-2 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2 cursor-pointer select-none"
                   onClick={() => !indexing && toggleGroup(groupLaws)}
+                  role={!indexing ? "checkbox" : undefined}
+                  aria-checked={allGroupSelected ? true : someGroupSelected ? "mixed" : false}
+                  aria-label={`${group} – alle ${groupLaws.length} Gesetze auswaehlen`}
+                  tabIndex={!indexing ? 0 : undefined}
+                  onKeyDown={(e) => {
+                    if (!indexing && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      toggleGroup(groupLaws);
+                    }
+                  }}
                 >
                   {!indexing && (
-                    <span className="text-slate-400">
+                    <span className="text-slate-400" aria-hidden="true">
                       {allGroupSelected ? (
                         <CheckSquare size={16} />
                       ) : someGroupSelected ? (
@@ -368,7 +380,7 @@ export function IndexPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 dark:border-slate-700">
-                      {!indexing && <th className="w-8 px-2 py-2"></th>}
+                      {!indexing && <th className="w-8 px-2 py-2"><span className="sr-only">Auswahl</span></th>}
                       <th className="text-left px-4 py-2 font-medium text-xs text-slate-500">Gesetz</th>
                       <th className="text-left px-4 py-2 font-medium text-xs text-slate-500">Beschreibung</th>
                       <th className="text-left px-4 py-2 font-medium text-xs text-slate-500">Status</th>
@@ -387,6 +399,16 @@ export function IndexPage() {
                         <tr
                           key={law.abkuerzung}
                           onClick={() => !indexing && toggleSelect(law.abkuerzung)}
+                          onKeyDown={(e) => {
+                            if (!indexing && (e.key === "Enter" || e.key === " ")) {
+                              e.preventDefault();
+                              toggleSelect(law.abkuerzung);
+                            }
+                          }}
+                          tabIndex={!indexing ? 0 : undefined}
+                          role={!indexing ? "checkbox" : undefined}
+                          aria-checked={isSelected}
+                          aria-label={`${law.abkuerzung} – ${law.beschreibung}`}
                           className={`border-b border-slate-50 dark:border-slate-700/50 last:border-0 ${
                             !indexing ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/30" : ""
                           } ${isCurrentlyIndexing ? "bg-blue-50 dark:bg-blue-900/10" : ""} ${
@@ -395,7 +417,7 @@ export function IndexPage() {
                         >
                           {!indexing && (
                             <td className="px-2 py-2 text-center">
-                              <span className="text-slate-400">
+                              <span className="text-slate-400" aria-hidden="true">
                                 {isSelected ? (
                                   <CheckSquare size={14} className="text-primary-500" />
                                 ) : (
@@ -455,9 +477,9 @@ export function IndexPage() {
             className="flex items-center gap-1 px-3 py-2 text-sm bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg"
           >
             {eutbLoading ? (
-              <Loader size={14} className="animate-spin" />
+              <Loader size={14} className="animate-spin" aria-hidden="true" />
             ) : (
-              <Download size={14} />
+              <Download size={14} aria-hidden="true" />
             )}
             Aktualisieren
           </button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from "react";
+import React, { useState, useEffect, useRef, createContext, useContext } from "react";
 import { Sidebar, type Page } from "./components/Sidebar";
 import { HealthOverlay } from "./components/HealthOverlay";
 import { SearchPage } from "./pages/SearchPage";
@@ -50,6 +50,8 @@ export default function App() {
   });
 
   const { state: healthState, health, error: healthError, retry } = useHealthCheck();
+  const mainRef = useRef<HTMLElement>(null);
+  const [pageAnnouncement, setPageAnnouncement] = useState("");
 
   // Dark mode
   useEffect(() => {
@@ -66,6 +68,24 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("paragraf_bookmarks", JSON.stringify(bookmarks));
   }, [bookmarks]);
+
+  // Page labels for announcements
+  const PAGE_LABELS: Record<Page, string> = {
+    search: "Suche",
+    lookup: "Nachschlagen",
+    compare: "Vergleich",
+    laws: "Gesetze",
+    counseling: "EUTB-Beratungsstellen",
+    index: "Index-Management",
+    settings: "Einstellungen",
+  };
+
+  // Focus management on page change
+  useEffect(() => {
+    setPageAnnouncement(`Seite: ${PAGE_LABELS[page]}`);
+    document.title = `${PAGE_LABELS[page]} – Paragraf`;
+    mainRef.current?.focus();
+  }, [page]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -127,7 +147,20 @@ export default function App() {
             onPageChange={setPage}
             backendState={healthState}
           />
-          <main className="flex-1 overflow-auto">{renderPage()}</main>
+          <main
+            ref={mainRef}
+            id="main-content"
+            className="flex-1 overflow-auto"
+            tabIndex={-1}
+            aria-label={PAGE_LABELS[page]}
+          >
+            {renderPage()}
+          </main>
+        </div>
+
+        {/* Live region for page change announcements */}
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
+          {pageAnnouncement}
         </div>
 
         <HealthOverlay

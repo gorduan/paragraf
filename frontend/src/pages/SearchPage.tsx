@@ -46,35 +46,39 @@ export function SearchPage() {
 
       {/* Loading */}
       {loading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader className="animate-spin text-primary-500" size={24} />
+        <div className="flex items-center justify-center py-12" role="status" aria-live="polite">
+          <Loader className="animate-spin text-primary-500" size={24} aria-hidden="true" />
           <span className="ml-2 text-slate-500">Suche läuft...</span>
         </div>
       )}
 
       {/* Error */}
       {error && (
-        <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+        <div role="alert" className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
           {error}
         </div>
       )}
 
       {/* Results */}
       {!loading && results.length > 0 && (
-        <div className="mt-6 space-y-3">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+        <section className="mt-6 space-y-3" aria-label="Suchergebnisse">
+          <p className="text-sm text-slate-500 dark:text-slate-400" aria-live="polite">
             {results.length} Ergebnisse für &quot;{query}&quot;
           </p>
-          {results.map((r, i) => (
-            <ResultCard key={`${r.paragraph}-${r.gesetz}-${i}`} result={r} />
-          ))}
+          <ul className="space-y-3" role="list">
+            {results.map((r, i) => (
+              <li key={`${r.paragraph}-${r.gesetz}-${i}`}>
+                <ResultCard result={r} />
+              </li>
+            ))}
+          </ul>
           <Disclaimer />
-        </div>
+        </section>
       )}
 
       {/* Empty state */}
       {!loading && !error && results.length === 0 && query && (
-        <div className="mt-8 text-center text-slate-400">
+        <div className="mt-8 text-center text-slate-400" role="status" aria-live="polite">
           <p>Keine Ergebnisse gefunden.</p>
           <p className="text-sm mt-1">
             Versuchen Sie eine allgemeinere Formulierung.

@@ -86,24 +86,29 @@ export function Sidebar({ currentPage, onPageChange, backendState }: SidebarProp
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-2 overflow-auto">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onPageChange(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-              currentPage === item.id
-                ? "bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-medium"
-                : "text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-            }`}
-          >
-            {item.icon}
-            <span className="flex-1 text-left">{item.label}</span>
-            <kbd className="text-[10px] text-slate-400 dark:text-slate-500 bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded">
-              ^{item.shortcut}
-            </kbd>
-          </button>
-        ))}
+      <nav aria-label="Hauptnavigation" className="flex-1 py-2 overflow-auto">
+        {NAV_ITEMS.map((item) => {
+          const isActive = currentPage === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onPageChange(item.id)}
+              aria-current={isActive ? "page" : undefined}
+              aria-label={`${item.label} (Ctrl+${item.shortcut})`}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                isActive
+                  ? "bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-medium"
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+              }`}
+            >
+              <span aria-hidden="true">{item.icon}</span>
+              <span className="flex-1 text-left">{item.label}</span>
+              <kbd className="text-[10px] text-slate-400 dark:text-slate-500 bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded" aria-hidden="true">
+                ^{item.shortcut}
+              </kbd>
+            </button>
+          );
+        })}
       </nav>
 
       {/* Server Status */}

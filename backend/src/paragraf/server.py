@@ -139,6 +139,8 @@ def create_server() -> FastMCP:
             "Gib bei jeder Antwort die exakten Paragraphen-Referenzen an. "
             "Bei Anfragen zu Leichter Sprache: folge der DIN SPEC 33429."
         ),
+        host=settings.mcp_host,
+        port=settings.mcp_port,
         lifespan=app_lifespan,
     )
 

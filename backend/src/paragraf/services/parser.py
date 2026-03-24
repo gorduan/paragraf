@@ -91,7 +91,7 @@ class GesetzParser:
                 logger.warning("Fehler beim Download von %s: %s", name, e)
         return paths
 
-    def parse_zip(self, zip_path: Path) -> list[LawChunk]:
+    def parse_zip(self, zip_path: Path, gesetz_abk: str | None = None) -> list[LawChunk]:
         """Parst eine ZIP-Datei und extrahiert alle Norm-Chunks."""
         with zipfile.ZipFile(zip_path) as zf:
             xml_files = [f for f in zf.namelist() if f.endswith(".xml")]
@@ -101,19 +101,20 @@ class GesetzParser:
 
             xml_content = zf.read(xml_files[0])
 
-        return self.parse_xml(xml_content)
+        return self.parse_xml(xml_content, gesetz_abk=gesetz_abk)
 
-    def parse_xml(self, xml_bytes: bytes) -> list[LawChunk]:
+    def parse_xml(self, xml_bytes: bytes, gesetz_abk: str | None = None) -> list[LawChunk]:
         """Parst XML-Bytes und extrahiert Chunks auf Paragraph-Ebene."""
         soup = BeautifulSoup(xml_bytes, "lxml-xml")
 
-        # Gesetzesname aus erster Norm (Eingangsformel) extrahieren
-        gesetz_abk = ""
-        erste_norm = soup.find("norm")
-        if erste_norm:
-            jurabk_tag = erste_norm.find("jurabk")
-            if jurabk_tag:
-                gesetz_abk = self._normalize_abkuerzung(jurabk_tag.get_text(strip=True))
+        # Gesetzesname: explizit uebergeben oder aus XML extrahieren
+        if not gesetz_abk:
+            gesetz_abk = ""
+            erste_norm = soup.find("norm")
+            if erste_norm:
+                jurabk_tag = erste_norm.find("jurabk")
+                if jurabk_tag:
+                    gesetz_abk = self._normalize_abkuerzung(jurabk_tag.get_text(strip=True))
 
         chunks: list[LawChunk] = []
         current_abschnitt = ""
@@ -179,7 +180,11 @@ class GesetzParser:
         norm_jurabk_tag = meta.find("jurabk")
         norm_abk = gesetz_abk
         if norm_jurabk_tag:
-            norm_abk = self._normalize_abkuerzung(norm_jurabk_tag.get_text(strip=True))
+            xml_abk = self._normalize_abkuerzung(norm_jurabk_tag.get_text(strip=True))
+            # Nur abweichen wenn es ein wirklich anderes Gesetz ist (Sammelnormen),
+            # nicht wenn das XML nur eine Variante des Namens hat (z.B. "BKGG 1996" vs "BKGG")
+            if gesetz_abk and not xml_abk.startswith(gesetz_abk):
+                norm_abk = xml_abk
 
         # Titel extrahieren
         titel_tag = meta.find("titel", attrs={"format": "parat"})

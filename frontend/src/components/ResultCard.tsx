@@ -41,10 +41,15 @@ export function ResultCard({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+    <article
+      className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden"
+      aria-label={`${result.paragraph} ${result.gesetz}${result.titel ? ` – ${result.titel}` : ""}`}
+    >
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
+        aria-label={`${result.paragraph} ${result.gesetz}${result.titel ? ` – ${result.titel}` : ""} ${expanded ? "zuklappen" : "aufklappen"}`}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors"
       >
         <div className="flex-1 text-left">
@@ -52,11 +57,11 @@ export function ResultCard({
             <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">
               {result.paragraph} {result.gesetz}
             </span>
-            <span className="px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs rounded-full">
+            <span className="px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs rounded-full" aria-hidden="true">
               {result.gesetz}
             </span>
             {showScore && (
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-400" aria-label={`Relevanz-Score: ${result.score.toFixed(2)}`}>
                 Score: {result.score.toFixed(2)}
               </span>
             )}
@@ -68,9 +73,9 @@ export function ResultCard({
           )}
         </div>
         {expanded ? (
-          <ChevronUp size={16} className="text-slate-400" />
+          <ChevronUp size={16} className="text-slate-400" aria-hidden="true" />
         ) : (
-          <ChevronDown size={16} className="text-slate-400" />
+          <ChevronDown size={16} className="text-slate-400" aria-hidden="true" />
         )}
       </button>
 
@@ -91,39 +96,43 @@ export function ResultCard({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-1 px-3 py-2 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+          <div className="flex items-center gap-1 px-3 py-2 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50" role="toolbar" aria-label="Aktionen">
             <button
               onClick={handleCopy}
+              aria-label={copied ? "Text kopiert" : `${result.paragraph} ${result.gesetz} kopieren`}
               className="flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
             >
-              {copied ? <Check size={14} /> : <Copy size={14} />}
-              {copied ? "Kopiert" : "Kopieren"}
+              {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+              <span aria-live="polite">{copied ? "Kopiert" : "Kopieren"}</span>
             </button>
             <button
               onClick={() =>
                 bookmarked ? removeBookmark(ref) : addBookmark(ref)
               }
+              aria-label={bookmarked ? `${ref} aus Lesezeichen entfernen` : `${ref} als Lesezeichen speichern`}
+              aria-pressed={bookmarked}
               className="flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
             >
               {bookmarked ? (
-                <BookmarkCheck size={14} className="text-primary-500" />
+                <BookmarkCheck size={14} className="text-primary-500" aria-hidden="true" />
               ) : (
-                <Bookmark size={14} />
+                <Bookmark size={14} aria-hidden="true" />
               )}
               {bookmarked ? "Gespeichert" : "Merken"}
             </button>
             {onCompare && (
               <button
                 onClick={() => onCompare(ref)}
+                aria-label={`${ref} zum Vergleich hinzufuegen`}
                 className="flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
               >
-                <GitCompare size={14} />
+                <GitCompare size={14} aria-hidden="true" />
                 Vergleichen
               </button>
             )}
           </div>
         </div>
       )}
-    </div>
+    </article>
   );
 }

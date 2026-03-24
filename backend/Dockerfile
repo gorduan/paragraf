@@ -7,9 +7,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install pip dependencies into /install
+# Install PyTorch CPU-only first (saves ~3GB vs default CUDA version)
+RUN pip install --no-cache-dir \
+    torch --index-url https://download.pytorch.org/whl/cpu
+
+# Install project dependencies (torch already satisfied, won't re-download)
 COPY pyproject.toml .
-RUN pip install --no-cache-dir --prefix=/install .
+COPY src/ src/
+RUN pip install --no-cache-dir .
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
 FROM python:3.12-slim
@@ -19,7 +24,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 # Copy installed packages from builder
-COPY --from=builder /install /usr/local
+COPY --from=builder /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 WORKDIR /app
 

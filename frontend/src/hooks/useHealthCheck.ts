@@ -32,7 +32,7 @@ export function useHealthCheck(): HealthCheckResult {
       setHealth(res);
       setError(null);
 
-      if (res.status === "ok" || res.status === "healthy") {
+      if (res.status === "ok" || res.status === "healthy" || res.status === "ready") {
         setState("ready");
       } else {
         setState("loading");

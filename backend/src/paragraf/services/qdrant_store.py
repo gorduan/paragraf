@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import AsyncIterator, Callable
 from typing import Any
 
 from qdrant_client import AsyncQdrantClient, models
@@ -94,58 +95,88 @@ class QdrantStore:
             )
         logger.info("Collection '%s' erstellt mit Payload-Indizes", self.collection_name)
 
-    async def upsert_chunks(self, chunks: list[LawChunk]) -> int:
-        """Fuegt Chunks mit Dense + Sparse Vektoren ein."""
+    async def upsert_chunks(
+        self,
+        chunks: list[LawChunk],
+        on_progress: Callable[[int, int], None] | None = None,
+    ) -> int:
+        """Fuegt Chunks mit Dense + Sparse Vektoren ein (nicht-streaming)."""
+        count = 0
+        async for embedded, total in self.upsert_chunks_stream(chunks):
+            if on_progress:
+                on_progress(embedded, total)
+            count = total
+        return count
+
+    async def upsert_chunks_stream(
+        self, chunks: list[LawChunk]
+    ) -> AsyncIterator[tuple[int, int]]:
+        """Fuegt Chunks batch-weise ein und yielded (embedded_so_far, total) nach jedem Batch.
+
+        Ermoeglicht SSE-Progress-Events waehrend langer Embedding-Operationen.
+        """
         if not chunks:
-            return 0
+            return
         if self.embedding is None:
             raise RuntimeError("Kein EmbeddingService konfiguriert")
 
-        texts = [c.text for c in chunks]
-        logger.info("Erzeuge Embeddings fuer %d Chunks...", len(texts))
+        total = len(chunks)
+        embed_batch_size = 32
+        upsert_batch_size = 100
 
-        dense_vecs, sparse_vecs = self.embedding.encode_dense_and_sparse(texts)
+        logger.info("Erzeuge Embeddings fuer %d Chunks in Batches à %d...", total, embed_batch_size)
 
-        points = []
-        for i, chunk in enumerate(chunks):
-            sparse_indices, sparse_values = EmbeddingService.sparse_to_qdrant(
-                sparse_vecs[i]
-            )
+        all_points: list[models.PointStruct] = []
 
-            named_vectors: dict[str, Any] = {
-                DENSE_VECTOR_NAME: dense_vecs[i],
-            }
-            named_sparse: dict[str, models.SparseVector] = {}
-            if sparse_indices:
-                named_sparse[SPARSE_VECTOR_NAME] = models.SparseVector(
-                    indices=sparse_indices,
-                    values=sparse_values,
+        for start in range(0, total, embed_batch_size):
+            batch_chunks = chunks[start : start + embed_batch_size]
+            texts = [c.text for c in batch_chunks]
+
+            dense_vecs, sparse_vecs = self.embedding.encode_dense_and_sparse(texts)
+
+            for i, chunk in enumerate(batch_chunks):
+                sparse_indices, sparse_values = EmbeddingService.sparse_to_qdrant(
+                    sparse_vecs[i]
                 )
 
-            point = models.PointStruct(
-                id=str(uuid.uuid5(uuid.NAMESPACE_URL, chunk.id)),
-                vector={**named_vectors, **named_sparse},
-                payload={
-                    "chunk_id": chunk.id,
-                    "text": chunk.text,
-                    **chunk.metadata.model_dump(),
-                },
-            )
-            points.append(point)
+                named_vectors: dict[str, Any] = {
+                    DENSE_VECTOR_NAME: dense_vecs[i],
+                }
+                named_sparse: dict[str, models.SparseVector] = {}
+                if sparse_indices:
+                    named_sparse[SPARSE_VECTOR_NAME] = models.SparseVector(
+                        indices=sparse_indices,
+                        values=sparse_values,
+                    )
 
-        # Batch-Upsert in Gruppen von 100
-        batch_size = 100
-        for start in range(0, len(points), batch_size):
-            batch = points[start : start + batch_size]
+                point = models.PointStruct(
+                    id=str(uuid.uuid5(uuid.NAMESPACE_URL, chunk.id)),
+                    vector={**named_vectors, **named_sparse},
+                    payload={
+                        "chunk_id": chunk.id,
+                        "text": chunk.text,
+                        **chunk.metadata.model_dump(),
+                    },
+                )
+                all_points.append(point)
+
+            embedded = min(start + embed_batch_size, total)
+            logger.debug("Embedding Batch %d–%d / %d", start, embedded, total)
+            yield embedded, total
+
+        # Batch-Upsert in Gruppen
+        upserted = 0
+        for start in range(0, len(all_points), upsert_batch_size):
+            batch = all_points[start : start + upsert_batch_size]
             await self.client.upsert(
                 collection_name=self.collection_name,
                 points=batch,
                 wait=True,
             )
+            upserted += len(batch)
             logger.debug("Upsert Batch %d–%d", start, start + len(batch))
 
-        logger.info("%d Chunks in Qdrant eingefuegt", len(points))
-        return len(points)
+        logger.info("%d Chunks in Qdrant eingefuegt", upserted)
 
     def _build_filter(
         self, search_filter: SearchFilter | None

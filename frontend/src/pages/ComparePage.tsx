@@ -49,10 +49,13 @@ export function ComparePage() {
       </div>
 
       {/* Input */}
-      <div className="space-y-2 mb-4">
+      <fieldset className="space-y-2 mb-4">
+        <legend className="sr-only">Paragraphen zum Vergleichen eingeben</legend>
         {refs.map((ref, i) => (
           <div key={i} className="flex gap-2">
+            <label htmlFor={`compare-ref-${i}`} className="sr-only">Paragraph {i + 1}</label>
             <input
+              id={`compare-ref-${i}`}
               type="text"
               value={ref}
               onChange={(e) => updateRef(i, e.target.value)}
@@ -63,28 +66,31 @@ export function ComparePage() {
             {refs.length > 2 && (
               <button
                 onClick={() => removeRef(i)}
+                aria-label={`Paragraph ${i + 1} entfernen`}
                 className="p-2 text-slate-400 hover:text-red-500"
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
               </button>
             )}
           </div>
         ))}
-      </div>
+      </fieldset>
 
       <div className="flex gap-2">
         {refs.length < 5 && (
           <button
             onClick={addRef}
+            aria-label="Weiteren Paragraphen hinzufuegen"
             className="flex items-center gap-1 px-3 py-2 text-sm text-slate-500 hover:text-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
           >
-            <Plus size={14} />
+            <Plus size={14} aria-hidden="true" />
             Hinzufügen
           </button>
         )}
         <button
           onClick={handleCompare}
           disabled={refs.filter((r) => r.trim()).length < 2}
+          aria-disabled={refs.filter((r) => r.trim()).length < 2}
           className="px-5 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
         >
           Vergleichen
@@ -92,13 +98,14 @@ export function ComparePage() {
       </div>
 
       {loading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader className="animate-spin text-primary-500" size={24} />
+        <div className="flex items-center justify-center py-12" role="status" aria-live="polite">
+          <Loader className="animate-spin text-primary-500" size={24} aria-hidden="true" />
+          <span className="sr-only">Vergleich wird geladen...</span>
         </div>
       )}
 
       {error && (
-        <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+        <div role="alert" className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
           {error}
         </div>
       )}

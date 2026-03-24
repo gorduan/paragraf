@@ -90,10 +90,36 @@ cd frontend && npm install && npm run dev
 - Settings-Page ist Read-Only (keine .env-Editor mehr)
 - HealthOverlay statt SetupWizard (kein Electron-IPC)
 
-## Unterschiede zu v1
-- Kein Electron – reine Web-App via nginx
-- Kein `useBackend` Hook – ersetzt durch `useHealthCheck` (REST-Polling)
-- Kein `SetupWizard` – ersetzt durch `HealthOverlay` (simpler Verbindungs-Check)
-- SettingsPage ist Read-Only (Docker-Env-Vars statt .env-Editor)
-- API BASE_URL leer (nginx proxied `/api/*` zum Backend)
-- ML-Modelle im Docker Volume gecacht (lazy download beim ersten Start)
+## Skills & Subagents
+
+### IMPORTANT: Nutze Subagents so oft wie moeglich
+Spawn Subagents fuer **jede nicht-triviale Teilaufgabe**:
+- **Explore-Agent**: Codebase durchsuchen, Abhaengigkeiten finden, Ist-Zustand analysieren
+- **Plan-Agent**: Implementierungsplaene erstellen, Architektur-Entscheidungen vorbereiten
+- **Implementierungs-Agent**: Aenderungen an mehreren Dateien parallel ausfuehren
+- **Review-Agent**: Code-Reviews, Konsistenz-Checks nach Aenderungen
+
+### Skill-Referenz
+| Aufgabe | Skill |
+|---------|-------|
+| Rechtsrecherche benchmarken | `/paragraf-bench` |
+| Neue Skills finden/installieren | `/find-skills` |
+| Frontend-UI bauen/aendern | `/frontend-design`, `/ui-ux-pro-max` |
+| Styling (Tailwind/shadcn) | `/ckm-ui-styling` |
+| Design-System/Tokens/Slides | `/ckm-design-system`, `/ckm-slides` |
+| Branding/Logos/Banner | `/ckm-design`, `/ckm-brand`, `/ckm-banner-design` |
+| MCP-Server erstellen | `/mcp-builder` |
+| Skills erstellen/aendern | `/skill-creator` |
+| TDD-Workflow (Red-Green-Refactor) | `/test-driven-development` (obra/superpowers) |
+| Security & Codebase Audit | Plugin: `codebase-audit-suite` (OWASP, Architecture, Code Quality) |
+| Agile Workflow & Testing | Plugin: `agile-workflow` (TDD, Test-Planner, Quality Gates) |
+| E2E Browser-Tests | Plugin: `playwright-skill` (Playwright Automation) |
+| Web-App Testing | `/webapp-testing` (Playwright-basiert, Screenshots, Logs) |
+| CI/CD Pipelines | Plugin: `ci-cd` (GitHub Actions, Pipeline-Design) |
+| Monitoring & Observability | Plugin: `monitoring-observability` (Prometheus, Grafana) |
+| Performance-Optimierung | Plugin: `optimization-suite` (Profiling, Dependencies) |
+| Projekt-Dokumentation | Plugin: `documentation-pipeline` (CLAUDE.md, README, API-Spec) |
+| Projekt-Bootstrap/Docker | Plugin: `project-bootstrap` (Scaffolding, Docker, CI/CD) |
+| Security-Guidance | Plugin: `security-guidance` (OWASP Best Practices) |
+| PDF-Erstellung/Manipulation | `/pdf` (Erstellen, Mergen, Extrahieren) |
+| Code vereinfachen | `/simplify` (Built-in) |
