@@ -122,7 +122,10 @@ class QdrantStore:
             raise RuntimeError("Kein EmbeddingService konfiguriert")
 
         total = len(chunks)
-        embed_batch_size = 32
+        # Use the model's configured batch size so each run_in_executor call
+        # completes one forward pass (~10-15s on CPU) instead of multiple,
+        # yielding progress events more frequently for SSE streaming.
+        embed_batch_size = self.embedding.batch_size if self.embedding else 32
         upsert_batch_size = 100
 
         logger.info("Erzeuge Embeddings fuer %d Chunks in Batches à %d...", total, embed_batch_size)

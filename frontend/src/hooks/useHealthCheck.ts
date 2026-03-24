@@ -34,6 +34,8 @@ export function useHealthCheck(): HealthCheckResult {
 
       if (res.status === "ok" || res.status === "healthy" || res.status === "ready") {
         setState("ready");
+      } else if (res.status === "loading") {
+        setState("loading");
       } else {
         setState("loading");
       }

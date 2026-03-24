@@ -32,10 +32,8 @@ class EmbeddingService:
         self.max_length = max_length
         self._model: Any = None
 
-    async def initialize(self) -> None:
-        """Laedt das Modell (lazy, beim ersten Aufruf)."""
-        if self._model is not None:
-            return
+    def _load_model(self) -> None:
+        """Synchrones Laden des Modells (wird in Thread ausgefuehrt)."""
         logger.info("Lade Embedding-Modell: %s auf %s", self.model_name, self.device)
         try:
             from FlagEmbedding import BGEM3FlagModel
@@ -54,6 +52,13 @@ class EmbeddingService:
 
             self._model = SentenceTransformer(self.model_name, device=self.device)
             logger.info("Fallback-Modell geladen via sentence-transformers")
+
+    async def initialize(self) -> None:
+        """Laedt das Modell in einem Thread (blockiert nicht die Event-Loop)."""
+        if self._model is not None:
+            return
+        import asyncio
+        await asyncio.to_thread(self._load_model)
 
     @property
     def is_bge_m3(self) -> bool:

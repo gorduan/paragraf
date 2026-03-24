@@ -32,10 +32,8 @@ class RerankerService:
         self.top_k = top_k
         self._reranker: Any = None
 
-    async def initialize(self) -> None:
-        """Laedt den Reranker."""
-        if self._reranker is not None:
-            return
+    def _load_model(self) -> None:
+        """Synchrones Laden des Rerankers (wird in Thread ausgefuehrt)."""
         logger.info("Lade Reranker: %s", self.model_name)
         try:
             from FlagEmbedding import FlagReranker
@@ -49,6 +47,12 @@ class RerankerService:
         except ImportError:
             logger.warning("FlagEmbedding nicht installiert – Reranking deaktiviert")
             self._reranker = None
+
+    async def initialize(self) -> None:
+        """Laedt den Reranker in einem Thread (blockiert nicht die Event-Loop)."""
+        if self._reranker is not None:
+            return
+        await asyncio.to_thread(self._load_model)
 
     def rerank(
         self,

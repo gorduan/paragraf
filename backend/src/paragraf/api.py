@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -62,7 +63,11 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def api_lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Initialisiert alle Services – eager (nicht lazy wie beim MCP-Server)."""
+    """Erstellt Services sofort, laedt ML-Modelle lazy im Hintergrund.
+
+    Der Server antwortet sofort auf /api/health (status='loading'),
+    waehrend Embedding- und Reranker-Modelle im Hintergrund geladen werden.
+    """
     logger.info("=== Paragraf REST-API startet ===")
 
     data_dir = settings.data_dir
@@ -70,7 +75,7 @@ async def api_lifespan(app: FastAPI) -> AsyncIterator[None]:
     (data_dir / "raw").mkdir(exist_ok=True)
     (data_dir / "processed").mkdir(exist_ok=True)
 
-    # 1. Embedding-Service
+    # Services konfigurieren (noch nicht initialisieren!)
     embedding = EmbeddingService(
         model_name=settings.embedding_model,
         device=settings.embedding_device,
@@ -78,27 +83,20 @@ async def api_lifespan(app: FastAPI) -> AsyncIterator[None]:
         batch_size=settings.embedding_batch_size,
         max_length=settings.embedding_max_length,
     )
-    await embedding.initialize()
 
-    # 2. Qdrant
     qdrant = QdrantStore(
         url=settings.qdrant_url,
         collection_name=settings.qdrant_collection,
         embedding_service=embedding,
     )
-    await qdrant.connect()
-    await qdrant.ensure_collection(vector_size=embedding.dimension)
 
-    # 3. Reranker
     reranker = RerankerService(
         model_name=settings.reranker_model,
         device=settings.embedding_device,
         use_fp16=settings.embedding_device != "cpu",
         top_k=settings.reranker_top_k,
     )
-    await reranker.initialize()
 
-    # 4. Parser
     parser = GesetzParser(data_dir=data_dir)
 
     app.state.ctx = AppContext(
@@ -109,12 +107,28 @@ async def api_lifespan(app: FastAPI) -> AsyncIterator[None]:
         data_dir=data_dir,
     )
 
-    logger.info("=== Alle Services initialisiert ===")
+    # Modelle im Hintergrund laden
+    async def _init_models() -> None:
+        try:
+            await embedding.initialize()
+            await qdrant.connect()
+            await qdrant.ensure_collection(vector_size=embedding.dimension)
+            await reranker.initialize()
+            app.state.ctx._initialized = True
+            logger.info("=== Alle Services initialisiert ===")
+        except Exception:
+            logger.exception("Fehler beim Laden der ML-Modelle")
+
+    init_task = asyncio.create_task(_init_models())
+
+    logger.info("=== Server bereit (Modelle werden im Hintergrund geladen) ===")
 
     try:
         yield
     finally:
-        await qdrant.close()
+        init_task.cancel()
+        if app.state.ctx._initialized:
+            await qdrant.close()
         logger.info("=== Paragraf REST-API gestoppt ===")
 
 
@@ -207,6 +221,16 @@ def _register_routes(app: FastAPI) -> None:
     @app.get("/api/health", response_model=HealthResponse)
     async def health(request: Request) -> HealthResponse:
         ctx = _get_ctx(request)
+        if not ctx._initialized:
+            return HealthResponse(
+                status="loading",
+                embedding_model=ctx.embedding.model_name,
+                embedding_dimension=0,
+                embedding_device=ctx.embedding.device,
+                qdrant_collection="",
+                qdrant_status="loading",
+                indexierte_chunks=0,
+            )
         info = await ctx.qdrant.get_collection_info()
         return HealthResponse(
             status="ready",
@@ -648,6 +672,9 @@ def _register_routes(app: FastAPI) -> None:
                         fortschritt=total_chunks, gesamt=total_chunks,
                         nachricht=f"{total_chunks} Chunks indexiert",
                     ))
+                except (asyncio.CancelledError, GeneratorExit):
+                    logger.warning("Stream fuer %s abgebrochen (Client-Disconnect)", body.gesetzbuch)
+                    return
                 except Exception as e:
                     yield _event(IndexProgressEvent(
                         gesetz=body.gesetzbuch, schritt="error",
@@ -704,6 +731,9 @@ def _register_routes(app: FastAPI) -> None:
                             fortschritt=i + 1, gesamt=total,
                             nachricht=f"{name}: {num_chunks} Chunks indexiert",
                         ))
+                    except (asyncio.CancelledError, GeneratorExit):
+                        logger.warning("Stream fuer %s abgebrochen (Client-Disconnect)", name)
+                        return
                     except Exception as e:
                         yield _event(IndexProgressEvent(
                             gesetz=name, schritt="error",
@@ -711,7 +741,40 @@ def _register_routes(app: FastAPI) -> None:
                             nachricht=f"{name}: {e}",
                         ))
 
-        return StreamingResponse(_stream(), media_type="text/event-stream")
+        async def _with_keepalive(
+            gen: AsyncIterator[str], interval: float = 15.0
+        ) -> AsyncIterator[str]:
+            """Sendet SSE-Keepalive-Kommentare bei Inaktivitaet.
+
+            Verhindert, dass Proxies/Docker-Networking idle Connections droppen,
+            z.B. waehrend langer Embedding-Batches auf CPU.
+            """
+            queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+            async def _produce() -> None:
+                try:
+                    async for chunk in gen:
+                        await queue.put(chunk)
+                finally:
+                    await queue.put(None)
+
+            task = asyncio.create_task(_produce())
+            try:
+                while True:
+                    try:
+                        item = await asyncio.wait_for(queue.get(), timeout=interval)
+                        if item is None:
+                            break
+                        yield item
+                    except asyncio.TimeoutError:
+                        yield ": keepalive\n\n"
+            finally:
+                if not task.done():
+                    task.cancel()
+
+        return StreamingResponse(
+            _with_keepalive(_stream()), media_type="text/event-stream"
+        )
 
     # ── EUTB indexieren ───────────────────────────────────────────────────
 
