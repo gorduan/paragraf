@@ -39,8 +39,8 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit seman
 - [x] Snapshot API fuer Backup/Restore vor Re-Indexierung — Validated in Phase 1: Snapshot Safety Net
 
 **Backend/MCP-Erweiterungen:**
-- [ ] Querverweis-Extraktion: Zitationen zwischen Gesetzen erkennen und als Payload speichern
-- [ ] Zitationsnetzwerk: Graph-basierte Navigation zwischen referenzierten Normen
+- [x] Querverweis-Extraktion: Zitationen zwischen Gesetzen erkennen und als Payload speichern — Validated in Phase 6: Cross-Reference Pipeline
+- [x] Zitationsnetzwerk: Graph-basierte Navigation zwischen referenzierten Normen — Validated in Phase 6: Cross-Reference Pipeline
 - [ ] Query Expansion: Synonym-/Paraphrasen-Erweiterung fuer besseren Recall
 - [ ] Multi-Hop MCP-Prompts: Kombinierte Suchen fuer komplexe Rechtsfragen
 - [x] Abschnitt-Filter vollstaendig in MCP-Tools exponieren — Validated in Phase 4: Recommend & Pagination
@@ -73,7 +73,7 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit seman
 - bge-m3 unterstuetzt ColBERT Multi-Vector Output — aktuell nur Dense + Sparse genutzt
 - Frontend hat teilweise vorbereitete aber nicht verdrahtete Features (onCompare, abschnitt-Filter)
 - MCP-Tools spiegeln die meisten Backend-Capabilities wider (Discovery + Grouping seit Phase 5)
-- Gesetze referenzieren sich intensiv gegenseitig — dieses Netzwerk ist aktuell unsichtbar
+- Gesetze referenzieren sich intensiv gegenseitig — Querverweis-Pipeline seit Phase 6 aktiv (Extraktion + API + MCP-Tool)
 - Frontend-Design soll mit /frontend-design, /ui-ux-pro-max und /ckm-ui-styling Skills professionell gestaltet werden
 
 ## Constraints
