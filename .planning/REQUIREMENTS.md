@@ -9,8 +9,8 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 
 ### Qdrant Infrastructure
 
-- [ ] **INFRA-01**: Snapshot API integriert -- Backup vor Re-Indexierung erstellen und wiederherstellen
-- [ ] **INFRA-02**: Scalar Quantization fuer Dense-Vektoren aktiviert (Sparse unberuehrt)
+- [x] **INFRA-01**: Snapshot API integriert -- Backup vor Re-Indexierung erstellen und wiederherstellen
+- [x] **INFRA-02**: Scalar Quantization fuer Dense-Vektoren aktiviert (Sparse unberuehrt)
 - [ ] **INFRA-03**: Full-Text Index auf `text`-Feld fuer exakte Wortsuche
 - [ ] **INFRA-04**: Payload Range-Filter fuer numerisches `absatz`-Feld
 - [ ] **INFRA-05**: Snapshot-Button im Index-Dashboard (Frontend)
@@ -93,8 +93,8 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 1: Snapshot Safety Net | Pending |
-| INFRA-02 | Phase 1: Snapshot Safety Net | Pending |
+| INFRA-01 | Phase 1: Snapshot Safety Net | Complete |
+| INFRA-02 | Phase 1: Snapshot Safety Net | Complete |
 | INFRA-03 | Phase 2: Search Indexes & Full-Text | Pending |
 | INFRA-04 | Phase 2: Search Indexes & Full-Text | Pending |
 | INFRA-05 | Phase 10: Dashboard, Export & Polish | Pending |

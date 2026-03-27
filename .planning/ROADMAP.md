@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md -- QdrantStore snapshot/quantization methods, config, Docker volume, unit tests
+- [x] 01-01-PLAN.md -- QdrantStore snapshot/quantization methods, config, Docker volume, unit tests
 - [ ] 01-02-PLAN.md -- REST endpoints, MCP tool, auto-snapshot hooks, quantization startup
 
 ### Phase 2: Search Indexes & Full-Text
@@ -198,7 +198,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Snapshot Safety Net | 0/2 | Not started | - |
+| 1. Snapshot Safety Net | 1/2 | In Progress|  |
 | 2. Search Indexes & Full-Text | 0/2 | Not started | - |
 | 3. Design System Foundation | 0/2 | Not started | - |
 | 4. Recommend & Pagination | 0/3 | Not started | - |
