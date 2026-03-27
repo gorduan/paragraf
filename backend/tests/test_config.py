@@ -49,3 +49,10 @@ class TestSettings:
         """xref_resolution_strategy akzeptiert 'precomputed'."""
         s = Settings(xref_resolution_strategy="precomputed")
         assert s.xref_resolution_strategy == "precomputed"
+
+    def test_query_expansion_defaults(self):
+        """Query-Expansion-Settings haben korrekte Standardwerte."""
+        s = Settings()
+        assert s.query_expansion_strategy == "append"
+        assert s.query_expansion_enabled is True
+        assert s.synonyms_json_path == ""
