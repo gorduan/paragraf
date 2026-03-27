@@ -62,7 +62,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 
 ### Semantic Chunking
 
-- [ ] **CHUNK-01**: Parser verbessern -- Chunking an juristischen Strukturgrenzen (Absatz, Satz, Nummer)
+- [x] **CHUNK-01**: Parser verbessern -- Chunking an juristischen Strukturgrenzen (Absatz, Satz, Nummer)
 - [ ] **CHUNK-02**: Re-Indexierung mit verbessertem Chunking (nach Snapshot)
 
 ## v2 Requirements
@@ -131,7 +131,7 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | UI-10 | Phase 9: Cross-Reference & Discovery UX | Pending |
 | UI-11 | Phase 10: Dashboard, Export & Polish | Pending |
 | UI-12 | Phase 10: Dashboard, Export & Polish | Pending |
-| CHUNK-01 | Phase 7: Query Expansion & Chunking | Pending |
+| CHUNK-01 | Phase 7: Query Expansion & Chunking | Complete |
 | CHUNK-02 | Phase 7: Query Expansion & Chunking | Pending |
 
 **Coverage:**

@@ -135,7 +135,7 @@ Plans:
 
 Plans:
 - [x] 07-01-PLAN.md -- QueryExpander service, curated synonym dictionary, config settings, unit tests
-- [ ] 07-02-PLAN.md -- Parser Satz-level chunking at legal structure boundaries, config thresholds, unit tests
+- [x] 07-02-PLAN.md -- Parser Satz-level chunking at legal structure boundaries, config thresholds, unit tests
 - [ ] 07-03-PLAN.md -- MultiHopService, REST integration (expand in search, multi-hop endpoint), MCP prompts, docker-compose ENV
 
 ### Phase 8: Search Results UX
