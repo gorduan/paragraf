@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, X, ChevronDown } from "lucide-react";
 import { api, type LawInfo } from "../lib/api";
+import { Button } from "@/components/ui/Button";
 
 interface SearchBarProps {
   onSearch: (query: string, gesetzbuch?: string) => void;
@@ -161,12 +162,9 @@ export function SearchBar({
           </div>
         )}
 
-        <button
-          onClick={() => doSearch(query)}
-          className="px-5 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          Suchen
-        </button>
+        <Button onClick={() => doSearch(query)} size="lg">
+          Suche starten
+        </Button>
       </div>
     </search>
   );

@@ -32,8 +32,8 @@ export function SearchPage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1">Suche</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <h1 className="text-heading font-semibold mb-1">Suche</h1>
+        <p className="text-body text-neutral-500 dark:text-slate-400">
           Semantische Suche über 18 deutsche Gesetze
         </p>
       </div>
@@ -54,7 +54,7 @@ export function SearchPage() {
 
       {/* Error */}
       {error && (
-        <div role="alert" className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+        <div role="alert" className="mt-4 p-4 bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 rounded-md text-body text-error-700 dark:text-error-300">
           {error}
         </div>
       )}
@@ -62,7 +62,7 @@ export function SearchPage() {
       {/* Results */}
       {!loading && results.length > 0 && (
         <section className="mt-6 space-y-3" aria-label="Suchergebnisse">
-          <p className="text-sm text-slate-500 dark:text-slate-400" aria-live="polite">
+          <p className="text-body text-slate-500 dark:text-slate-400" aria-live="polite">
             {results.length} Ergebnisse für &quot;{query}&quot;
           </p>
           <ul className="space-y-3" role="list">
@@ -80,7 +80,7 @@ export function SearchPage() {
       {!loading && !error && results.length === 0 && query && (
         <div className="mt-8 text-center text-slate-400" role="status" aria-live="polite">
           <p>Keine Ergebnisse gefunden.</p>
-          <p className="text-sm mt-1">
+          <p className="text-body mt-1">
             Versuchen Sie eine allgemeinere Formulierung.
           </p>
         </div>

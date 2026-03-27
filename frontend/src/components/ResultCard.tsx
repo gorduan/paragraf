@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { BookmarkContext } from "../App";
 import type { SearchResultItem } from "../lib/api";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 
 interface ResultCardProps {
   result: SearchResultItem;
@@ -57,9 +59,9 @@ export function ResultCard({
             <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">
               {result.paragraph} {result.gesetz}
             </span>
-            <span className="px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs rounded-full" aria-hidden="true">
+            <Badge variant="primary" aria-hidden="true">
               {result.gesetz}
-            </span>
+            </Badge>
             {showScore && (
               <span className="text-xs text-slate-400" aria-label={`Relevanz-Score: ${result.score.toFixed(2)}`}>
                 Score: {result.score.toFixed(2)}
@@ -97,21 +99,25 @@ export function ResultCard({
 
           {/* Actions */}
           <div className="flex items-center gap-1 px-3 py-2 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50" role="toolbar" aria-label="Aktionen">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleCopy}
               aria-label={copied ? "Text kopiert" : `${result.paragraph} ${result.gesetz} kopieren`}
-              className="flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+              className="gap-1"
             >
               {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
               <span aria-live="polite">{copied ? "Kopiert" : "Kopieren"}</span>
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() =>
                 bookmarked ? removeBookmark(ref) : addBookmark(ref)
               }
               aria-label={bookmarked ? `${ref} aus Lesezeichen entfernen` : `${ref} als Lesezeichen speichern`}
               aria-pressed={bookmarked}
-              className="flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+              className="gap-1"
             >
               {bookmarked ? (
                 <BookmarkCheck size={14} className="text-primary-500" aria-hidden="true" />
@@ -119,16 +125,18 @@ export function ResultCard({
                 <Bookmark size={14} aria-hidden="true" />
               )}
               {bookmarked ? "Gespeichert" : "Merken"}
-            </button>
+            </Button>
             {onCompare && (
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => onCompare(ref)}
                 aria-label={`${ref} zum Vergleich hinzufuegen`}
-                className="flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+                className="gap-1"
               >
                 <GitCompare size={14} aria-hidden="true" />
                 Vergleichen
-              </button>
+              </Button>
             )}
           </div>
         </div>
