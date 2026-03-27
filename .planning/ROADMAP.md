@@ -149,13 +149,13 @@ Plans:
   4. User can add results directly to comparison view from search results (onCompare wired)
   5. Pagination controls appear at bottom of search results with page navigation
   6. Full-text search toggle is available in the search bar alongside semantic search
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 08-01: TBD
-- [ ] 08-02: TBD
-- [ ] 08-03: TBD
+- [ ] 08-01-PLAN.md -- API client extensions, CompareContext, SearchModeToggle, FilterPanel, FilterChips
+- [ ] 08-02-PLAN.md -- MiniCard, RecommendSection, ResultCard recommend button + compare wiring
+- [ ] 08-03-PLAN.md -- ViewToggle, GroupedResults, LoadMoreButton, SearchPage + SearchBar full integration
 
 ### Phase 9: Cross-Reference & Discovery UX
 **Goal**: Users can visually explore the citation network between laws and perform discovery searches with positive/negative example selection
