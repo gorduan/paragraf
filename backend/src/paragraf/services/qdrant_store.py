@@ -714,6 +714,185 @@ class QdrantStore:
             )
         return search_results
 
+    # ── Cross-Reference Payload ────────────────────────────────────────────────
+
+    async def set_references_payload(
+        self, point_id: str, references: list[dict]
+    ) -> None:
+        """Setzt references_out Payload fuer einen Punkt ohne Re-Embedding."""
+        await self.client.set_payload(
+            collection_name=self.collection_name,
+            payload={"references_out": references},
+            points=[point_id],
+            wait=False,
+        )
+
+    async def extract_all_references(
+        self,
+        extractor: Any,
+        gesetz_filter: str | None = None,
+        batch_size: int = 100,
+    ) -> dict[str, int]:
+        """Scrollt alle Punkte und extrahiert Querverweise via extractor.extract().
+
+        Setzt references_out Payload fuer jeden Punkt mit Querverweisen.
+        Gibt Statistiken zurueck: total_points, points_with_refs, total_refs.
+        """
+        gesetz_cond: models.Filter | None = None
+        if gesetz_filter:
+            gesetz_cond = models.Filter(must=[
+                models.FieldCondition(
+                    key="gesetz",
+                    match=models.MatchValue(value=gesetz_filter),
+                ),
+            ])
+
+        total_points = 0
+        points_with_refs = 0
+        total_refs = 0
+        offset = None
+
+        while True:
+            records, next_offset = await self.client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter=gesetz_cond,
+                limit=batch_size,
+                offset=offset,
+                with_payload=["text", "gesetz", "paragraph"],
+            )
+            if not records:
+                break
+            for record in records:
+                total_points += 1
+                text = record.payload.get("text", "")
+                refs = extractor.extract(text)
+                if refs:
+                    await self.set_references_payload(str(record.id), refs)
+                    points_with_refs += 1
+                    total_refs += len(refs)
+            offset = next_offset
+            if offset is None:
+                break
+
+        logger.info(
+            "Querverweise extrahiert: %d Punkte, %d mit Refs, %d Refs gesamt",
+            total_points, points_with_refs, total_refs,
+        )
+        return {
+            "total_points": total_points,
+            "points_with_refs": points_with_refs,
+            "total_refs": total_refs,
+        }
+
+    async def get_outgoing_references(
+        self, gesetz: str, paragraph: str
+    ) -> list[dict]:
+        """Gibt ausgehende Querverweise fuer einen Paragraphen zurueck."""
+        search_filter = SearchFilter(gesetz=gesetz, paragraph=paragraph)
+        qdrant_filter = self._build_filter(search_filter)
+        records, _ = await self.client.scroll(
+            collection_name=self.collection_name,
+            scroll_filter=qdrant_filter,
+            limit=10,
+            with_payload=["references_out"],
+        )
+        if not records:
+            return []
+
+        # Merge and deduplicate from multiple chunks (absatz chunks)
+        all_refs: list[dict] = []
+        seen: set[tuple] = set()
+        for record in records:
+            refs = record.payload.get("references_out", [])
+            for ref in refs:
+                key = (ref.get("gesetz", ""), ref.get("paragraph", ""), ref.get("absatz"))
+                if key not in seen:
+                    seen.add(key)
+                    all_refs.append(ref)
+        return all_refs
+
+    async def get_incoming_references(
+        self, gesetz: str, paragraph: str, limit: int = 50
+    ) -> list[dict]:
+        """Gibt eingehende Querverweise zurueck (wer zitiert diesen Paragraphen)."""
+        nested_filter = models.Filter(must=[
+            models.NestedCondition(nested=models.Nested(
+                key="references_out",
+                filter=models.Filter(must=[
+                    models.FieldCondition(
+                        key="gesetz",
+                        match=models.MatchValue(value=gesetz),
+                    ),
+                    models.FieldCondition(
+                        key="paragraph",
+                        match=models.MatchValue(value=paragraph),
+                    ),
+                ]),
+            ))
+        ])
+        records, _ = await self.client.scroll(
+            collection_name=self.collection_name,
+            scroll_filter=nested_filter,
+            limit=limit,
+            with_payload=["gesetz", "paragraph", "chunk_id", "text"],
+        )
+        results: list[dict] = []
+        for record in records:
+            payload = record.payload or {}
+            text = payload.get("text", "")
+            results.append({
+                "gesetz": payload.get("gesetz", ""),
+                "paragraph": payload.get("paragraph", ""),
+                "chunk_id": payload.get("chunk_id", ""),
+                "text_preview": text[:200],
+            })
+        return results
+
+    async def count_incoming_references(
+        self, gesetz: str, paragraph: str
+    ) -> int:
+        """Zaehlt eingehende Querverweise fuer einen Paragraphen."""
+        nested_filter = models.Filter(must=[
+            models.NestedCondition(nested=models.Nested(
+                key="references_out",
+                filter=models.Filter(must=[
+                    models.FieldCondition(
+                        key="gesetz",
+                        match=models.MatchValue(value=gesetz),
+                    ),
+                    models.FieldCondition(
+                        key="paragraph",
+                        match=models.MatchValue(value=paragraph),
+                    ),
+                ]),
+            ))
+        ])
+        count_result = await self.client.count(
+            collection_name=self.collection_name,
+            count_filter=nested_filter,
+            exact=True,
+        )
+        return count_result.count
+
+    async def create_reference_indexes(self) -> None:
+        """Erstellt Payload-Indizes fuer Querverweis-Nested-Fields.
+
+        Idempotent: Ignoriert Fehler wenn Index bereits existiert.
+        """
+        for field_name in [
+            "references_out[].gesetz",
+            "references_out[].paragraph",
+        ]:
+            try:
+                await self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name=field_name,
+                    field_schema=models.PayloadSchemaType.KEYWORD,
+                )
+                logger.info("Payload-Index erstellt: %s", field_name)
+            except Exception:
+                logger.debug("Payload-Index existiert bereits: %s", field_name)
+
     # ── Snapshot-CRUD ────────────────────────────────────────────────────────────
 
     async def create_snapshot(self) -> str:

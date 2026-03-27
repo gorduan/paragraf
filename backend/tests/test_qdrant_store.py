@@ -846,6 +846,158 @@ class TestResolvePointId:
         assert result is None
 
 
+class TestQdrantStoreReferences:
+    """Tests fuer die Querverweis-Methoden."""
+
+    @pytest.mark.asyncio
+    async def test_set_references_payload(self):
+        """set_references_payload() ruft client.set_payload mit korrekten Argumenten auf."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+
+        refs = [{"gesetz": "BGB", "paragraph": "§ 1", "raw": "§ 1 BGB", "verified": True}]
+        await store.set_references_payload("point-123", refs)
+
+        store._client.set_payload.assert_called_once_with(
+            collection_name="paragraf",
+            payload={"references_out": refs},
+            points=["point-123"],
+            wait=False,
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_incoming_references_builds_nested_filter(self):
+        """get_incoming_references() baut NestedCondition Filter fuer references_out."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_record = MagicMock()
+        mock_record.payload = {
+            "gesetz": "BGB",
+            "paragraph": "§ 823",
+            "chunk_id": "bgb-823",
+            "text": "Wer vorsaetzlich oder fahrlaessig...",
+        }
+        store._client.scroll.return_value = ([mock_record], None)
+
+        results = await store.get_incoming_references("SGB IX", "§ 152")
+
+        store._client.scroll.assert_called_once()
+        call_kwargs = store._client.scroll.call_args.kwargs
+        scroll_filter = call_kwargs["scroll_filter"]
+        # Verify NestedCondition is used
+        assert len(scroll_filter.must) == 1
+        nested_cond = scroll_filter.must[0]
+        assert isinstance(nested_cond, models.NestedCondition)
+        assert nested_cond.nested.key == "references_out"
+        inner_filter = nested_cond.nested.filter
+        assert len(inner_filter.must) == 2
+
+        # Verify result structure
+        assert len(results) == 1
+        assert results[0]["gesetz"] == "BGB"
+        assert results[0]["paragraph"] == "§ 823"
+        assert results[0]["chunk_id"] == "bgb-823"
+        assert "text_preview" in results[0]
+
+    @pytest.mark.asyncio
+    async def test_count_incoming_references(self):
+        """count_incoming_references() ruft client.count mit NestedCondition auf."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_count = MagicMock()
+        mock_count.count = 42
+        store._client.count.return_value = mock_count
+
+        result = await store.count_incoming_references("SGB IX", "§ 152")
+
+        assert result == 42
+        store._client.count.assert_called_once()
+        call_kwargs = store._client.count.call_args.kwargs
+        assert call_kwargs["exact"] is True
+        count_filter = call_kwargs["count_filter"]
+        assert len(count_filter.must) == 1
+        assert isinstance(count_filter.must[0], models.NestedCondition)
+
+    @pytest.mark.asyncio
+    async def test_create_reference_indexes(self):
+        """create_reference_indexes() erstellt zwei Keyword-Indizes fuer nested fields."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+
+        await store.create_reference_indexes()
+
+        assert store._client.create_payload_index.call_count == 2
+        calls = store._client.create_payload_index.call_args_list
+        field_names = [c.kwargs["field_name"] for c in calls]
+        assert "references_out[].gesetz" in field_names
+        assert "references_out[].paragraph" in field_names
+        for c in calls:
+            assert c.kwargs["field_schema"] == models.PayloadSchemaType.KEYWORD
+
+    @pytest.mark.asyncio
+    async def test_create_reference_indexes_idempotent(self):
+        """create_reference_indexes() ignoriert Fehler wenn Index bereits existiert."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        store._client.create_payload_index.side_effect = Exception("Index exists")
+
+        # Should not raise
+        await store.create_reference_indexes()
+
+    @pytest.mark.asyncio
+    async def test_extract_all_references_scrolls_and_sets_payload(self):
+        """extract_all_references() scrollt Punkte und setzt Payload fuer Punkte mit Refs."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+
+        # Mock records: one with refs, one without
+        record1 = MagicMock()
+        record1.id = "id-1"
+        record1.payload = {"text": "Gemaess § 1 BGB gilt...", "gesetz": "SGB IX", "paragraph": "§ 1"}
+        record2 = MagicMock()
+        record2.id = "id-2"
+        record2.payload = {"text": "Kein Querverweis hier.", "gesetz": "SGB IX", "paragraph": "§ 2"}
+
+        store._client.scroll.side_effect = [
+            ([record1, record2], None),  # single batch, no more
+        ]
+
+        # Mock extractor
+        mock_extractor = MagicMock()
+        mock_extractor.extract.side_effect = [
+            [{"gesetz": "BGB", "paragraph": "§ 1", "raw": "§ 1 BGB", "verified": True}],  # record1 has refs
+            [],  # record2 has no refs
+        ]
+
+        stats = await store.extract_all_references(mock_extractor)
+
+        assert stats["total_points"] == 2
+        assert stats["points_with_refs"] == 1
+        assert stats["total_refs"] == 1
+        # set_payload called only for record1
+        store._client.set_payload.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_outgoing_references(self):
+        """get_outgoing_references() gibt deduplizierte references_out zurueck."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        ref1 = {"gesetz": "BGB", "paragraph": "§ 1", "absatz": None, "raw": "§ 1 BGB"}
+        ref2 = {"gesetz": "BGB", "paragraph": "§ 2", "absatz": None, "raw": "§ 2 BGB"}
+        record1 = MagicMock()
+        record1.payload = {"references_out": [ref1, ref2]}
+        record2 = MagicMock()
+        record2.payload = {"references_out": [ref1]}  # duplicate
+        store._client.scroll.return_value = ([record1, record2], None)
+
+        results = await store.get_outgoing_references("SGB IX", "§ 152")
+
+        # Should deduplicate: ref1 appears in both records
+        assert len(results) == 2
+        assert results[0] == ref1
+        assert results[1] == ref2
+
+
 class TestQdrantStoreScroll:
     """Tests fuer die scroll_search() Methode."""
 
