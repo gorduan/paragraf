@@ -33,8 +33,8 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit seman
 - [ ] Discovery API: Explorative Suche mit Positiv/Negativ-Beispielen
 - [ ] Grouping API: Suchergebnisse nach Gesetz/Rechtsgebiet gruppieren
 - [ ] Scroll API: Paginierung ueber grosse Ergebnismengen
-- [ ] Full-Text Index auf `text`-Feld fuer exakte Wortsuche
-- [ ] Payload Range-Filter fuer numerische Felder (absatz)
+- [x] Full-Text Index auf `text`-Feld fuer exakte Wortsuche — Validated in Phase 2: Search Indexes Full-Text
+- [x] Payload Range-Filter fuer numerische Felder (absatz) — Validated in Phase 2: Search Indexes Full-Text
 - [x] Scalar Quantization fuer speichereffizientere Vektoren — Validated in Phase 1: Snapshot Safety Net
 - [x] Snapshot API fuer Backup/Restore vor Re-Indexierung — Validated in Phase 1: Snapshot Safety Net
 
@@ -112,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after Phase 1 (Snapshot Safety Net) completion*
+*Last updated: 2026-03-27 after Phase 2 (Search Indexes Full-Text) completion*
