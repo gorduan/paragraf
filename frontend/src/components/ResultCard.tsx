@@ -7,11 +7,13 @@ import {
   Copy,
   Check,
   GitCompare,
+  Sparkles,
 } from "lucide-react";
-import { BookmarkContext } from "../App";
+import { BookmarkContext, CompareContext } from "../App";
 import type { SearchResultItem } from "../lib/api";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { RecommendSection } from "./RecommendSection";
 
 interface ResultCardProps {
   result: SearchResultItem;
@@ -28,10 +30,13 @@ export function ResultCard({
 }: ResultCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [copied, setCopied] = useState(false);
+  const [showRecommend, setShowRecommend] = useState(false);
   const { isBookmarked, addBookmark, removeBookmark } = useContext(BookmarkContext);
+  const { isSelected, addItem, removeItem } = useContext(CompareContext);
 
   const ref = `${result.paragraph} ${result.gesetz}`;
   const bookmarked = isBookmarked(ref);
+  const compareSelected = isSelected(ref);
 
   const handleCopy = async () => {
     const text = `${result.paragraph} ${result.gesetz}${
@@ -126,19 +131,40 @@ export function ResultCard({
               )}
               {bookmarked ? "Gespeichert" : "Merken"}
             </Button>
-            {onCompare && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onCompare(ref)}
-                aria-label={`${ref} zum Vergleich hinzufuegen`}
-                className="gap-1"
-              >
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowRecommend(!showRecommend)}
+              aria-expanded={showRecommend}
+              aria-label={showRecommend ? "Aehnliche Paragraphen ausblenden" : "Aehnliche Paragraphen anzeigen"}
+              className="gap-1"
+            >
+              <Sparkles size={14} aria-hidden="true" />
+              Aehnliche finden
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => compareSelected ? removeItem(ref) : addItem(ref)}
+              aria-label={compareSelected ? `${ref} aus Vergleich entfernen` : `${ref} zum Vergleich hinzufuegen`}
+              aria-pressed={compareSelected}
+              className={`gap-1 ${compareSelected ? "text-primary-500" : ""}`}
+            >
+              {compareSelected ? (
+                <Check size={14} className="text-primary-500" aria-hidden="true" />
+              ) : (
                 <GitCompare size={14} aria-hidden="true" />
-                Vergleichen
-              </Button>
-            )}
+              )}
+              {compareSelected ? "Ausgewaehlt" : "Vergleichen"}
+            </Button>
           </div>
+
+          {/* Recommend Section */}
+          {showRecommend && (
+            <div className="motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-out">
+              <RecommendSection paragraph={result.paragraph} gesetz={result.gesetz} />
+            </div>
+          )}
         </div>
       )}
     </article>
