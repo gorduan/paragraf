@@ -68,7 +68,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md -- Design tokens, dependencies, cn() utility, vitest setup, Button/Card/Input/Badge primitives
-- [ ] 03-02-PLAN.md -- Radix primitives (Dialog/Select/Tooltip/Tabs), SearchPage + Sidebar migration
+- [x] 03-02-PLAN.md -- Radix primitives (Dialog/Select/Tooltip/Tabs), SearchPage + Sidebar migration
 
 ### Phase 4: Recommend & Pagination
 **Goal**: Users can find similar paragraphs to any given result and navigate large result sets with pagination, while MCP tools expose these capabilities to Claude
