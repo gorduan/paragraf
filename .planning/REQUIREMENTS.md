@@ -48,10 +48,10 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 ### Frontend UX (mit /frontend-design, /ui-ux-pro-max, /ckm-ui-styling)
 
 - [x] **UI-01**: Design-System mit konsistenten Tokens (Farben, Spacing, Typografie) via TailwindCSS 4
-- [ ] **UI-02**: "Aehnliche Paragraphen"-Button auf ResultCard (Recommend API)
+- [x] **UI-02**: "Aehnliche Paragraphen"-Button auf ResultCard (Recommend API)
 - [ ] **UI-03**: Ergebnis-Gruppierung nach Gesetz/Rechtsgebiet in SearchPage
 - [x] **UI-04**: Erweiterte Filter-UI: Abschnitt + Chunk-Typ + Absatz-Range als Sidebar/Panel
-- [ ] **UI-05**: Vergleich direkt aus Suchergebnissen (onCompare verdrahten)
+- [x] **UI-05**: Vergleich direkt aus Suchergebnissen (onCompare verdrahten)
 - [ ] **UI-06**: Paginierung fuer Suche (Scroll API) und Law Browser
 - [x] **UI-07**: Full-Text-Suche Toggle im SearchBar
 - [ ] **UI-08**: Zitationsgraph-Visualisierung (interaktiv, klickbar)
@@ -120,10 +120,10 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | MCP-06 | Phase 1: Snapshot Safety Net | Pending |
 | MCP-07 | Phase 5: Grouping & Discovery API | Complete |
 | UI-01 | Phase 3: Design System Foundation | Complete |
-| UI-02 | Phase 8: Search Results UX | Pending |
+| UI-02 | Phase 8: Search Results UX | Complete |
 | UI-03 | Phase 8: Search Results UX | Pending |
 | UI-04 | Phase 8: Search Results UX | Complete |
-| UI-05 | Phase 8: Search Results UX | Pending |
+| UI-05 | Phase 8: Search Results UX | Complete |
 | UI-06 | Phase 8: Search Results UX | Pending |
 | UI-07 | Phase 8: Search Results UX | Complete |
 | UI-08 | Phase 9: Cross-Reference & Discovery UX | Pending |
