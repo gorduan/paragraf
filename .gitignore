@@ -15,6 +15,7 @@ frontend/dist/
 # IDE
 .vscode/
 .idea/
+.continue/
 
 # OS
 .DS_Store
@@ -28,5 +29,5 @@ Thumbs.db
 *.bin
 *.safetensors
 
-# Data
-data/
+# Data (nur root-level)
+/data/
