@@ -101,7 +101,7 @@ Plans:
 
 Plans:
 - [x] 05-01-PLAN.md -- Settings, Pydantic models, QdrantStore service methods (discover, grouped_search, grouped_recommend), unit tests
-- [ ] 05-02-PLAN.md -- REST endpoints (/api/discover, /api/search/grouped, /api/recommend/grouped), docker-compose ENV vars
+- [x] 05-02-PLAN.md -- REST endpoints (/api/discover, /api/search/grouped, /api/recommend/grouped), docker-compose ENV vars
 - [ ] 05-03-PLAN.md -- MCP tools paragraf_discover, paragraf_grouped_search, paragraf_similar_grouped, unit tests
 
 ### Phase 6: Cross-Reference Pipeline
