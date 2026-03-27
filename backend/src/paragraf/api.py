@@ -53,6 +53,7 @@ from paragraf.models.law import (
     GESETZ_DOWNLOAD_SLUGS,
     LAW_REGISTRY,
     SearchFilter,
+    SearchResult,
 )
 from paragraf.server import AppContext
 from paragraf.services.embedding import EmbeddingService
@@ -289,44 +290,118 @@ def _register_routes(app: FastAPI) -> None:
         search_filter = SearchFilter(
             gesetz=body.gesetzbuch,
             abschnitt=body.abschnitt,
+            absatz_von=body.absatz_von,
+            absatz_bis=body.absatz_bis,
         )
 
-        # Hybrid-Search
-        raw_results = await ctx.qdrant.hybrid_search(
-            query=body.anfrage,
-            top_k=settings.retrieval_top_k,
-            search_filter=search_filter,
-        )
+        if body.search_type == "fulltext":
+            # Fulltext-Suche: MatchText + Sparse Scoring, kein Reranking
+            raw_results = await ctx.qdrant.fulltext_search(
+                query=body.anfrage,
+                top_k=max_ergebnisse,
+                search_filter=search_filter,
+            )
+            items = [_result_to_item(r) for r in raw_results]
+            return SearchResponse(
+                query=body.anfrage,
+                results=items,
+                total=len(items),
+                search_type="fulltext",
+            )
 
-        if not raw_results:
-            return SearchResponse(query=body.anfrage, results=[], total=0)
+        elif body.search_type == "hybrid_fulltext":
+            # Hybrid: Semantische + Fulltext-Suche unabhaengig, Merge, Reranking
+            semantic_results = await ctx.qdrant.hybrid_search(
+                query=body.anfrage,
+                top_k=settings.retrieval_top_k,
+                search_filter=search_filter,
+            )
+            fulltext_results = await ctx.qdrant.fulltext_search(
+                query=body.anfrage,
+                top_k=settings.retrieval_top_k,
+                search_filter=search_filter,
+            )
+            # Merge: Semantisch zuerst, dann einzigartige Fulltext-Ergebnisse
+            seen_ids: set[str] = set()
+            merged: list[SearchResult] = []
+            for r in semantic_results:
+                rid = r.chunk.id
+                if rid not in seen_ids:
+                    seen_ids.add(rid)
+                    merged.append(r)
+            for r in fulltext_results:
+                rid = r.chunk.id
+                if rid not in seen_ids:
+                    seen_ids.add(rid)
+                    merged.append(r)
 
-        # Reranking (async, blockiert nicht die Event-Loop)
-        reranked = await ctx.reranker.arerank(body.anfrage, raw_results, top_k=max_ergebnisse)
+            # Reranking der zusammengefuehrten Ergebnisse
+            if merged:
+                reranked = await ctx.reranker.arerank(
+                    body.anfrage, merged, top_k=max_ergebnisse,
+                )
+                reranked = [r for r in reranked if r.score >= settings.similarity_threshold]
+            else:
+                reranked = []
 
-        # Schwellenwert
-        reranked = [r for r in reranked if r.score >= settings.similarity_threshold]
+            # Deduplizierung nach Paragraph+Gesetz
+            seen_keys: set[str] = set()
+            deduplicated: list[SearchResult] = []
+            for r in reranked:
+                key = f"{r.chunk.metadata.paragraph}|{r.chunk.metadata.gesetz}"
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    deduplicated.append(r)
 
-        if not reranked:
-            return SearchResponse(query=body.anfrage, results=[], total=0)
+            items = [_result_to_item(r) for r in deduplicated[:max_ergebnisse]]
+            return SearchResponse(
+                query=body.anfrage,
+                results=items,
+                total=len(items),
+                search_type="hybrid_fulltext",
+            )
 
-        # Deduplizierung
-        seen: set[str] = set()
-        deduplicated = []
-        deferred = []
-        for r in reranked:
-            key = f"{r.chunk.metadata.paragraph}|{r.chunk.metadata.gesetz}"
-            if key not in seen:
-                seen.add(key)
-                deduplicated.append(r)
-            elif r.chunk.metadata.chunk_typ == "absatz" and len(deduplicated) < max_ergebnisse:
-                deferred.append(r)
+        else:
+            # Standard: Semantische Suche (bestehende Logik)
+            raw_results = await ctx.qdrant.hybrid_search(
+                query=body.anfrage,
+                top_k=settings.retrieval_top_k,
+                search_filter=search_filter,
+            )
 
-        if len(deduplicated) < max_ergebnisse and deferred:
-            deduplicated.extend(deferred[: max_ergebnisse - len(deduplicated)])
+            if not raw_results:
+                return SearchResponse(
+                    query=body.anfrage, results=[], total=0, search_type="semantic",
+                )
 
-        items = [_result_to_item(r) for r in deduplicated]
-        return SearchResponse(query=body.anfrage, results=items, total=len(items))
+            reranked = await ctx.reranker.arerank(
+                body.anfrage, raw_results, top_k=max_ergebnisse,
+            )
+            reranked = [r for r in reranked if r.score >= settings.similarity_threshold]
+
+            if not reranked:
+                return SearchResponse(
+                    query=body.anfrage, results=[], total=0, search_type="semantic",
+                )
+
+            # Deduplizierung
+            seen_keys: set[str] = set()
+            deduplicated: list[SearchResult] = []
+            deferred: list[SearchResult] = []
+            for r in reranked:
+                key = f"{r.chunk.metadata.paragraph}|{r.chunk.metadata.gesetz}"
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    deduplicated.append(r)
+                elif r.chunk.metadata.chunk_typ == "absatz" and len(deduplicated) < max_ergebnisse:
+                    deferred.append(r)
+            if len(deduplicated) < max_ergebnisse and deferred:
+                deduplicated.extend(deferred[: max_ergebnisse - len(deduplicated)])
+
+            items = [_result_to_item(r) for r in deduplicated]
+            return SearchResponse(
+                query=body.anfrage, results=items, total=len(items), search_type="semantic",
+            )
 
     # ── Paragraph nachschlagen ────────────────────────────────────────────
 
@@ -890,6 +965,28 @@ def _register_routes(app: FastAPI) -> None:
             return IndexResultResponse(erfolg=False, fehler=["openpyxl nicht installiert"])
         except Exception as e:
             return IndexResultResponse(erfolg=False, fehler=[str(e)])
+
+    # ── Index-Migration ──────────────────────────────────────────────────────
+
+    @app.post("/api/indexes/ensure")
+    async def ensure_indexes(request: Request) -> dict:
+        """Erstellt fehlende Payload-Indexes (Full-Text, Integer Range)."""
+        ctx = _get_ctx(request)
+        created: list[str] = []
+        errors: list[str] = []
+        try:
+            await ctx.qdrant.create_text_index()
+            created.append("text_fulltext")
+        except Exception as e:
+            logger.warning("Text-Index Erstellung fehlgeschlagen: %s", e)
+            errors.append(f"text_fulltext: {e}")
+        try:
+            await ctx.qdrant.create_absatz_index()
+            created.append("absatz_integer")
+        except Exception as e:
+            logger.warning("Absatz-Index Erstellung fehlgeschlagen: %s", e)
+            errors.append(f"absatz_integer: {e}")
+        return {"created": created, "errors": errors, "erfolg": len(errors) == 0}
 
     # ── Snapshot-Endpunkte ────────────────────────────────────────────────────
 

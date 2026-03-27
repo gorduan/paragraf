@@ -19,6 +19,8 @@ class SearchRequest(BaseModel):
         "semantic",
         description="Suchmodus: semantic (Standard), fulltext (Keyword), hybrid_fulltext (beides)",
     )
+    absatz_von: int | None = Field(None, description="Absatz-Range Minimum (1-basiert)")
+    absatz_bis: int | None = Field(None, description="Absatz-Range Maximum (1-basiert)")
 
 
 class LookupRequest(BaseModel):
