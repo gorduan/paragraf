@@ -63,12 +63,12 @@ Plans:
   1. Design tokens for colors, spacing, typography, and shadows are defined in Tailwind CSS 4 configuration
   2. A set of primitive UI components (Button, Card, Input, Badge, Dialog) exists and follows the token system
   3. At least one existing page (e.g., SearchPage) uses the new primitives without visual regression
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
+- [ ] 03-01-PLAN.md -- Design tokens, dependencies, cn() utility, vitest setup, Button/Card/Input/Badge primitives
+- [ ] 03-02-PLAN.md -- Radix primitives (Dialog/Select/Tooltip/Tabs), SearchPage + Sidebar migration
 
 ### Phase 4: Recommend & Pagination
 **Goal**: Users can find similar paragraphs to any given result and navigate large result sets with pagination, while MCP tools expose these capabilities to Claude
