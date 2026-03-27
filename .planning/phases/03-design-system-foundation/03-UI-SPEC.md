@@ -43,6 +43,7 @@ Declared values (4px base, all multiples of 4 -- D-01):
 |-------|-------|--------------|-------|
 | xs | 4px | `--spacing-xs` | Icon gaps, inline padding |
 | sm | 8px | `--spacing-sm` | Compact element spacing, icon-to-label gaps |
+| xs2 | 12px | `--spacing-xs2` | Component-level horizontal padding (buttons, inputs) |
 | md | 16px | `--spacing-md` | Default element padding, form field spacing |
 | lg | 24px | `--spacing-lg` | Card padding, section inner padding |
 | xl | 32px | `--spacing-xl` | Layout gaps between major sections |
@@ -63,9 +64,9 @@ Exceptions: Touch targets for icon-only buttons use 40px minimum (10 * 4px) for 
 | Body | 14px | 400 (regular) | 1.5 | `--font-body` | Paragraph text, form labels, sidebar items |
 | Subheading | 16px | 600 (semibold) | 1.4 | `--font-subheading` | Card titles, section subheadings, nav active |
 | Heading | 20px | 600 (semibold) | 1.3 | `--font-heading` | Page titles, dialog headings |
-| Display | 28px | 700 (bold) | 1.2 | `--font-display` | Hero text, major feature headings |
+| Display | 28px | 600 (semibold) | 1.2 | `--font-display` | Hero text, major feature headings |
 
-Weights declared: 400 (regular), 600 (semibold), 700 (bold -- Display only).
+Weights declared: 400 (regular), 600 (semibold).
 
 Note: Existing components use `size={20}` for Lucide icons. Body text at 14px pairs well with 20px icons. Sidebar labels and result card text already use roughly these sizes.
 
@@ -171,6 +172,12 @@ Dark mode: Shadows use `rgb(0 0 0 / 0.3)` base for visibility against dark surfa
 
 ---
 
+## Focal Point
+
+**Primary screen (SearchPage):** The visual anchor is the search input bar paired with the "Suche starten" CTA button, horizontally centered in the main content area. The input occupies the majority of the horizontal space with the CTA button immediately adjacent to the right. On initial load (empty state), the search bar sits in the upper third of the content area, drawing the user's eye with the indigo-600 accent CTA against the neutral background.
+
+---
+
 ## Primitive Components (D-04, D-05)
 
 All components in `frontend/src/components/ui/`. Each as a single `.tsx` file with named export.
@@ -186,9 +193,9 @@ All components in `frontend/src/components/ui/`. Each as a single `.tsx` file wi
 
 | Size | Height | Padding X | Font Size | Icon Size |
 |------|--------|-----------|-----------|-----------|
-| `sm` | 32px | 12px | 12px | 16px |
-| `md` | 40px | 16px | 14px | 20px |
-| `lg` | 48px | 24px | 16px | 20px |
+| `sm` | 32px | `--spacing-xs2` (12px) | 12px | 16px |
+| `md` | 40px | `--spacing-md` (16px) | 14px | 20px |
+| `lg` | 48px | `--spacing-lg` (24px) | 16px | 20px |
 
 States: hover (lighten/darken 1 step), active (darken 2 steps), disabled (opacity 0.5, cursor not-allowed), focus-visible (indigo-500 ring 3px offset 2px).
 
@@ -208,7 +215,7 @@ Padding: `--spacing-lg` (24px). Border radius: `--radius-md` (8px).
 | `default` | Text input, search bar |
 | `error` | Validation error state |
 
-Height: 40px. Padding: 12px horizontal. Background: white / dark:slate-800. Border: slate-200 / dark:slate-600. Focus: indigo-500 ring. Error: red-500 border + red-500 ring.
+Height: 40px. Padding: `--spacing-xs2` (12px) horizontal. Background: white / dark:slate-800. Border: slate-200 / dark:slate-600. Focus: indigo-500 ring. Error: red-500 border + red-500 ring.
 
 Placeholder color: slate-400.
 
@@ -230,7 +237,7 @@ Overlay: black at 50% opacity. Content: white / dark:slate-800 background, shado
 
 ### Select / Dropdown (Radix-based)
 
-Trigger styled as Input variant. Content: white / dark:slate-800, shadow-lg, radius-md. Item: 36px height, 12px padding-x, hover: slate-100 / dark:slate-700. Selected item: indigo-50 background + checkmark icon.
+Trigger styled as Input variant. Content: white / dark:slate-800, shadow-lg, radius-md. Item: 36px height, `--spacing-xs2` (12px) padding-x, hover: slate-100 / dark:slate-700. Selected item: indigo-50 background + checkmark icon.
 
 ### Tooltip (Radix-based)
 
@@ -322,6 +329,7 @@ All tokens defined in `frontend/src/styles/index.css` inside the existing `@them
   /* Spacing */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
+  --spacing-xs2: 12px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
