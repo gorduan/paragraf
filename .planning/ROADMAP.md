@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 3: Design System Foundation** - Design tokens, primitives, and consistent visual language
 - [ ] **Phase 4: Recommend & Pagination** - Similar paragraphs, paginated results, batch search, and MCP tools
 - [ ] **Phase 5: Grouping & Discovery API** - Grouped results, discovery search, and grouped recommendations
-- [ ] **Phase 6: Cross-Reference Pipeline** - Citation extraction, re-indexing, citation network API
+- [x] **Phase 6: Cross-Reference Pipeline** - Citation extraction, re-indexing, citation network API (completed 2026-03-27)
 - [ ] **Phase 7: Query Expansion & Chunking** - Legal synonym expansion, multi-hop MCP, semantic chunking
 - [ ] **Phase 8: Search Results UX** - Recommend button, grouped view, filters, compare, pagination, full-text toggle
 - [ ] **Phase 9: Cross-Reference & Discovery UX** - Clickable citation links, interactive graph, discovery mode UI
@@ -119,7 +119,7 @@ Plans:
 Plans:
 - [x] 06-01-PLAN.md -- Reference model, CrossReferenceExtractor service with regex extraction, unit tests
 - [x] 06-02-PLAN.md -- QdrantStore reference methods, REST endpoints, Pydantic API models, docker-compose ENV
-- [ ] 06-03-PLAN.md -- MCP tool paragraf_references, server registration, unit tests
+- [x] 06-03-PLAN.md -- MCP tool paragraf_references, server registration, unit tests
 
 ### Phase 7: Query Expansion & Chunking
 **Goal**: Search recall is improved through conservative legal synonym expansion and smarter paragraph segmentation, with multi-hop MCP prompts combining search and citation traversal
@@ -203,7 +203,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 3. Design System Foundation | 0/2 | Not started | - |
 | 4. Recommend & Pagination | 0/3 | Not started | - |
 | 5. Grouping & Discovery API | 0/3 | Not started | - |
-| 6. Cross-Reference Pipeline | 0/3 | Not started | - |
+| 6. Cross-Reference Pipeline | 3/3 | Complete   | 2026-03-27 |
 | 7. Query Expansion & Chunking | 0/3 | Not started | - |
 | 8. Search Results UX | 0/3 | Not started | - |
 | 9. Cross-Reference & Discovery UX | 0/3 | Not started | - |
