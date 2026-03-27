@@ -36,6 +36,22 @@ export const BookmarkContext = createContext<BookmarkContextValue>({
   isBookmarked: () => false,
 });
 
+interface CompareContextValue {
+  items: string[];
+  addItem: (ref: string) => void;
+  removeItem: (ref: string) => void;
+  clearAll: () => void;
+  isSelected: (ref: string) => boolean;
+}
+
+export const CompareContext = createContext<CompareContextValue>({
+  items: [],
+  addItem: () => {},
+  removeItem: () => {},
+  clearAll: () => {},
+  isSelected: () => false,
+});
+
 // ── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -119,6 +135,16 @@ export default function App() {
     isBookmarked: (ref) => bookmarks.includes(ref),
   };
 
+  const [compareItems, setCompareItems] = useState<string[]>([]);
+
+  const compareCtx: CompareContextValue = {
+    items: compareItems,
+    addItem: (ref) => setCompareItems((prev) => prev.includes(ref) ? prev : [...prev, ref]),
+    removeItem: (ref) => setCompareItems((prev) => prev.filter((r) => r !== ref)),
+    clearAll: () => setCompareItems([]),
+    isSelected: (ref) => compareItems.includes(ref),
+  };
+
   const renderPage = () => {
     switch (page) {
       case "search":
@@ -141,6 +167,7 @@ export default function App() {
   return (
     <ThemeContext.Provider value={{ dark, toggle: () => setDark((d) => !d) }}>
       <BookmarkContext.Provider value={bookmarkCtx}>
+      <CompareContext.Provider value={compareCtx}>
         <div className="flex h-screen overflow-hidden">
           <Sidebar
             currentPage={page}
@@ -169,6 +196,7 @@ export default function App() {
           error={healthError}
           onRetry={retry}
         />
+      </CompareContext.Provider>
       </BookmarkContext.Provider>
     </ThemeContext.Provider>
   );
