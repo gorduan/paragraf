@@ -36,6 +36,10 @@ services:
       - RETRIEVAL_TOP_K=20
       - FINAL_TOP_K=5
       - SIMILARITY_THRESHOLD=0.35
+      - BATCH_MAX_QUERIES=10
+      - SCROLL_PAGE_SIZE=10
+      - RECOMMEND_DEFAULT_LIMIT=10
+      - SNAPSHOT_MAX_COUNT=3
       - LOG_LEVEL=INFO
       - HF_HOME=/models
       - TORCH_HOME=/models/torch
@@ -67,6 +71,10 @@ services:
       - RETRIEVAL_TOP_K=20
       - FINAL_TOP_K=5
       - SIMILARITY_THRESHOLD=0.35
+      - BATCH_MAX_QUERIES=10
+      - SCROLL_PAGE_SIZE=10
+      - RECOMMEND_DEFAULT_LIMIT=10
+      - SNAPSHOT_MAX_COUNT=3
       - LOG_LEVEL=INFO
       - HF_HOME=/models
       - TORCH_HOME=/models/torch
