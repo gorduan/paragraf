@@ -114,12 +114,12 @@ Plans:
   3. Citation network API returns both outgoing references (what a paragraph cites) and incoming references (what cites this paragraph)
   4. MCP tool `paragraf_references` returns cross-references for a given paragraph
   5. Re-indexing is performed safely using snapshot backup/restore from Phase 1
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
-- [ ] 06-03: TBD
+- [ ] 06-01-PLAN.md -- Reference model, CrossReferenceExtractor service with regex extraction, unit tests
+- [ ] 06-02-PLAN.md -- QdrantStore reference methods, REST endpoints, Pydantic API models, docker-compose ENV
+- [ ] 06-03-PLAN.md -- MCP tool paragraf_references, server registration, unit tests
 
 ### Phase 7: Query Expansion & Chunking
 **Goal**: Search recall is improved through conservative legal synonym expansion and smarter paragraph segmentation, with multi-hop MCP prompts combining search and citation traversal
