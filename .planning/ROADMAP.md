@@ -153,7 +153,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 08-01-PLAN.md -- API client extensions, CompareContext, SearchModeToggle, FilterPanel, FilterChips
+- [x] 08-01-PLAN.md -- API client extensions, CompareContext, SearchModeToggle, FilterPanel, FilterChips
 - [ ] 08-02-PLAN.md -- MiniCard, RecommendSection, ResultCard recommend button + compare wiring
 - [ ] 08-03-PLAN.md -- ViewToggle, GroupedResults, LoadMoreButton, SearchPage + SearchBar full integration
 
