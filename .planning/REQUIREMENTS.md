@@ -18,10 +18,10 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 ### Search Enhancement
 
 - [x] **SRCH-01**: Qdrant Recommend API -- aehnliche Paragraphen zu einem gegebenen Punkt finden
-- [ ] **SRCH-02**: Qdrant Discovery API -- explorative Suche mit Positiv/Negativ-Beispielen
-- [ ] **SRCH-03**: Qdrant Grouping API -- Suchergebnisse nach Gesetz gruppiert zurueckgeben
+- [x] **SRCH-02**: Qdrant Discovery API -- explorative Suche mit Positiv/Negativ-Beispielen
+- [x] **SRCH-03**: Qdrant Grouping API -- Suchergebnisse nach Gesetz gruppiert zurueckgeben
 - [x] **SRCH-04**: Qdrant Scroll API -- paginierte Ergebnisse mit Offset/Limit
-- [ ] **SRCH-05**: Grouped Recommendations -- Empfehlungen nach Gesetz gruppiert
+- [x] **SRCH-05**: Grouped Recommendations -- Empfehlungen nach Gesetz gruppiert
 - [x] **SRCH-06**: Full-Text-Suche als Toggle neben semantischer Suche
 - [ ] **SRCH-07**: Query Expansion mit juristischem Synonym-Woerterbuch (konservativ, nur Abkuerzungen + Kernsynonyme)
 - [x] **SRCH-08**: Batch Search Endpoint fuer parallele Queries
@@ -99,10 +99,10 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | INFRA-04 | Phase 2: Search Indexes & Full-Text | Complete |
 | INFRA-05 | Phase 10: Dashboard, Export & Polish | Pending |
 | SRCH-01 | Phase 4: Recommend & Pagination | Complete |
-| SRCH-02 | Phase 5: Grouping & Discovery API | Pending |
-| SRCH-03 | Phase 5: Grouping & Discovery API | Pending |
+| SRCH-02 | Phase 5: Grouping & Discovery API | Complete |
+| SRCH-03 | Phase 5: Grouping & Discovery API | Complete |
 | SRCH-04 | Phase 4: Recommend & Pagination | Complete |
-| SRCH-05 | Phase 5: Grouping & Discovery API | Pending |
+| SRCH-05 | Phase 5: Grouping & Discovery API | Complete |
 | SRCH-06 | Phase 2: Search Indexes & Full-Text | Complete |
 | SRCH-07 | Phase 7: Query Expansion & Chunking | Pending |
 | SRCH-08 | Phase 4: Recommend & Pagination | Complete |
