@@ -14,7 +14,7 @@ export function SelectTrigger({
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        "flex h-10 w-full items-center justify-between px-xs2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-md text-body placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed",
+        "flex h-10 w-full items-center justify-between px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-md text-body placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed",
         className
       )}
       {...props}
@@ -67,7 +67,7 @@ export function SelectItem({
   return (
     <SelectPrimitive.Item
       className={cn(
-        "relative flex cursor-pointer select-none items-center h-9 px-xs2 pl-8 text-body outline-none hover:bg-slate-100 dark:hover:bg-slate-700 data-[state=checked]:bg-primary-50 dark:data-[state=checked]:bg-primary-900/30 data-[disabled]:opacity-50 data-[disabled]:pointer-events-none",
+        "relative flex cursor-pointer select-none items-center h-9 px-3 pl-8 text-body outline-none hover:bg-slate-100 dark:hover:bg-slate-700 data-[state=checked]:bg-primary-50 dark:data-[state=checked]:bg-primary-900/30 data-[disabled]:opacity-50 data-[disabled]:pointer-events-none",
         className
       )}
       {...props}
@@ -88,7 +88,7 @@ export function SelectLabel({
 }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>) {
   return (
     <SelectPrimitive.Label
-      className={cn("px-xs2 py-1.5 text-caption font-semibold text-slate-500", className)}
+      className={cn("px-3 py-1.5 text-caption font-semibold text-slate-500", className)}
       {...props}
     />
   );

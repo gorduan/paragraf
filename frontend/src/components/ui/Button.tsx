@@ -16,9 +16,9 @@ export const buttonVariants = cva(
           "bg-red-500 text-white hover:bg-red-600 active:bg-red-700",
       },
       size: {
-        sm: "h-8 px-xs2 text-caption rounded-md",
-        md: "h-10 px-md text-body rounded-md",
-        lg: "h-12 px-lg text-subheading rounded-md",
+        sm: "h-8 px-3 text-caption rounded-md",
+        md: "h-10 px-4 text-body rounded-md",
+        lg: "h-12 px-6 text-subheading rounded-md",
       },
     },
     defaultVariants: {

@@ -18,7 +18,7 @@ export function DialogContent({
       />
       <DialogPrimitive.Content
         className={cn(
-          "fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 shadow-lg rounded-lg p-lg max-w-[480px] w-full data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+          "fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 shadow-lg rounded-lg p-6 max-w-[480px] w-full data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
           className
         )}
         {...props}
@@ -55,7 +55,7 @@ export function DialogDescription({
   return (
     <DialogPrimitive.Description
       className={cn(
-        "text-body text-slate-500 dark:text-slate-400 mt-sm",
+        "text-body text-slate-500 dark:text-slate-400 mt-2",
         className
       )}
       {...props}

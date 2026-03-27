@@ -1,7 +1,7 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-export const cardVariants = cva("rounded-md border p-lg", {
+export const cardVariants = cva("rounded-md border p-6", {
   variants: {
     variant: {
       default:
@@ -27,14 +27,14 @@ export function CardHeader({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("pb-sm", className)} {...props} />;
+  return <div className={cn("pb-2", className)} {...props} />;
 }
 
 export function CardContent({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("py-sm", className)} {...props} />;
+  return <div className={cn("py-2", className)} {...props} />;
 }
 
 export function CardFooter({
@@ -43,7 +43,7 @@ export function CardFooter({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("pt-sm flex items-center justify-end gap-sm", className)}
+      className={cn("pt-2 flex items-center justify-end gap-2", className)}
       {...props}
     />
   );

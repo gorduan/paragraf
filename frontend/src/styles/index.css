@@ -58,14 +58,10 @@
   --color-info-900: #312e81;
 
   /* ── Spacing (4px base, D-01) ───────────────────────────────────────────── */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-xs2: 12px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
-  --spacing-3xl: 64px;
+  /* Using Tailwind 4 default numeric scale (--spacing: 0.25rem base).
+     Named tokens removed to avoid collision with Tailwind's size system
+     (e.g. --spacing-md would override max-w-md from 28rem to 16px).
+     Mapping: xs=1(4px) sm=2(8px) xs2=3(12px) md=4(16px) lg=6(24px) xl=8(32px) 2xl=12(48px) 3xl=16(64px) */
 
   /* ── Typography (D-01) ──────────────────────────────────────────────────── */
   --text-caption: 12px;

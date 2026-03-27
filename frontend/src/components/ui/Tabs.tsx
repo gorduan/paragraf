@@ -25,7 +25,7 @@ export function TabsTrigger({
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        "h-10 px-md text-body text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 data-[state=active]:text-primary-600 dark:data-[state=active]:text-primary-400 data-[state=active]:border-b-2 data-[state=active]:border-primary-600 dark:data-[state=active]:border-primary-400 transition-colors",
+        "h-10 px-4 text-body text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 data-[state=active]:text-primary-600 dark:data-[state=active]:text-primary-400 data-[state=active]:border-b-2 data-[state=active]:border-primary-600 dark:data-[state=active]:border-primary-400 transition-colors",
         className
       )}
       {...props}
@@ -39,7 +39,7 @@ export function TabsContent({
 }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>) {
   return (
     <TabsPrimitive.Content
-      className={cn("pt-md", className)}
+      className={cn("pt-4", className)}
       {...props}
     />
   );
