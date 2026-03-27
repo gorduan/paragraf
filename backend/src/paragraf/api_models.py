@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -13,6 +15,10 @@ class SearchRequest(BaseModel):
     gesetzbuch: str | None = Field(None, description="Filter nach Gesetzbuch")
     abschnitt: str | None = Field(None, description="Filter nach Abschnitt")
     max_ergebnisse: int = Field(5, ge=1, le=20, description="Anzahl Ergebnisse")
+    search_type: Literal["semantic", "fulltext", "hybrid_fulltext"] = Field(
+        "semantic",
+        description="Suchmodus: semantic (Standard), fulltext (Keyword), hybrid_fulltext (beides)",
+    )
 
 
 class LookupRequest(BaseModel):
@@ -58,6 +64,7 @@ class SearchResponse(BaseModel):
     query: str
     results: list[SearchResultItem]
     total: int
+    search_type: str = Field("semantic", description="Verwendeter Suchmodus")
     disclaimer: str = (
         "Dies ist eine allgemeine Rechtsinformation, keine Rechtsberatung "
         "im Sinne des Rechtsdienstleistungsgesetzes (RDG). Fuer eine individuelle "

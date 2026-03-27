@@ -8,6 +8,7 @@ import pytest
 from qdrant_client import models
 
 from paragraf.models.law import SearchFilter
+from paragraf.services.embedding import EmbeddingService
 from paragraf.services.qdrant_store import (
     DENSE_VECTOR_NAME,
     SPARSE_VECTOR_NAME,
@@ -310,3 +311,181 @@ class TestQdrantStoreQuantization:
         search_params = call_kwargs["search_params"]
         assert search_params.quantization.rescore is True
         assert search_params.quantization.oversampling == 1.5
+
+
+class TestQdrantStoreIndexes:
+    """Tests fuer create_text_index und create_absatz_index."""
+
+    @pytest.mark.asyncio
+    async def test_create_text_index(self):
+        """create_text_index() ruft create_payload_index mit TextIndexParams auf."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+
+        await store.create_text_index()
+
+        store._client.create_payload_index.assert_called_once()
+        call_kwargs = store._client.create_payload_index.call_args.kwargs
+        assert call_kwargs["collection_name"] == "paragraf"
+        assert call_kwargs["field_name"] == "text"
+        assert call_kwargs["wait"] is True
+        schema = call_kwargs["field_schema"]
+        assert isinstance(schema, models.TextIndexParams)
+        assert schema.tokenizer == models.TokenizerType.WORD
+        assert schema.min_token_len == 2
+        assert schema.max_token_len == 40
+        assert schema.lowercase is True
+
+    @pytest.mark.asyncio
+    async def test_create_absatz_index(self):
+        """create_absatz_index() ruft create_payload_index mit IntegerIndexParams auf."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+
+        await store.create_absatz_index()
+
+        store._client.create_payload_index.assert_called_once()
+        call_kwargs = store._client.create_payload_index.call_args.kwargs
+        assert call_kwargs["collection_name"] == "paragraf"
+        assert call_kwargs["field_name"] == "absatz"
+        assert call_kwargs["wait"] is True
+        schema = call_kwargs["field_schema"]
+        assert isinstance(schema, models.IntegerIndexParams)
+        assert schema.lookup is True
+        assert schema.range is True
+
+
+class TestBuildFilterRange:
+    """Tests fuer _build_filter mit absatz Range-Parametern."""
+
+    def test_absatz_von_and_bis(self):
+        """absatz_von=1, absatz_bis=5 erzeugt Range(gte=1, lte=5) Bedingung."""
+        store = QdrantStore()
+        f = SearchFilter(absatz_von=1, absatz_bis=5)
+        result = store._build_filter(f)
+        assert result is not None
+        # Should have Range on "absatz" + MatchValue on "chunk_typ" (D-05)
+        keys = [c.key for c in result.must]
+        assert "absatz" in keys
+        assert "chunk_typ" in keys
+        absatz_cond = [c for c in result.must if c.key == "absatz"][0]
+        assert absatz_cond.range.gte == 1
+        assert absatz_cond.range.lte == 5
+
+    def test_absatz_von_adds_chunk_typ(self):
+        """absatz_von setzt automatisch chunk_typ='absatz' (D-05)."""
+        store = QdrantStore()
+        f = SearchFilter(absatz_von=1)
+        result = store._build_filter(f)
+        assert result is not None
+        chunk_typ_conds = [c for c in result.must if c.key == "chunk_typ"]
+        assert len(chunk_typ_conds) == 1
+        assert chunk_typ_conds[0].match.value == "absatz"
+
+    def test_absatz_von_only_no_lte(self):
+        """absatz_von=3, absatz_bis=None erzeugt Range(gte=3) ohne lte."""
+        store = QdrantStore()
+        f = SearchFilter(absatz_von=3)
+        result = store._build_filter(f)
+        absatz_cond = [c for c in result.must if c.key == "absatz"][0]
+        assert absatz_cond.range.gte == 3
+        assert absatz_cond.range.lte is None
+
+    def test_explicit_chunk_typ_not_overridden(self):
+        """Wenn chunk_typ explizit gesetzt ist, wird kein zweites chunk_typ hinzugefuegt."""
+        store = QdrantStore()
+        f = SearchFilter(absatz_von=1, absatz_bis=5, chunk_typ="paragraph")
+        result = store._build_filter(f)
+        chunk_typ_conds = [c for c in result.must if c.key == "chunk_typ"]
+        # Only one chunk_typ condition (the explicit one)
+        assert len(chunk_typ_conds) == 1
+        assert chunk_typ_conds[0].match.value == "paragraph"
+
+
+class TestQdrantStoreFulltext:
+    """Tests fuer fulltext_search."""
+
+    @pytest.mark.asyncio
+    async def test_fulltext_search_with_sparse(self):
+        """fulltext_search() ruft query_points mit MatchText und Sparse-Vektor auf."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_embedding = MagicMock()
+        mock_embedding.encode_query.return_value = ([0.1] * 1024, {"word": 0.5})
+        store.embedding = mock_embedding
+
+        with patch.object(
+            EmbeddingService, "sparse_to_qdrant", return_value=([1], [0.5])
+        ):
+            mock_response = MagicMock()
+            mock_response.points = []
+            store._client.query_points.return_value = mock_response
+
+            results = await store.fulltext_search("Paragraph Test")
+
+            assert results == []
+            store._client.query_points.assert_called_once()
+            call_kwargs = store._client.query_points.call_args.kwargs
+            assert call_kwargs["using"] == SPARSE_VECTOR_NAME
+            # Verify MatchText in filter
+            query_filter = call_kwargs["query_filter"]
+            text_conditions = [
+                c for c in query_filter.must
+                if hasattr(c, "match") and isinstance(getattr(c.match, "text", None), str)
+            ]
+            assert len(text_conditions) == 1
+            assert text_conditions[0].key == "text"
+
+    @pytest.mark.asyncio
+    async def test_fulltext_search_with_filter(self):
+        """fulltext_search() kombiniert MatchText mit zusaetzlichem SearchFilter."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_embedding = MagicMock()
+        mock_embedding.encode_query.return_value = ([0.1] * 1024, {"word": 0.5})
+        store.embedding = mock_embedding
+
+        with patch.object(
+            EmbeddingService, "sparse_to_qdrant", return_value=([1], [0.5])
+        ):
+            mock_response = MagicMock()
+            mock_response.points = []
+            store._client.query_points.return_value = mock_response
+
+            await store.fulltext_search(
+                "Test", search_filter=SearchFilter(gesetz="SGB IX")
+            )
+
+            call_kwargs = store._client.query_points.call_args.kwargs
+            query_filter = call_kwargs["query_filter"]
+            keys = [c.key for c in query_filter.must]
+            assert "text" in keys
+            assert "gesetz" in keys
+
+    @pytest.mark.asyncio
+    async def test_fulltext_search_fallback_scroll(self):
+        """fulltext_search() faellt auf scroll zurueck wenn keine Sparse-Vektoren."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_embedding = MagicMock()
+        mock_embedding.encode_query.return_value = ([0.1] * 1024, {})
+        store.embedding = mock_embedding
+
+        with patch.object(
+            EmbeddingService, "sparse_to_qdrant", return_value=([], [])
+        ):
+            store._client.scroll.return_value = ([], None)
+
+            results = await store.fulltext_search("Test")
+
+            assert results == []
+            store._client.scroll.assert_called_once()
+            store._client.query_points.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_fulltext_search_without_embedding_raises(self):
+        """fulltext_search() ohne EmbeddingService wirft RuntimeError."""
+        store = QdrantStore(embedding_service=None)
+        store._client = AsyncMock()
+        with pytest.raises(RuntimeError, match="Kein EmbeddingService"):
+            await store.fulltext_search("Test")

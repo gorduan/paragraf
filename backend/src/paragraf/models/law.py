@@ -235,6 +235,8 @@ class SearchFilter(BaseModel):
     paragraph: str | None = Field(None, description="Nach Paragraph filtern")
     abschnitt: str | None = Field(None, description="Nach Abschnitt filtern")
     chunk_typ: str | None = Field(None, description="paragraph | absatz | abschnitt")
+    absatz_von: int | None = Field(None, description="Absatz-Range Minimum (1-basiert)")
+    absatz_bis: int | None = Field(None, description="Absatz-Range Maximum (1-basiert)")
 
 
 class SearchResult(BaseModel):

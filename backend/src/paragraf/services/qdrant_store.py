@@ -96,6 +96,36 @@ class QdrantStore:
             )
         logger.info("Collection '%s' erstellt mit Payload-Indizes", self.collection_name)
 
+    async def create_text_index(self) -> None:
+        """Erstellt Full-Text Index auf dem text-Feld."""
+        await self.client.create_payload_index(
+            collection_name=self.collection_name,
+            field_name="text",
+            field_schema=models.TextIndexParams(
+                type=models.TextIndexType.TEXT,
+                tokenizer=models.TokenizerType.WORD,
+                min_token_len=2,
+                max_token_len=40,
+                lowercase=True,
+            ),
+            wait=True,
+        )
+        logger.info("Full-Text Index auf 'text' erstellt")
+
+    async def create_absatz_index(self) -> None:
+        """Erstellt Integer-Index auf dem absatz-Feld fuer Range-Queries."""
+        await self.client.create_payload_index(
+            collection_name=self.collection_name,
+            field_name="absatz",
+            field_schema=models.IntegerIndexParams(
+                type=models.IntegerIndexType.INTEGER,
+                lookup=True,
+                range=True,
+            ),
+            wait=True,
+        )
+        logger.info("Integer-Index auf 'absatz' erstellt")
+
     async def upsert_chunks(
         self,
         chunks: list[LawChunk],
@@ -224,6 +254,27 @@ class QdrantStore:
                 )
             )
 
+        if search_filter.absatz_von is not None or search_filter.absatz_bis is not None:
+            range_params: dict[str, int] = {}
+            if search_filter.absatz_von is not None:
+                range_params["gte"] = search_filter.absatz_von
+            if search_filter.absatz_bis is not None:
+                range_params["lte"] = search_filter.absatz_bis
+            conditions.append(
+                models.FieldCondition(
+                    key="absatz",
+                    range=models.Range(**range_params),
+                )
+            )
+            # D-05: Nur Absatz-Chunks wenn Range-Filter aktiv
+            if not search_filter.chunk_typ:
+                conditions.append(
+                    models.FieldCondition(
+                        key="chunk_typ",
+                        match=models.MatchValue(value="absatz"),
+                    )
+                )
+
         if not conditions:
             return None
         return models.Filter(must=conditions)
@@ -335,6 +386,88 @@ class QdrantStore:
         )
 
         return self._points_to_results(results)
+
+    async def fulltext_search(
+        self,
+        query: str,
+        top_k: int = 20,
+        search_filter: SearchFilter | None = None,
+    ) -> list[SearchResult]:
+        """Full-Text-Suche: MatchText-Filter + Sparse-Vektor-Scoring."""
+        if self.embedding is None:
+            raise RuntimeError("Kein EmbeddingService konfiguriert")
+
+        # MatchText filter on text field
+        text_condition = models.FieldCondition(
+            key="text",
+            match=models.MatchText(text=query),
+        )
+
+        # Combine with existing filters
+        base_filter = self._build_filter(search_filter)
+        must_conditions: list[models.FieldCondition] = [text_condition]
+        if base_filter and base_filter.must:
+            must_conditions.extend(base_filter.must)
+
+        combined_filter = models.Filter(must=must_conditions)
+
+        # Encode query for sparse vector scoring
+        loop = asyncio.get_running_loop()
+        _, sparse_weights = await loop.run_in_executor(
+            None, self.embedding.encode_query, query
+        )
+        sparse_indices, sparse_values = EmbeddingService.sparse_to_qdrant(sparse_weights)
+
+        if sparse_indices:
+            results = await self.client.query_points(
+                collection_name=self.collection_name,
+                query=models.SparseVector(
+                    indices=sparse_indices,
+                    values=sparse_values,
+                ),
+                using=SPARSE_VECTOR_NAME,
+                limit=top_k,
+                query_filter=combined_filter,
+                with_payload=True,
+            )
+            return self._points_to_results(results)
+        else:
+            # Fallback: scroll with filter if no sparse vectors
+            records, _ = await self.client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter=combined_filter,
+                limit=top_k,
+                with_payload=True,
+            )
+            return self._records_to_results(records)
+
+    @staticmethod
+    def _records_to_results(records: list[Any]) -> list[SearchResult]:
+        """Konvertiert Qdrant-Scroll-Records zu SearchResult-Liste (score=0.0)."""
+        search_results = []
+        for rank, record in enumerate(records, start=1):
+            payload = record.payload or {}
+            metadata = ChunkMetadata(
+                gesetz=payload.get("gesetz", ""),
+                paragraph=payload.get("paragraph", ""),
+                absatz=payload.get("absatz"),
+                titel=payload.get("titel", ""),
+                abschnitt=payload.get("abschnitt", ""),
+                hierarchie_pfad=payload.get("hierarchie_pfad", ""),
+                norm_id=payload.get("norm_id", ""),
+                stand=payload.get("stand"),
+                quelle=payload.get("quelle", "gesetze-im-internet.de"),
+                chunk_typ=payload.get("chunk_typ", "paragraph"),
+            )
+            chunk = LawChunk(
+                id=payload.get("chunk_id", ""),
+                text=payload.get("text", ""),
+                metadata=metadata,
+            )
+            search_results.append(
+                SearchResult(chunk=chunk, score=0.0, rank=rank)
+            )
+        return search_results
 
     # ── Snapshot-CRUD ────────────────────────────────────────────────────────────
 

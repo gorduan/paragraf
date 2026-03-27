@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import pytest
+from pydantic import ValidationError
+
+from paragraf.api_models import SearchRequest, SearchResponse
 from paragraf.models.law import (
     GESETZ_DOWNLOAD_SLUGS,
     LAW_REGISTRY,
@@ -9,6 +13,7 @@ from paragraf.models.law import (
     EUTBBeratungsstelle,
     Gesetzbuch,
     LawChunk,
+    SearchFilter,
     SearchResult,
 )
 
@@ -164,3 +169,69 @@ class TestEUTBBeratungsstelle:
         )
         assert len(stelle.schwerpunkte) == 2
         assert "Berlin" in stelle.ort
+
+
+class TestSearchFilter:
+    """Tests fuer SearchFilter mit absatz_von/absatz_bis Feldern."""
+
+    def test_defaults_none(self):
+        """Neue Felder sind standardmaessig None."""
+        f = SearchFilter()
+        assert f.absatz_von is None
+        assert f.absatz_bis is None
+
+    def test_absatz_range(self):
+        """absatz_von und absatz_bis werden korrekt gesetzt."""
+        f = SearchFilter(absatz_von=1, absatz_bis=5)
+        assert f.absatz_von == 1
+        assert f.absatz_bis == 5
+
+    def test_absatz_von_only(self):
+        """Nur absatz_von ohne absatz_bis ist gueltig."""
+        f = SearchFilter(absatz_von=3)
+        assert f.absatz_von == 3
+        assert f.absatz_bis is None
+
+    def test_absatz_bis_only(self):
+        """Nur absatz_bis ohne absatz_von ist gueltig."""
+        f = SearchFilter(absatz_bis=7)
+        assert f.absatz_von is None
+        assert f.absatz_bis == 7
+
+
+class TestSearchRequestSearchType:
+    """Tests fuer SearchRequest.search_type Feld."""
+
+    def test_default_semantic(self):
+        """Standard-Suchmodus ist 'semantic'."""
+        req = SearchRequest(anfrage="test")
+        assert req.search_type == "semantic"
+
+    def test_fulltext_accepted(self):
+        """search_type='fulltext' wird akzeptiert."""
+        req = SearchRequest(anfrage="test", search_type="fulltext")
+        assert req.search_type == "fulltext"
+
+    def test_hybrid_fulltext_accepted(self):
+        """search_type='hybrid_fulltext' wird akzeptiert."""
+        req = SearchRequest(anfrage="test", search_type="hybrid_fulltext")
+        assert req.search_type == "hybrid_fulltext"
+
+    def test_invalid_search_type_raises(self):
+        """Ungueltiger search_type loest ValidationError aus."""
+        with pytest.raises(ValidationError):
+            SearchRequest(anfrage="test", search_type="invalid")
+
+
+class TestSearchResponseSearchType:
+    """Tests fuer SearchResponse.search_type Feld."""
+
+    def test_default_semantic(self):
+        """Standard-Suchmodus in Response ist 'semantic'."""
+        resp = SearchResponse(query="test", results=[], total=0)
+        assert resp.search_type == "semantic"
+
+    def test_custom_search_type(self):
+        """search_type kann gesetzt werden."""
+        resp = SearchResponse(query="test", results=[], total=0, search_type="fulltext")
+        assert resp.search_type == "fulltext"
