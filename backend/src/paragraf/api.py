@@ -9,12 +9,14 @@ import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from paragraf.api_models import (
+    BatchSearchRequest,
+    BatchSearchResponse,
     CompareItem,
     CompareRequest,
     CompareResponse,
@@ -35,6 +37,8 @@ from paragraf.api_models import (
     LawStructureResponse,
     LookupRequest,
     LookupResponse,
+    RecommendRequest,
+    RecommendResponse,
     SearchRequest,
     SearchResponse,
     SearchResultItem,
@@ -294,6 +298,22 @@ def _register_routes(app: FastAPI) -> None:
             absatz_bis=body.absatz_bis,
         )
 
+        # Per D-08: Cursor-basierte Pagination via Scroll API (kein Reranking)
+        if body.cursor is not None:
+            results, next_cursor = await ctx.qdrant.scroll_search(
+                search_filter=search_filter,
+                limit=body.page_size,
+                cursor=body.cursor,
+            )
+            items = [_result_to_item(r) for r in results]
+            return SearchResponse(
+                query=body.anfrage,
+                results=items,
+                total=len(items),
+                search_type="scroll",
+                next_cursor=next_cursor,
+            )
+
         if body.search_type == "fulltext":
             # Fulltext-Suche: MatchText + Sparse Scoring, kein Reranking
             raw_results = await ctx.qdrant.fulltext_search(
@@ -402,6 +422,130 @@ def _register_routes(app: FastAPI) -> None:
             return SearchResponse(
                 query=body.anfrage, results=items, total=len(items), search_type="semantic",
             )
+
+    # ── Recommend ──────────────────────────────────────────────────────────
+
+    @app.post("/api/recommend", response_model=RecommendResponse)
+    async def recommend(body: RecommendRequest, request: Request) -> RecommendResponse:
+        """Findet aehnliche Paragraphen via Qdrant Recommend API."""
+        ctx = _get_ctx(request)
+
+        # Resolve point_ids from paragraph+gesetz if not provided
+        point_ids = body.point_ids
+        source_gesetz: str | None = None
+
+        if not point_ids:
+            if not body.paragraph or not body.gesetz:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Entweder point_ids oder paragraph+gesetz muss angegeben werden.",
+                )
+            resolved_id = await ctx.qdrant._resolve_point_id(body.paragraph, body.gesetz)
+            if resolved_id is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Paragraph {body.paragraph} in {body.gesetz} nicht gefunden.",
+                )
+            point_ids = [resolved_id]
+            source_gesetz = body.gesetz
+        else:
+            source_gesetz = None
+
+        # exclude_same_law filter
+        exclude_gesetz_value: str | None = None
+        if body.exclude_same_law and source_gesetz:
+            exclude_gesetz_value = source_gesetz
+
+        # Build search filter from optional filter params
+        search_filter = SearchFilter(
+            gesetz=body.gesetzbuch,
+            abschnitt=body.abschnitt,
+            absatz_von=body.absatz_von,
+            absatz_bis=body.absatz_bis,
+        )
+
+        results = await ctx.qdrant.recommend(
+            point_ids=point_ids,
+            limit=body.limit,
+            search_filter=search_filter,
+            exclude_gesetz=exclude_gesetz_value,
+        )
+
+        items = [_result_to_item(r) for r in results]
+        return RecommendResponse(
+            source_ids=point_ids,
+            results=items,
+            total=len(items),
+        )
+
+    # ── Batch Search ──────────────────────────────────────────────────────
+
+    @app.post("/api/search/batch", response_model=BatchSearchResponse)
+    async def search_batch(body: BatchSearchRequest, request: Request) -> BatchSearchResponse:
+        """Fuehrt mehrere Suchanfragen parallel aus."""
+        ctx = _get_ctx(request)
+
+        # Validate against max queries from settings
+        if len(body.queries) > settings.batch_max_queries:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Maximal {settings.batch_max_queries} parallele Queries erlaubt.",
+            )
+
+        # load_warning heuristic
+        load_warning = len(body.queries) >= int(settings.batch_max_queries * 0.8)
+
+        async def _execute_single(query: SearchRequest) -> SearchResponse:
+            """Fuehrt eine einzelne Suche aus (wiederverwendet search-Logik)."""
+            search_filter_inner = SearchFilter(
+                gesetz=query.gesetzbuch,
+                abschnitt=query.abschnitt,
+                absatz_von=query.absatz_von,
+                absatz_bis=query.absatz_bis,
+            )
+            raw_results = await ctx.qdrant.hybrid_search(
+                query=query.anfrage,
+                top_k=settings.retrieval_top_k,
+                search_filter=search_filter_inner,
+            )
+            if raw_results:
+                reranked = await ctx.reranker.arerank(
+                    query.anfrage, raw_results, top_k=query.max_ergebnisse,
+                )
+                reranked = [r for r in reranked if r.score >= settings.similarity_threshold]
+            else:
+                reranked = []
+
+            items = [_result_to_item(r) for r in reranked]
+            return SearchResponse(
+                query=query.anfrage,
+                results=items,
+                total=len(items),
+                search_type=query.search_type,
+            )
+
+        # Execute all queries in parallel with return_exceptions=True
+        tasks = [_execute_single(q) for q in body.queries]
+        gathered = await asyncio.gather(*tasks, return_exceptions=True)
+
+        responses: list[SearchResponse] = []
+        for i, result in enumerate(gathered):
+            if isinstance(result, Exception):
+                logger.warning("Batch query %d fehlgeschlagen: %s", i, result)
+                responses.append(SearchResponse(
+                    query=body.queries[i].anfrage,
+                    results=[],
+                    total=0,
+                    search_type=body.queries[i].search_type,
+                ))
+            else:
+                responses.append(result)
+
+        return BatchSearchResponse(
+            results=responses,
+            total_queries=len(responses),
+            load_warning=load_warning,
+        )
 
     # ── Paragraph nachschlagen ────────────────────────────────────────────
 
