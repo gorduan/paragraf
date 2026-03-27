@@ -1,7 +1,7 @@
-# Requirements: Paragraf v2 — Volles Qdrant-Potenzial
+# Requirements: Paragraf v2 -- Volles Qdrant-Potenzial
 
 **Defined:** 2026-03-27
-**Core Value:** Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit semantischer Suche, Querverweisen zwischen Gesetzen und gruppierten Ergebnissen.
+**Core Value:** Juristen und Buerger finden in Sekunden die relevanten Paragraphen -- mit semantischer Suche, Querverweisen zwischen Gesetzen und gruppierten Ergebnissen.
 
 ## v1 Requirements
 
@@ -9,7 +9,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 
 ### Qdrant Infrastructure
 
-- [ ] **INFRA-01**: Snapshot API integriert — Backup vor Re-Indexierung erstellen und wiederherstellen
+- [ ] **INFRA-01**: Snapshot API integriert -- Backup vor Re-Indexierung erstellen und wiederherstellen
 - [ ] **INFRA-02**: Scalar Quantization fuer Dense-Vektoren aktiviert (Sparse unberuehrt)
 - [ ] **INFRA-03**: Full-Text Index auf `text`-Feld fuer exakte Wortsuche
 - [ ] **INFRA-04**: Payload Range-Filter fuer numerisches `absatz`-Feld
@@ -17,33 +17,33 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 
 ### Search Enhancement
 
-- [ ] **SRCH-01**: Qdrant Recommend API — aehnliche Paragraphen zu einem gegebenen Punkt finden
-- [ ] **SRCH-02**: Qdrant Discovery API — explorative Suche mit Positiv/Negativ-Beispielen
-- [ ] **SRCH-03**: Qdrant Grouping API — Suchergebnisse nach Gesetz gruppiert zurueckgeben
-- [ ] **SRCH-04**: Qdrant Scroll API — paginierte Ergebnisse mit Offset/Limit
-- [ ] **SRCH-05**: Grouped Recommendations — Empfehlungen nach Gesetz gruppiert
+- [ ] **SRCH-01**: Qdrant Recommend API -- aehnliche Paragraphen zu einem gegebenen Punkt finden
+- [ ] **SRCH-02**: Qdrant Discovery API -- explorative Suche mit Positiv/Negativ-Beispielen
+- [ ] **SRCH-03**: Qdrant Grouping API -- Suchergebnisse nach Gesetz gruppiert zurueckgeben
+- [ ] **SRCH-04**: Qdrant Scroll API -- paginierte Ergebnisse mit Offset/Limit
+- [ ] **SRCH-05**: Grouped Recommendations -- Empfehlungen nach Gesetz gruppiert
 - [ ] **SRCH-06**: Full-Text-Suche als Toggle neben semantischer Suche
 - [ ] **SRCH-07**: Query Expansion mit juristischem Synonym-Woerterbuch (konservativ, nur Abkuerzungen + Kernsynonyme)
 - [ ] **SRCH-08**: Batch Search Endpoint fuer parallele Queries
 
 ### Cross-References
 
-- [ ] **XREF-01**: Regex-basierte Querverweis-Extraktion aus deutschem Gesetzestext (§ X Abs. Y SGB Z, i.V.m., etc.)
+- [ ] **XREF-01**: Regex-basierte Querverweis-Extraktion aus deutschem Gesetzestext (SS X Abs. Y SGB Z, i.V.m., etc.)
 - [ ] **XREF-02**: Querverweise als Array im Qdrant-Payload speichern (pro Paragraph)
 - [ ] **XREF-03**: Re-Indexierung aller Gesetze mit Querverweis-Daten (nach Snapshot)
-- [ ] **XREF-04**: Zitationsnetzwerk-API — zu einem Paragraphen alle referenzierten und referenzierenden Normen abrufen
+- [ ] **XREF-04**: Zitationsnetzwerk-API -- zu einem Paragraphen alle referenzierten und referenzierenden Normen abrufen
 - [ ] **XREF-05**: Klickbare Querverweis-Links in der Paragraphen-Anzeige
 - [ ] **XREF-06**: Interaktive Zitationsgraph-Visualisierung (gerichteter Graph)
 
 ### MCP Tools
 
-- [ ] **MCP-01**: MCP-Tool `paragraf_similar` — aehnliche Paragraphen via Recommend API
-- [ ] **MCP-02**: MCP-Tool `paragraf_discover` — explorative Suche mit Positiv/Negativ-Beispielen
-- [ ] **MCP-03**: MCP-Tool `paragraf_references` — Querverweise eines Paragraphen abrufen
-- [ ] **MCP-04**: Multi-Hop MCP-Prompt — Paragraphen finden, Querverweise folgen, Rechtslage zusammenfassen
+- [ ] **MCP-01**: MCP-Tool `paragraf_similar` -- aehnliche Paragraphen via Recommend API
+- [ ] **MCP-02**: MCP-Tool `paragraf_discover` -- explorative Suche mit Positiv/Negativ-Beispielen
+- [ ] **MCP-03**: MCP-Tool `paragraf_references` -- Querverweise eines Paragraphen abrufen
+- [ ] **MCP-04**: Multi-Hop MCP-Prompt -- Paragraphen finden, Querverweise folgen, Rechtslage zusammenfassen
 - [ ] **MCP-05**: Abschnitt-Filter vollstaendig in allen MCP-Such-Tools exponieren
-- [ ] **MCP-06**: MCP-Tool `paragraf_snapshot` — Backup erstellen/wiederherstellen
-- [ ] **MCP-07**: MCP-Tool `paragraf_grouped_search` — gruppierte Suchergebnisse
+- [ ] **MCP-06**: MCP-Tool `paragraf_snapshot` -- Backup erstellen/wiederherstellen
+- [ ] **MCP-07**: MCP-Tool `paragraf_grouped_search` -- gruppierte Suchergebnisse
 
 ### Frontend UX (mit /frontend-design, /ui-ux-pro-max, /ckm-ui-styling)
 
@@ -62,7 +62,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 
 ### Semantic Chunking
 
-- [ ] **CHUNK-01**: Parser verbessern — Chunking an juristischen Strukturgrenzen (Absatz, Satz, Nummer)
+- [ ] **CHUNK-01**: Parser verbessern -- Chunking an juristischen Strukturgrenzen (Absatz, Satz, Nummer)
 - [ ] **CHUNK-02**: Re-Indexierung mit verbessertem Chunking (nach Snapshot)
 
 ## v2 Requirements
@@ -85,23 +85,60 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | Built-in LLM Chat Interface | Claude via MCP ist besser; RDG-Haftung, Halluzinationsrisiko |
 | User-Accounts / Authentifizierung | Single-User/internes Tool, Auth bringt null Mehrwert |
 | Real-Time Gesetzesaenderungs-Alerts | Keine Change-Feeds verfuegbar, enormer Polling-Aufwand |
-| Neo4j Graph-Datenbank | Overkill — Qdrant Payload-Arrays genuegen fuer ~95 Gesetze |
+| Neo4j Graph-Datenbank | Overkill -- Qdrant Payload-Arrays genuegen fuer ~95 Gesetze |
 | Mobile Native App | Web-first, responsive genuegt |
 | Automatisierte Rechtsanalysen | RDG-Haftung, ueberschreitet Informationsbereitstellung |
 
 ## Traceability
 
-Wird waehrend Roadmap-Erstellung befuellt.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmapper) | | |
+| INFRA-01 | Phase 1: Snapshot Safety Net | Pending |
+| INFRA-02 | Phase 1: Snapshot Safety Net | Pending |
+| INFRA-03 | Phase 2: Search Indexes & Full-Text | Pending |
+| INFRA-04 | Phase 2: Search Indexes & Full-Text | Pending |
+| INFRA-05 | Phase 10: Dashboard, Export & Polish | Pending |
+| SRCH-01 | Phase 4: Recommend & Pagination | Pending |
+| SRCH-02 | Phase 5: Grouping & Discovery API | Pending |
+| SRCH-03 | Phase 5: Grouping & Discovery API | Pending |
+| SRCH-04 | Phase 4: Recommend & Pagination | Pending |
+| SRCH-05 | Phase 5: Grouping & Discovery API | Pending |
+| SRCH-06 | Phase 2: Search Indexes & Full-Text | Pending |
+| SRCH-07 | Phase 7: Query Expansion & Chunking | Pending |
+| SRCH-08 | Phase 4: Recommend & Pagination | Pending |
+| XREF-01 | Phase 6: Cross-Reference Pipeline | Pending |
+| XREF-02 | Phase 6: Cross-Reference Pipeline | Pending |
+| XREF-03 | Phase 6: Cross-Reference Pipeline | Pending |
+| XREF-04 | Phase 6: Cross-Reference Pipeline | Pending |
+| XREF-05 | Phase 9: Cross-Reference & Discovery UX | Pending |
+| XREF-06 | Phase 9: Cross-Reference & Discovery UX | Pending |
+| MCP-01 | Phase 4: Recommend & Pagination | Pending |
+| MCP-02 | Phase 5: Grouping & Discovery API | Pending |
+| MCP-03 | Phase 6: Cross-Reference Pipeline | Pending |
+| MCP-04 | Phase 7: Query Expansion & Chunking | Pending |
+| MCP-05 | Phase 4: Recommend & Pagination | Pending |
+| MCP-06 | Phase 1: Snapshot Safety Net | Pending |
+| MCP-07 | Phase 5: Grouping & Discovery API | Pending |
+| UI-01 | Phase 3: Design System Foundation | Pending |
+| UI-02 | Phase 8: Search Results UX | Pending |
+| UI-03 | Phase 8: Search Results UX | Pending |
+| UI-04 | Phase 8: Search Results UX | Pending |
+| UI-05 | Phase 8: Search Results UX | Pending |
+| UI-06 | Phase 8: Search Results UX | Pending |
+| UI-07 | Phase 8: Search Results UX | Pending |
+| UI-08 | Phase 9: Cross-Reference & Discovery UX | Pending |
+| UI-09 | Phase 10: Dashboard, Export & Polish | Pending |
+| UI-10 | Phase 9: Cross-Reference & Discovery UX | Pending |
+| UI-11 | Phase 10: Dashboard, Export & Polish | Pending |
+| UI-12 | Phase 10: Dashboard, Export & Polish | Pending |
+| CHUNK-01 | Phase 7: Query Expansion & Chunking | Pending |
+| CHUNK-02 | Phase 7: Query Expansion & Chunking | Pending |
 
 **Coverage:**
 - v1 requirements: 40 total
-- Mapped to phases: 0
-- Unmapped: 40
+- Mapped to phases: 40
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after initial definition*
+*Last updated: 2026-03-27 after roadmap creation*
