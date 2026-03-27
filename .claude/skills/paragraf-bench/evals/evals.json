@@ -1,0 +1,60 @@
+{
+  "skill": "paragraf-bench",
+  "version": "1.0",
+  "evals": [
+    {
+      "id": "bench-smoke-test",
+      "description": "Smoke-Test: einzelner Testfall mit api-only Agent",
+      "command": "python .agents/skills/paragraf-bench/scripts/run_bench.py --test sem-01 --agents api-only --parallel 1",
+      "expected": {
+        "exit_code": 0,
+        "output_contains": ["Fertig", "workspace"]
+      }
+    },
+    {
+      "id": "bench-grading",
+      "description": "Bewertung laeuft durch und erzeugt grading.json",
+      "depends_on": "bench-smoke-test",
+      "command": "python .agents/skills/paragraf-bench/scripts/grade_results.py --workspace ${WORKSPACE} --skip-verification",
+      "expected": {
+        "exit_code": 0,
+        "files_created": ["grading.json"]
+      }
+    },
+    {
+      "id": "bench-report",
+      "description": "Berichtsgenerierung erzeugt benchmark.md und benchmark.json",
+      "depends_on": "bench-grading",
+      "command": "python .agents/skills/paragraf-bench/scripts/generate_report.py --workspace ${WORKSPACE}",
+      "expected": {
+        "exit_code": 0,
+        "files_created": ["benchmark.md", "benchmark.json"]
+      }
+    },
+    {
+      "id": "bench-edge-cases",
+      "description": "Edge Cases: kein Agent halluziniert bei Nonsense",
+      "command": "python .agents/skills/paragraf-bench/scripts/run_bench.py --category edge --agents knowledge-only --parallel 1",
+      "expected": {
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "bench-all-agents",
+      "description": "Alle 4 Agenten gegen semantische Suche",
+      "command": "python .agents/skills/paragraf-bench/scripts/run_bench.py --category sem --agents api-only,api-web,web-only,knowledge-only --parallel 2",
+      "expected": {
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "bench-full-run",
+      "description": "Vollstaendiger Benchmark: 28 Tests x 4 Agenten",
+      "command": "python .agents/skills/paragraf-bench/scripts/run_bench.py --all --parallel 4",
+      "expected": {
+        "exit_code": 0,
+        "min_success_rate": 0.9
+      }
+    }
+  ]
+}
