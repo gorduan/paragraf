@@ -23,7 +23,14 @@ from paragraf.api_models import (
     CounselingItem,
     CounselingRequest,
     CounselingResponse,
+    DiscoverRequest,
+    DiscoverResponse,
     GpuInfoResponse,
+    GroupedRecommendRequest,
+    GroupedRecommendResponse,
+    GroupedResultGroup,
+    GroupedSearchRequest,
+    GroupedSearchResponse,
     HealthResponse,
     IndexProgressEvent,
     IndexRequest,
@@ -545,6 +552,154 @@ def _register_routes(app: FastAPI) -> None:
             results=responses,
             total_queries=len(responses),
             load_warning=load_warning,
+        )
+
+    # ── Discovery ─────────────────────────────────────────────────────────
+
+    @app.post("/api/discover", response_model=DiscoverResponse)
+    async def discover(body: DiscoverRequest, request: Request) -> DiscoverResponse:
+        """Explorative Suche mit Positiv/Negativ-Beispielen via Discovery API."""
+        ctx = _get_ctx(request)
+
+        # Resolve positive IDs: collect from point_ids + paragraph resolution
+        positive_ids: list[str] = list(body.positive_ids or [])
+        if body.positive_paragraphs:
+            resolved = await asyncio.gather(
+                *[ctx.qdrant._resolve_point_id(p.paragraph, p.gesetz) for p in body.positive_paragraphs]
+            )
+            for i, rid in enumerate(resolved):
+                if rid is None:
+                    p = body.positive_paragraphs[i]
+                    raise HTTPException(404, f"Paragraph {p.paragraph} in {p.gesetz} nicht gefunden.")
+                positive_ids.append(rid)
+
+        if not positive_ids:
+            raise HTTPException(400, "Mindestens ein positives Beispiel erforderlich (positive_ids oder positive_paragraphs).")
+
+        # Resolve negative IDs
+        negative_ids: list[str] = list(body.negative_ids or [])
+        if body.negative_paragraphs:
+            resolved_neg = await asyncio.gather(
+                *[ctx.qdrant._resolve_point_id(p.paragraph, p.gesetz) for p in body.negative_paragraphs]
+            )
+            for i, rid in enumerate(resolved_neg):
+                if rid is None:
+                    p = body.negative_paragraphs[i]
+                    raise HTTPException(404, f"Paragraph {p.paragraph} in {p.gesetz} nicht gefunden.")
+                negative_ids.append(rid)
+
+        # Build context pairs per Research Pattern 2
+        # target = first positive, remaining positives paired with negatives
+        target_id = positive_ids[0]
+        context_pairs: list[tuple[str, str]] = []
+        remaining_pos = positive_ids[1:]
+        if negative_ids:
+            # Cartesian: each remaining positive paired with each negative
+            for pos in remaining_pos:
+                for neg in negative_ids:
+                    context_pairs.append((pos, neg))
+            # Also pair target-associated positives if only negatives exist
+            if not remaining_pos:
+                for neg in negative_ids:
+                    context_pairs.append((target_id, neg))
+
+        search_filter = SearchFilter(gesetz=body.gesetzbuch, abschnitt=body.abschnitt)
+
+        results = await ctx.qdrant.discover(
+            target_id=target_id,
+            context_pairs=context_pairs,
+            limit=body.limit,
+            search_filter=search_filter,
+        )
+
+        items = [_result_to_item(r) for r in results]
+        return DiscoverResponse(
+            positive_ids=positive_ids,
+            negative_ids=negative_ids,
+            results=items,
+            total=len(items),
+        )
+
+    # ── Grouped Search ────────────────────────────────────────────────────
+
+    @app.post("/api/search/grouped", response_model=GroupedSearchResponse)
+    async def search_grouped(body: GroupedSearchRequest, request: Request) -> GroupedSearchResponse:
+        """Suchergebnisse nach Gesetz gruppiert via query_points_groups."""
+        ctx = _get_ctx(request)
+
+        search_filter = SearchFilter(gesetz=body.gesetzbuch, abschnitt=body.abschnitt)
+
+        grouped = await ctx.qdrant.grouped_search(
+            query=body.anfrage,
+            group_size=body.group_size,
+            max_groups=body.max_groups,
+            search_filter=search_filter,
+        )
+
+        groups = [
+            GroupedResultGroup(
+                gesetz=gesetz,
+                results=[_result_to_item(r) for r in results],
+                total=len(results),
+            )
+            for gesetz, results in grouped
+        ]
+        return GroupedSearchResponse(
+            query=body.anfrage,
+            groups=groups,
+            total_groups=len(groups),
+        )
+
+    # ── Grouped Recommend ─────────────────────────────────────────────────
+
+    @app.post("/api/recommend/grouped", response_model=GroupedRecommendResponse)
+    async def recommend_grouped(body: GroupedRecommendRequest, request: Request) -> GroupedRecommendResponse:
+        """Empfehlungen nach Gesetz gruppiert."""
+        ctx = _get_ctx(request)
+
+        # Resolve point_ids (same pattern as /api/recommend)
+        point_ids = body.point_ids
+        source_gesetz: str | None = None
+        if not point_ids:
+            if not body.paragraph or not body.gesetz:
+                raise HTTPException(400, "Entweder point_ids oder paragraph+gesetz muss angegeben werden.")
+            resolved_id = await ctx.qdrant._resolve_point_id(body.paragraph, body.gesetz)
+            if resolved_id is None:
+                raise HTTPException(404, f"Paragraph {body.paragraph} in {body.gesetz} nicht gefunden.")
+            point_ids = [resolved_id]
+            source_gesetz = body.gesetz
+        else:
+            source_gesetz = None
+
+        exclude_gesetz_value: str | None = None
+        if body.exclude_same_law and source_gesetz:
+            exclude_gesetz_value = source_gesetz
+
+        search_filter = SearchFilter(
+            gesetz=body.gesetzbuch, abschnitt=body.abschnitt,
+            absatz_von=body.absatz_von, absatz_bis=body.absatz_bis,
+        )
+
+        grouped = await ctx.qdrant.grouped_recommend(
+            point_ids=point_ids,
+            group_size=body.group_size,
+            max_groups=body.max_groups,
+            search_filter=search_filter,
+            exclude_gesetz=exclude_gesetz_value,
+        )
+
+        groups = [
+            GroupedResultGroup(
+                gesetz=gesetz,
+                results=[_result_to_item(r) for r in results],
+                total=len(results),
+            )
+            for gesetz, results in grouped
+        ]
+        return GroupedRecommendResponse(
+            source_ids=point_ids,
+            groups=groups,
+            total_groups=len(groups),
         )
 
     # ── Paragraph nachschlagen ────────────────────────────────────────────
