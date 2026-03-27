@@ -34,11 +34,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. User can restore a collection from a snapshot, returning the database to its prior state
   3. Scalar quantization is active on dense vectors, reducing memory usage without degrading search quality
   4. Claude Desktop/Code can create and restore snapshots via the `paragraf_snapshot` MCP tool
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md -- QdrantStore snapshot/quantization methods, config, Docker volume, unit tests
+- [ ] 01-02-PLAN.md -- REST endpoints, MCP tool, auto-snapshot hooks, quantization startup
 
 ### Phase 2: Search Indexes & Full-Text
 **Goal**: The Qdrant collection has optimized indexes for exact text matching and numeric filtering, and the backend exposes full-text keyword search alongside semantic search
