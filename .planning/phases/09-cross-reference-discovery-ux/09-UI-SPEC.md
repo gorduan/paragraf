@@ -36,9 +36,8 @@ Declared values (multiples of 4, using Tailwind 4 numeric scale):
 | Token | Value | Usage in this phase |
 |-------|-------|---------------------|
 | 1 (xs) | 4px | Citation icon gap from text, context label internal padding, chip X-button padding |
-| 2 (sm) | 8px | Discovery chip gap, graph legend item spacing, tooltip internal padding |
-| 3 | 12px | Citation tooltip content padding, graph side panel field spacing |
-| 4 (md) | 16px | Graph side panel section padding, discovery example bar padding |
+| 2 (sm) | 8px | Discovery chip gap, graph legend item spacing, tooltip internal padding, citation tooltip content padding |
+| 4 (md) | 16px | Graph side panel section padding, graph side panel field spacing, discovery example bar padding |
 | 6 (lg) | 24px | Graph container padding, side panel card padding |
 | 8 (xl) | 32px | Gap between graph area and side panel |
 | 12 (2xl) | 48px | Not used in this phase |
@@ -99,6 +98,14 @@ Source: index.css primary/success/warning/error tokens, Phase 3 D-02
 
 ---
 
+## Visual Hierarchy
+
+**GraphPage focal point:** The force-directed graph canvas is the primary visual anchor. At lg breakpoint (>= 1024px) the canvas takes approximately 70% of viewport width (flex-1 minus the 320px side panel when open, full width when panel is closed). All other GraphPage elements (level toggle, legend, zoom controls) are lightweight overlays on or adjacent to the canvas. The side panel is secondary — it appears on demand and never competes with the canvas for visual dominance.
+
+**SearchPage (discovery mode) focal point:** The result list remains the primary visual element. The DiscoveryExampleBar is a compact supporting element (single row height when chips fit, max two rows) positioned between the mode toggle and results. It does not push results below the fold at any breakpoint.
+
+---
+
 ## Component Inventory
 
 ### New Components
@@ -112,6 +119,7 @@ Source: index.css primary/success/warning/error tokens, Phase 3 D-02
 | GraphSidePanel | `components/GraphSidePanel.tsx` | Detail panel on node click: paragraph text, reference counts, navigation link |
 | GraphLegend | `components/GraphLegend.tsx` | Color legend for edge context types, positioned overlay on graph |
 | DiscoveryExampleBar | `components/DiscoveryExampleBar.tsx` | Compact bar above results showing green/red example chips + "Entdecken" button |
+| UndoSnackbar | `components/UndoSnackbar.tsx` | Temporary bottom snackbar with undo action, auto-dismisses after 5 seconds |
 
 ### Reused Primitives (from Phase 3)
 
@@ -193,9 +201,18 @@ Canvas rendering specifics:
 | Minimum examples | "Entdecken" button disabled until at least 1 positive example selected. Tooltip: "Waehlen Sie mindestens ein positives Beispiel (+)." |
 | Execute discovery | Click "Entdecken" -> calls api.discover() with selected point IDs -> results replace current results below the example bar. |
 | Results display | Discovery results shown as standard ResultCards (same as search results). Each can also have +/- buttons for iterative refinement. |
-| Reset | "Zuruecksetzen" text link (destructive color) in example bar clears all selections and restores previous search results. |
+| Reset | "Zuruecksetzen" text link (destructive color) in example bar. On click: immediately clears all selections and restores previous search results, then shows UndoSnackbar at bottom-center with "Beispiele entfernt" message and "Rueckgaengig" action button. Snackbar auto-dismisses after 5 seconds. Clicking "Rueckgaengig" restores all selections and re-applies discovery results. If the snackbar dismisses without undo, the reset is permanent. |
 | Mode switch away | Switching from "Entdecken" to another search mode clears discovery selections and restores normal search flow. |
 | Max examples | 5 positive + 5 negative (matches API limit). Additional selections disabled with tooltip "Maximal 5 Beispiele pro Kategorie." |
+
+### UndoSnackbar (for discovery reset)
+
+| State | Behavior |
+|-------|----------|
+| Visible | Fixed position bottom-center, 16px from viewport bottom. Neutral-800 bg (dark: neutral-100), white text (dark: neutral-900). Contains message text + "Rueckgaengig" text button in primary-300 (dark: primary-600). Auto-progress bar shrinks over 5 seconds. |
+| Dismiss | Auto-dismisses after 5 seconds, or on explicit close (X icon, 16px). Slide-down exit animation (150ms). |
+| Undo clicked | Restores previous discovery state (selections + results). Snackbar closes immediately. |
+| Stacking | Only one snackbar at a time. New reset while snackbar visible: dismiss old snackbar (commit that reset), show new snackbar for new reset. |
 
 ### Graph Entry from ResultCard (D-16)
 
@@ -228,6 +245,8 @@ Canvas rendering specifics:
 | Negative chip prefix | "- SS {paragraph} {gesetz}" |
 | Discovery execute button | "Entdecken" |
 | Discovery reset | "Zuruecksetzen" |
+| Discovery reset undo snackbar | "Beispiele entfernt" |
+| Discovery reset undo action | "Rueckgaengig" |
 | Discovery min-examples tooltip | "Waehlen Sie mindestens ein positives Beispiel (+)." |
 | Discovery max-examples tooltip | "Maximal 5 Beispiele pro Kategorie." |
 | Citation tooltip "more" link | "Mehr lesen" |
@@ -266,6 +285,7 @@ Canvas rendering specifics:
 | Discovery chips | Each chip is `<button>` with `aria-label="Beispiel entfernen: SS {paragraph} {gesetz}"` |
 | SearchModeToggle (extended) | Existing `role="radiogroup"` pattern extended with 4th segment |
 | Graph zoom controls | Visible +/- buttons as alternative to mouse wheel. `aria-label="Vergroessern"` / `aria-label="Verkleinern"` |
+| UndoSnackbar | `role="status"`, `aria-live="polite"`, `aria-label="Aktion rueckgaengig machen"`. "Rueckgaengig" button focusable. |
 
 ---
 
@@ -289,6 +309,7 @@ Canvas rendering specifics:
 | Discovery negative examples | SearchPage local state (array of point IDs + display info) | Memory only |
 | Discovery results | SearchPage local state | Memory only |
 | Previous search results (before discovery) | SearchPage local state | Memory only |
+| Undo snapshot (discovery reset) | SearchPage local state (stashed selections + results for 5s) | Memory only |
 | Graph current level (law/paragraph) | GraphPage local state | Memory only |
 | Graph focused law (drill-down) | GraphPage local state + URL param | URL query param |
 | Graph selected node | GraphPage local state | Memory only |
