@@ -97,12 +97,12 @@ Plans:
   3. Recommendations can be returned grouped by law (Recommend + Groups combined)
   4. MCP tool `paragraf_discover` enables explorative search with positive/negative examples
   5. MCP tool `paragraf_grouped_search` returns results grouped by law
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
-- [ ] 05-03: TBD
+- [ ] 05-01-PLAN.md -- Settings, Pydantic models, QdrantStore service methods (discover, grouped_search, grouped_recommend), unit tests
+- [ ] 05-02-PLAN.md -- REST endpoints (/api/discover, /api/search/grouped, /api/recommend/grouped), docker-compose ENV vars
+- [ ] 05-03-PLAN.md -- MCP tools paragraf_discover, paragraf_grouped_search, paragraf_similar_grouped, unit tests
 
 ### Phase 6: Cross-Reference Pipeline
 **Goal**: The system extracts legal cross-references from paragraph text, stores them as structured payload, and exposes a citation network API for navigating between referencing and referenced norms
