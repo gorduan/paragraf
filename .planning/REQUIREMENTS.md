@@ -40,7 +40,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 - [x] **MCP-01**: MCP-Tool `paragraf_similar` -- aehnliche Paragraphen via Recommend API
 - [x] **MCP-02**: MCP-Tool `paragraf_discover` -- explorative Suche mit Positiv/Negativ-Beispielen
 - [x] **MCP-03**: MCP-Tool `paragraf_references` -- Querverweise eines Paragraphen abrufen
-- [ ] **MCP-04**: Multi-Hop MCP-Prompt -- Paragraphen finden, Querverweise folgen, Rechtslage zusammenfassen
+- [x] **MCP-04**: Multi-Hop MCP-Prompt -- Paragraphen finden, Querverweise folgen, Rechtslage zusammenfassen
 - [x] **MCP-05**: Abschnitt-Filter vollstaendig in allen MCP-Such-Tools exponieren
 - [ ] **MCP-06**: MCP-Tool `paragraf_snapshot` -- Backup erstellen/wiederherstellen
 - [x] **MCP-07**: MCP-Tool `paragraf_grouped_search` -- gruppierte Suchergebnisse
@@ -63,7 +63,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 ### Semantic Chunking
 
 - [x] **CHUNK-01**: Parser verbessern -- Chunking an juristischen Strukturgrenzen (Absatz, Satz, Nummer)
-- [ ] **CHUNK-02**: Re-Indexierung mit verbessertem Chunking (nach Snapshot)
+- [x] **CHUNK-02**: Re-Indexierung mit verbessertem Chunking (nach Snapshot)
 
 ## v2 Requirements
 
@@ -115,7 +115,7 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | MCP-01 | Phase 4: Recommend & Pagination | Complete |
 | MCP-02 | Phase 5: Grouping & Discovery API | Complete |
 | MCP-03 | Phase 6: Cross-Reference Pipeline | Complete |
-| MCP-04 | Phase 7: Query Expansion & Chunking | Pending |
+| MCP-04 | Phase 7: Query Expansion & Chunking | Complete |
 | MCP-05 | Phase 4: Recommend & Pagination | Complete |
 | MCP-06 | Phase 1: Snapshot Safety Net | Pending |
 | MCP-07 | Phase 5: Grouping & Discovery API | Complete |
@@ -132,7 +132,7 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | UI-11 | Phase 10: Dashboard, Export & Polish | Pending |
 | UI-12 | Phase 10: Dashboard, Export & Polish | Pending |
 | CHUNK-01 | Phase 7: Query Expansion & Chunking | Complete |
-| CHUNK-02 | Phase 7: Query Expansion & Chunking | Pending |
+| CHUNK-02 | Phase 7: Query Expansion & Chunking | Complete |
 
 **Coverage:**
 - v1 requirements: 40 total
