@@ -47,6 +47,11 @@ from paragraf.api_models import (
     RecommendRequest,
     RecommendResponse,
     SearchRequest,
+    IncomingReferenceItem,
+    ReferenceExtractRequest,
+    ReferenceExtractResponse,
+    ReferenceItem,
+    ReferenceNetworkResponse,
     SearchResponse,
     SearchResultItem,
     SettingsResponse,
@@ -1383,3 +1388,96 @@ def _register_routes(app: FastAPI) -> None:
         except Exception as e:
             logger.error("Snapshot-Loeschung fehlgeschlagen: %s", e)
             return JSONResponse(status_code=500, content={"detail": str(e)})
+
+    # ── Cross-Reference Endpoints ────────────────────────────────────────────
+
+    @app.post("/api/references/extract", response_model=ReferenceExtractResponse)
+    async def extract_references(
+        body: ReferenceExtractRequest, request: Request,
+    ) -> ReferenceExtractResponse | JSONResponse:
+        """Extrahiert Querverweise aus allen Punkten und speichert sie als Payload."""
+        ctx = _get_ctx(request)
+        try:
+            # D-09: Snapshot vor Extraktion erstellen
+            snapshot_name = await ctx.qdrant.create_snapshot()
+            logger.info("Sicherungs-Snapshot vor Extraktion: %s", snapshot_name)
+
+            from paragraf.services.cross_reference import CrossReferenceExtractor
+
+            extractor = CrossReferenceExtractor()
+            stats = await ctx.qdrant.extract_all_references(
+                extractor, gesetz_filter=body.gesetz
+            )
+
+            # Nested-Indizes sicherstellen
+            await ctx.qdrant.create_reference_indexes()
+
+            modus = "Vollstaendige Neuindexierung" if body.full_reindex else "Inkrementelle Extraktion"
+            nachricht = (
+                f"{modus} abgeschlossen: {stats['points_with_refs']} von "
+                f"{stats['total_points']} Punkten mit Querverweisen "
+                f"({stats['total_refs']} Querverweise gesamt)"
+            )
+
+            return ReferenceExtractResponse(
+                erfolg=True,
+                total_points=stats["total_points"],
+                points_with_refs=stats["points_with_refs"],
+                total_refs=stats["total_refs"],
+                snapshot_name=snapshot_name,
+                nachricht=nachricht,
+            )
+        except Exception as e:
+            logger.error("Querverweis-Extraktion fehlgeschlagen: %s", e)
+            return JSONResponse(
+                status_code=500,
+                content={"detail": f"Querverweis-Extraktion fehlgeschlagen: {e}"},
+            )
+
+    @app.get("/api/references/{gesetz}/{paragraph}", response_model=ReferenceNetworkResponse)
+    async def get_reference_network(
+        gesetz: str, paragraph: str, request: Request,
+    ) -> ReferenceNetworkResponse | JSONResponse:
+        """Gibt das Zitationsnetzwerk eines Paragraphen zurueck."""
+        ctx = _get_ctx(request)
+        try:
+            paragraph = _normalize_paragraph_input(paragraph)
+
+            outgoing_raw = await ctx.qdrant.get_outgoing_references(gesetz, paragraph)
+            incoming_raw = await ctx.qdrant.get_incoming_references(gesetz, paragraph)
+            incoming_count = await ctx.qdrant.count_incoming_references(gesetz, paragraph)
+
+            outgoing = [
+                ReferenceItem(
+                    gesetz=ref.get("gesetz", ""),
+                    paragraph=ref.get("paragraph", ""),
+                    absatz=ref.get("absatz"),
+                    raw=ref.get("raw", ""),
+                    verified=ref.get("verified", False),
+                    kontext=ref.get("kontext"),
+                )
+                for ref in outgoing_raw
+            ]
+            incoming = [
+                IncomingReferenceItem(
+                    gesetz=ref.get("gesetz", ""),
+                    paragraph=ref.get("paragraph", ""),
+                    chunk_id=ref.get("chunk_id", ""),
+                    text_preview=ref.get("text_preview", ""),
+                )
+                for ref in incoming_raw
+            ]
+
+            return ReferenceNetworkResponse(
+                gesetz=gesetz,
+                paragraph=paragraph,
+                outgoing=outgoing,
+                incoming=incoming,
+                incoming_count=incoming_count,
+            )
+        except Exception as e:
+            logger.error("Zitationsnetzwerk-Abfrage fehlgeschlagen: %s", e)
+            return JSONResponse(
+                status_code=500,
+                content={"detail": f"Zitationsnetzwerk-Abfrage fehlgeschlagen: {e}"},
+            )

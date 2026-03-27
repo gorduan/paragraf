@@ -43,6 +43,7 @@ services:
       - GROUP_MAX_GROUPS=10
       - DISCOVERY_MAX_POSITIVE=5
       - DISCOVERY_MAX_NEGATIVE=5
+      - XREF_RESOLUTION_STRATEGY=filter
       - SNAPSHOT_MAX_COUNT=3
       - LOG_LEVEL=INFO
       - HF_HOME=/models
@@ -82,6 +83,7 @@ services:
       - GROUP_MAX_GROUPS=10
       - DISCOVERY_MAX_POSITIVE=5
       - DISCOVERY_MAX_NEGATIVE=5
+      - XREF_RESOLUTION_STRATEGY=filter
       - SNAPSHOT_MAX_COUNT=3
       - LOG_LEVEL=INFO
       - HF_HOME=/models

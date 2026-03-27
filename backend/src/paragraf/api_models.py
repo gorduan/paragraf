@@ -388,3 +388,54 @@ class GroupedRecommendResponse(BaseModel):
         "Beratung wenden Sie sich an eine Rechtsanwaeltin/einen Rechtsanwalt oder "
         "eine EUTB-Beratungsstelle (www.teilhabeberatung.de)."
     )
+
+
+# ── Cross-Reference (Querverweise) ─────────────────────────────────────────
+
+
+class ReferenceExtractRequest(BaseModel):
+    """Anfrage zur Querverweis-Extraktion."""
+
+    gesetz: str | None = Field(None, description="Optional: nur fuer ein Gesetz extrahieren")
+    full_reindex: bool = Field(False, description="True fuer vollstaendige Neuindexierung statt set_payload")
+
+
+class ReferenceExtractResponse(BaseModel):
+    """Ergebnis der Querverweis-Extraktion."""
+
+    erfolg: bool
+    total_points: int = Field(description="Anzahl durchsuchter Punkte")
+    points_with_refs: int = Field(description="Punkte mit mindestens einem Querverweis")
+    total_refs: int = Field(description="Gesamtzahl extrahierter Querverweise")
+    snapshot_name: str | None = Field(None, description="Name des Sicherungs-Snapshots")
+    nachricht: str = Field(description="Status-Nachricht")
+
+
+class ReferenceItem(BaseModel):
+    """Ein Querverweis in der API-Antwort."""
+
+    gesetz: str
+    paragraph: str
+    absatz: int | None = None
+    raw: str
+    verified: bool
+    kontext: str | None = None
+
+
+class IncomingReferenceItem(BaseModel):
+    """Ein eingehender Querverweis (wer zitiert diesen Paragraphen)."""
+
+    gesetz: str = Field(description="Gesetz des zitierenden Paragraphen")
+    paragraph: str = Field(description="Zitierender Paragraph")
+    chunk_id: str = Field(description="Chunk-ID des zitierenden Punktes")
+    text_preview: str = Field(description="Textvorschau (max 200 Zeichen)")
+
+
+class ReferenceNetworkResponse(BaseModel):
+    """Zitationsnetzwerk eines Paragraphen."""
+
+    gesetz: str
+    paragraph: str
+    outgoing: list[ReferenceItem] = Field(description="Ausgehende Querverweise")
+    incoming: list[IncomingReferenceItem] = Field(description="Eingehende Querverweise")
+    incoming_count: int = Field(description="Gesamtzahl eingehender Querverweise")
