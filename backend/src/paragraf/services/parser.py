@@ -16,9 +16,50 @@ from paragraf.models.law import (
     LawChunk,
 )
 
+from paragraf.config import settings
+
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://www.gesetze-im-internet.de"
+
+# ── Satz-Level Chunking ──────────────────────────────────────────────────────
+
+_LEGAL_ABBREVS = (
+    "Abs.", "Nr.", "Satz", "Buchst.", "lit.", "vgl.", "gem.", "Art.",
+    "Ziff.", "S.", "bzw.", "usw.", "etc.", "ca.", "bzgl.", "insb.",
+    "ggf.", "i.V.m.", "i.S.d.", "i.d.R.", "z.B.", "u.a.", "d.h.",
+    "sog.", "Urt.", "Beschl.", "BVerfG", "BSG", "BAG", "BGH",
+    "Rn.", "Rdnr.", "Halbs.", "Alt.",
+)
+_PLACEHOLDER = "\x00"
+
+
+def _split_into_saetze(text: str, min_length: int = 100) -> list[str]:
+    """Spaltet Text an Satzgrenzen unter Beruecksichtigung juristischer Abkuerzungen."""
+    # Step 1: Replace known abbreviations with placeholders
+    protected = text
+    replacements: list[tuple[str, str]] = []
+    for abbrev in _LEGAL_ABBREVS:
+        if abbrev in protected:
+            placeholder = f"{_PLACEHOLDER}{len(replacements)}{_PLACEHOLDER}"
+            replacements.append((placeholder, abbrev))
+            protected = protected.replace(abbrev, placeholder)
+
+    # Step 2: Split on sentence boundaries (period + space + uppercase/paragraph/digit)
+    parts = re.split(r'(?<=\.)\s+(?=[A-ZÄÖÜ0-9§(])', protected)
+
+    # Step 3: Restore abbreviations
+    restored: list[str] = []
+    for part in parts:
+        for placeholder, original in replacements:
+            part = part.replace(placeholder, original)
+        part = part.strip()
+        if len(part) >= min_length:
+            restored.append(part)
+
+    return restored
+
+
 TOC_URL = f"{BASE_URL}/gii-toc.xml"
 
 # Fallback-Titel fuer GG-Artikel (wenn XML keinen Titel liefert)
@@ -245,7 +286,7 @@ class GesetzParser:
         chunks.append(chunk)
 
         # Bei langen Paragraphen: zusaetzlich Absatz-Level Chunks
-        if len(absaetze) > 1 and len(full_text) > 800:
+        if len(absaetze) > 1 and len(full_text) > settings.chunk_min_length_for_split:
             for abs_nr, abs_text in enumerate(absaetze, start=1):
                 if len(abs_text.strip()) < 20:
                     continue
@@ -266,6 +307,32 @@ class GesetzParser:
                     ),
                 )
                 chunks.append(abs_chunk)
+
+        # Bei langen Absaetzen: zusaetzlich Satz-Level Chunks
+        for abs_nr, abs_text in enumerate(absaetze, start=1):
+            if len(abs_text.strip()) < settings.chunk_satz_min_length * 2:
+                continue  # Nur Absaetze splitten die mindestens 2x min Satz-Laenge sind
+            saetze = _split_into_saetze(abs_text, min_length=settings.chunk_satz_min_length)
+            if len(saetze) <= 1:
+                continue  # Kein Splitting bei nur einem Satz
+            for satz_nr, satz_text in enumerate(saetze, start=1):
+                satz_id = f"{paragraph_id}_Abs{abs_nr}_S{satz_nr}"
+                satz_chunk = LawChunk(
+                    id=satz_id,
+                    text=f"{enbez} Abs. {abs_nr} Satz {satz_nr} {norm_abk}\n\n{satz_text}",
+                    metadata=ChunkMetadata(
+                        gesetz=norm_abk,
+                        paragraph=enbez,
+                        absatz=abs_nr,
+                        titel=titel,
+                        abschnitt=current_abschnitt,
+                        hierarchie_pfad=f"{hierarchie} > Abs. {abs_nr} > S. {satz_nr}",
+                        norm_id=norm_id,
+                        quelle="gesetze-im-internet.de",
+                        chunk_typ="satz",
+                    ),
+                )
+                chunks.append(satz_chunk)
 
         return chunks
 

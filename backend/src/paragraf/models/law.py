@@ -230,7 +230,7 @@ class ChunkMetadata(BaseModel):
     norm_id: str = Field("", description="Eindeutige Norm-ID (doknr aus XML)")
     stand: str | None = Field(None, description="Fassungsdatum")
     quelle: str = Field("gesetze-im-internet.de", description="Datenquelle")
-    chunk_typ: str = Field("paragraph", description="paragraph | absatz | abschnitt")
+    chunk_typ: str = Field("paragraph", description="paragraph | absatz | satz")
     references_out: list[Reference] = Field(
         default_factory=list,
         description="Ausgehende Querverweise dieses Paragraphen",

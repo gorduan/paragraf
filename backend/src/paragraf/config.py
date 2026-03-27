@@ -69,6 +69,10 @@ class Settings(BaseSettings):
     query_expansion_enabled: bool = True
     synonyms_json_path: str = ""
 
+    # ── Chunking ─────────────────────────────────────────────
+    chunk_min_length_for_split: int = 800
+    chunk_satz_min_length: int = 100
+
     @property
     def raw_dir(self) -> Path:
         return self.data_dir / "raw"
