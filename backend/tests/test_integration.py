@@ -196,6 +196,43 @@ class TestRerankerPipeline:
         assert "§ 0" in zit
 
 
+class TestSearchEndpointSignature:
+    """Verifies search endpoint accepts new parameters."""
+
+    def test_search_request_accepts_search_type(self):
+        from paragraf.api_models import SearchRequest
+        req = SearchRequest(anfrage="test", search_type="fulltext")
+        assert req.search_type == "fulltext"
+
+    def test_search_request_accepts_hybrid_fulltext(self):
+        from paragraf.api_models import SearchRequest
+        req = SearchRequest(anfrage="test", search_type="hybrid_fulltext")
+        assert req.search_type == "hybrid_fulltext"
+
+    def test_search_request_accepts_absatz_range(self):
+        from paragraf.api_models import SearchRequest
+        req = SearchRequest(anfrage="test", absatz_von=1, absatz_bis=5)
+        assert req.absatz_von == 1
+        assert req.absatz_bis == 5
+
+    def test_search_request_defaults_to_semantic(self):
+        from paragraf.api_models import SearchRequest
+        req = SearchRequest(anfrage="test")
+        assert req.search_type == "semantic"
+        assert req.absatz_von is None
+        assert req.absatz_bis is None
+
+    def test_search_response_includes_search_type(self):
+        from paragraf.api_models import SearchResponse
+        resp = SearchResponse(query="test", results=[], total=0, search_type="fulltext")
+        assert resp.search_type == "fulltext"
+
+    def test_search_response_defaults_to_semantic(self):
+        from paragraf.api_models import SearchResponse
+        resp = SearchResponse(query="test", results=[], total=0)
+        assert resp.search_type == "semantic"
+
+
 class TestSearchFilter:
     """Integration: Filter-Erstellung und Validierung."""
 

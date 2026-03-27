@@ -7,7 +7,7 @@ import logging
 from mcp.server.fastmcp import Context, FastMCP
 
 from paragraf.config import settings
-from paragraf.models.law import SearchFilter
+from paragraf.models.law import SearchFilter, SearchResult
 from paragraf.services.reranker import long_context_reorder
 
 logger = logging.getLogger(__name__)
@@ -22,6 +22,25 @@ DISCLAIMER = (
 )
 
 
+def _deduplicate_results(
+    results: list[SearchResult], max_results: int,
+) -> list[SearchResult]:
+    """Dedupliziert Suchergebnisse: Paragraph-Chunks bevorzugen, Absatz-Duplikate entfernen."""
+    seen: set[str] = set()
+    deduplicated: list[SearchResult] = []
+    deferred: list[SearchResult] = []
+    for r in results:
+        key = f"{r.chunk.metadata.paragraph}|{r.chunk.metadata.gesetz}"
+        if key not in seen:
+            seen.add(key)
+            deduplicated.append(r)
+        elif r.chunk.metadata.chunk_typ == "absatz" and len(deduplicated) < max_results:
+            deferred.append(r)
+    if len(deduplicated) < max_results and deferred:
+        deduplicated.extend(deferred[: max_results - len(deduplicated)])
+    return deduplicated
+
+
 def register_search_tools(mcp: FastMCP) -> None:
     """Registriert alle Such-Tools am MCP-Server."""
 
@@ -32,6 +51,9 @@ def register_search_tools(mcp: FastMCP) -> None:
         gesetzbuch: str | None = None,
         abschnitt: str | None = None,
         max_ergebnisse: int = settings.final_top_k,
+        suchmodus: str = "semantisch",
+        absatz_von: int | None = None,
+        absatz_bis: int | None = None,
     ) -> str:
         """Durchsucht deutsche Gesetze nach relevanten Paragraphen.
 
@@ -48,6 +70,11 @@ def register_search_tools(mcp: FastMCP) -> None:
                         SGB XII, SGB XIV, BGG, AGG, VersMedV, EStG, KraftStG
             abschnitt: Optional: Filter nach Abschnitt/Kapitel
             max_ergebnisse: Anzahl zurueckzugebender Ergebnisse (1-10, Standard: 5)
+            suchmodus: Suchmodus - 'semantisch' (Standard, bedeutungsbasiert),
+                       'volltext' (exakte Begriffe/Paragraphennummern),
+                       'hybrid' (beides kombiniert, wenn unsicher)
+            absatz_von: Optional: Minimum Absatz-Nummer (1-basiert)
+            absatz_bis: Optional: Maximum Absatz-Nummer (1-basiert)
 
         Returns:
             Relevante Gesetzestexte mit Quellenangaben und RDG-Disclaimer.
@@ -61,65 +88,104 @@ def register_search_tools(mcp: FastMCP) -> None:
 
         await ctx.info(f"Suche: '{anfrage}'" + (f" in {gesetzbuch}" if gesetzbuch else ""))
 
-        # 1. Filter aufbauen
+        # Filter aufbauen
         search_filter = SearchFilter(
             gesetz=gesetzbuch,
             abschnitt=abschnitt,
+            absatz_von=absatz_von,
+            absatz_bis=absatz_bis,
         )
 
-        # 2. Hybrid-Search (Dense + Sparse)
-        await ctx.report_progress(progress=1, total=4)
-        raw_results = await qdrant.hybrid_search(
-            query=anfrage,
-            top_k=settings.retrieval_top_k,
-            search_filter=search_filter,
-        )
+        # Suchmodus-Mapping (deutsch -> intern)
+        mode_map = {"semantisch": "semantic", "volltext": "fulltext", "hybrid": "hybrid_fulltext"}
+        search_type = mode_map.get(suchmodus, "semantic")
 
-        if not raw_results:
-            return (
-                f"Keine Ergebnisse fuer '{anfrage}' gefunden."
-                + (f" (Filter: {gesetzbuch})" if gesetzbuch else "")
-                + "\n\nVersuchen Sie eine allgemeinere Formulierung oder "
-                "entfernen Sie den Gesetzbuch-Filter."
+        if search_type == "fulltext":
+            # Fulltext-Suche: MatchText + Sparse Scoring, kein Reranking
+            await ctx.report_progress(progress=1, total=3)
+            raw_results = await qdrant.fulltext_search(
+                query=anfrage,
+                top_k=max_ergebnisse,
+                search_filter=search_filter,
             )
+            if not raw_results:
+                return (
+                    f"Keine Ergebnisse fuer '{anfrage}' gefunden (Volltext-Suche)."
+                    + (f" (Filter: {gesetzbuch})" if gesetzbuch else "")
+                    + "\n\nVersuchen Sie andere Suchbegriffe oder wechseln Sie zum semantischen Modus."
+                )
+            await ctx.report_progress(progress=2, total=3)
+            deduplicated = _deduplicate_results(raw_results, max_ergebnisse)
 
-        # 3. Cross-Encoder Reranking -> Top k
-        await ctx.report_progress(progress=2, total=4)
-        reranked = await reranker.arerank(anfrage, raw_results, top_k=max_ergebnisse)
-
-        # Ergebnisse unter Schwellenwert entfernen
-        reranked = [r for r in reranked if r.score >= settings.similarity_threshold]
-
-        if not reranked:
-            return (
-                f"Keine ausreichend relevanten Ergebnisse fuer '{anfrage}' gefunden "
-                f"(Schwellenwert: {settings.similarity_threshold})."
-                + (f" (Filter: {gesetzbuch})" if gesetzbuch else "")
-                + "\n\nVersuchen Sie eine allgemeinere Formulierung."
+        elif search_type == "hybrid_fulltext":
+            # Beide Suchen unabhaengig, Merge, Reranking
+            await ctx.report_progress(progress=1, total=4)
+            semantic_results = await qdrant.hybrid_search(
+                query=anfrage,
+                top_k=settings.retrieval_top_k,
+                search_filter=search_filter,
             )
+            fulltext_results = await qdrant.fulltext_search(
+                query=anfrage,
+                top_k=settings.retrieval_top_k,
+                search_filter=search_filter,
+            )
+            # Merge mit Dedup nach Chunk-ID
+            seen_ids: set[str] = set()
+            merged = []
+            for r in semantic_results + fulltext_results:
+                if r.chunk.id not in seen_ids:
+                    seen_ids.add(r.chunk.id)
+                    merged.append(r)
 
-        # 4. Deduplizierung: Paragraph-Chunks bevorzugen, Absatz-Duplikate entfernen
-        await ctx.report_progress(progress=3, total=4)
-        seen_paragraphs: set[str] = set()
-        deduplicated = []
-        deferred_absaetze = []
-        for r in reranked:
-            key = f"{r.chunk.metadata.paragraph}|{r.chunk.metadata.gesetz}"
-            if key not in seen_paragraphs:
-                seen_paragraphs.add(key)
-                deduplicated.append(r)
-            elif r.chunk.metadata.chunk_typ == "absatz" and len(deduplicated) < max_ergebnisse:
-                deferred_absaetze.append(r)
+            if not merged:
+                return (
+                    f"Keine Ergebnisse fuer '{anfrage}' gefunden (Hybrid-Suche)."
+                    + (f" (Filter: {gesetzbuch})" if gesetzbuch else "")
+                )
 
-        # Wenn nach Deduplizierung zu wenig Ergebnisse, Absatz-Chunks nachruecken
-        if len(deduplicated) < max_ergebnisse and deferred_absaetze:
-            deduplicated.extend(deferred_absaetze[: max_ergebnisse - len(deduplicated)])
+            await ctx.report_progress(progress=2, total=4)
+            reranked = await reranker.arerank(anfrage, merged, top_k=max_ergebnisse)
+            reranked = [r for r in reranked if r.score >= settings.similarity_threshold]
+            if not reranked:
+                return f"Keine ausreichend relevanten Ergebnisse fuer '{anfrage}' gefunden."
+            await ctx.report_progress(progress=3, total=4)
+            deduplicated = _deduplicate_results(reranked, max_ergebnisse)
 
-        # 5. LongContextReorder
+        else:
+            # Semantisch (bestehende Logik)
+            await ctx.report_progress(progress=1, total=4)
+            raw_results = await qdrant.hybrid_search(
+                query=anfrage,
+                top_k=settings.retrieval_top_k,
+                search_filter=search_filter,
+            )
+            if not raw_results:
+                return (
+                    f"Keine Ergebnisse fuer '{anfrage}' gefunden."
+                    + (f" (Filter: {gesetzbuch})" if gesetzbuch else "")
+                    + "\n\nVersuchen Sie eine allgemeinere Formulierung oder "
+                    "entfernen Sie den Gesetzbuch-Filter."
+                )
+            await ctx.report_progress(progress=2, total=4)
+            reranked = await reranker.arerank(anfrage, raw_results, top_k=max_ergebnisse)
+            reranked = [r for r in reranked if r.score >= settings.similarity_threshold]
+            if not reranked:
+                return (
+                    f"Keine ausreichend relevanten Ergebnisse fuer '{anfrage}' gefunden "
+                    f"(Schwellenwert: {settings.similarity_threshold})."
+                    + (f" (Filter: {gesetzbuch})" if gesetzbuch else "")
+                    + "\n\nVersuchen Sie eine allgemeinere Formulierung."
+                )
+            await ctx.report_progress(progress=3, total=4)
+            deduplicated = _deduplicate_results(reranked, max_ergebnisse)
+
+        # LongContextReorder
         reordered = long_context_reorder(deduplicated)
 
-        # 6. Ergebnisse formatieren
-        await ctx.report_progress(progress=4, total=4)
+        # Ergebnisse formatieren
+        total_steps = 3 if search_type == "fulltext" else 4
+        await ctx.report_progress(progress=total_steps, total=total_steps)
         output_parts = [f"## Ergebnisse fuer: {anfrage}\n"]
 
         for r in reordered:
