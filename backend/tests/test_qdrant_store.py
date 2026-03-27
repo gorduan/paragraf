@@ -492,6 +492,245 @@ class TestQdrantStoreFulltext:
             await store.fulltext_search("Test")
 
 
+class TestQdrantStoreDiscover:
+    """Tests fuer die discover() Methode."""
+
+    @pytest.mark.asyncio
+    async def test_discover_calls_query_points_with_discover_query(self):
+        """discover() ruft query_points mit DiscoverQuery und ContextPair auf."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_point = MagicMock()
+        mock_point.payload = {
+            "chunk_id": "test-id",
+            "text": "Test text",
+            "gesetz": "SGB IX",
+            "paragraph": "§ 1",
+            "titel": "Test",
+            "abschnitt": "",
+            "hierarchie_pfad": "",
+            "norm_id": "",
+            "stand": None,
+            "quelle": "gesetze-im-internet.de",
+            "chunk_typ": "paragraph",
+            "absatz": None,
+        }
+        mock_point.score = 0.85
+        mock_response = MagicMock()
+        mock_response.points = [mock_point]
+        store._client.query_points.return_value = mock_response
+
+        results = await store.discover(
+            target_id="abc-123",
+            context_pairs=[("pos-1", "neg-1")],
+        )
+
+        store._client.query_points.assert_called_once()
+        call_kwargs = store._client.query_points.call_args.kwargs
+        query = call_kwargs["query"]
+        assert isinstance(query, models.DiscoverQuery)
+        assert query.discover.target == "abc-123"
+        assert len(query.discover.context) == 1
+        assert isinstance(query.discover.context[0], models.ContextPair)
+        assert call_kwargs["using"] == DENSE_VECTOR_NAME
+        assert len(results) == 1
+        assert results[0].score == 0.85
+
+    @pytest.mark.asyncio
+    async def test_discover_empty_context(self):
+        """discover() mit leerer context_pairs uebergibt context=None."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_response = MagicMock()
+        mock_response.points = []
+        store._client.query_points.return_value = mock_response
+
+        await store.discover(target_id="abc-123", context_pairs=[])
+
+        call_kwargs = store._client.query_points.call_args.kwargs
+        query = call_kwargs["query"]
+        assert query.discover.context is None
+
+    @pytest.mark.asyncio
+    async def test_discover_with_filter(self):
+        """discover() mit search_filter uebergibt query_filter."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_response = MagicMock()
+        mock_response.points = []
+        store._client.query_points.return_value = mock_response
+
+        await store.discover(
+            target_id="abc-123",
+            context_pairs=[],
+            search_filter=SearchFilter(gesetz="SGB IX"),
+        )
+
+        call_kwargs = store._client.query_points.call_args.kwargs
+        assert call_kwargs["query_filter"] is not None
+        assert any(c.key == "gesetz" for c in call_kwargs["query_filter"].must)
+
+
+class TestQdrantStoreGroupedSearch:
+    """Tests fuer die grouped_search() Methode."""
+
+    @pytest.mark.asyncio
+    async def test_grouped_search_calls_query_points_groups(self):
+        """grouped_search() ruft query_points_groups mit group_by='gesetz' auf."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_embedding = MagicMock()
+        mock_embedding.encode_query.return_value = ([0.1] * 1024, {"word": 0.5})
+        store.embedding = mock_embedding
+
+        mock_groups_result = MagicMock()
+        mock_groups_result.groups = []
+        store._client.query_points_groups.return_value = mock_groups_result
+
+        results = await store.grouped_search("test query")
+
+        store._client.query_points_groups.assert_called_once()
+        call_kwargs = store._client.query_points_groups.call_args.kwargs
+        assert call_kwargs["group_by"] == "gesetz"
+        assert call_kwargs["group_size"] == 3
+        assert call_kwargs["limit"] == 10
+        assert call_kwargs["using"] == DENSE_VECTOR_NAME
+        assert results == []
+
+    @pytest.mark.asyncio
+    async def test_grouped_search_raises_without_embedding(self):
+        """grouped_search() ohne EmbeddingService wirft RuntimeError."""
+        store = QdrantStore(embedding_service=None)
+        store._client = AsyncMock()
+        with pytest.raises(RuntimeError, match="Kein EmbeddingService konfiguriert"):
+            await store.grouped_search("test")
+
+    @pytest.mark.asyncio
+    async def test_grouped_search_custom_params(self):
+        """grouped_search() uebergibt benutzerdefinierte group_size und max_groups."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_embedding = MagicMock()
+        mock_embedding.encode_query.return_value = ([0.1] * 1024, {})
+        store.embedding = mock_embedding
+
+        mock_groups_result = MagicMock()
+        mock_groups_result.groups = []
+        store._client.query_points_groups.return_value = mock_groups_result
+
+        await store.grouped_search("test", group_size=5, max_groups=15)
+
+        call_kwargs = store._client.query_points_groups.call_args.kwargs
+        assert call_kwargs["group_size"] == 5
+        assert call_kwargs["limit"] == 15
+
+
+class TestQdrantStoreGroupedRecommend:
+    """Tests fuer die grouped_recommend() Methode."""
+
+    @pytest.mark.asyncio
+    async def test_grouped_recommend_uses_recommend_query_with_groups(self):
+        """grouped_recommend() nutzt RecommendQuery mit query_points_groups."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_groups_result = MagicMock()
+        mock_groups_result.groups = []
+        store._client.query_points_groups.return_value = mock_groups_result
+
+        await store.grouped_recommend(point_ids=["id-1"])
+
+        store._client.query_points_groups.assert_called_once()
+        call_kwargs = store._client.query_points_groups.call_args.kwargs
+        query = call_kwargs["query"]
+        assert isinstance(query, models.RecommendQuery)
+        assert query.recommend.positive == ["id-1"]
+        assert query.recommend.strategy == models.RecommendStrategy.AVERAGE_VECTOR
+        assert call_kwargs["group_by"] == "gesetz"
+
+    @pytest.mark.asyncio
+    async def test_grouped_recommend_applies_exclude_gesetz(self):
+        """grouped_recommend() mit exclude_gesetz setzt must_not Filter."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_groups_result = MagicMock()
+        mock_groups_result.groups = []
+        store._client.query_points_groups.return_value = mock_groups_result
+
+        await store.grouped_recommend(
+            point_ids=["id-1"], exclude_gesetz="SGB IX"
+        )
+
+        call_kwargs = store._client.query_points_groups.call_args.kwargs
+        query_filter = call_kwargs["query_filter"]
+        assert query_filter is not None
+        assert len(query_filter.must_not) == 1
+        assert query_filter.must_not[0].key == "gesetz"
+        assert query_filter.must_not[0].match.value == "SGB IX"
+
+
+class TestGroupsToGroupedResults:
+    """Tests fuer die _groups_to_grouped_results() statische Methode."""
+
+    def test_converts_groups_result(self):
+        """Konvertiert mock GroupsResult zu Liste von (gesetz, results) Tupeln."""
+        mock_point1 = MagicMock()
+        mock_point1.payload = {
+            "chunk_id": "sgb9-1",
+            "text": "Paragraph 1 SGB IX",
+            "gesetz": "SGB IX",
+            "paragraph": "§ 1",
+            "titel": "Titel 1",
+            "abschnitt": "Teil 1",
+            "hierarchie_pfad": "",
+            "norm_id": "",
+            "stand": None,
+            "quelle": "gesetze-im-internet.de",
+            "chunk_typ": "paragraph",
+            "absatz": None,
+        }
+        mock_point1.score = 0.9
+
+        mock_point2 = MagicMock()
+        mock_point2.payload = {
+            "chunk_id": "bgb-1",
+            "text": "Paragraph 1 BGB",
+            "gesetz": "BGB",
+            "paragraph": "§ 1",
+            "titel": "Titel 1",
+            "abschnitt": "Buch 1",
+            "hierarchie_pfad": "",
+            "norm_id": "",
+            "stand": None,
+            "quelle": "gesetze-im-internet.de",
+            "chunk_typ": "paragraph",
+            "absatz": None,
+        }
+        mock_point2.score = 0.8
+
+        mock_group1 = MagicMock()
+        mock_group1.id = "SGB IX"
+        mock_group1.hits = [mock_point1]
+
+        mock_group2 = MagicMock()
+        mock_group2.id = "BGB"
+        mock_group2.hits = [mock_point2]
+
+        mock_groups_result = MagicMock()
+        mock_groups_result.groups = [mock_group1, mock_group2]
+
+        result = QdrantStore._groups_to_grouped_results(mock_groups_result)
+
+        assert len(result) == 2
+        assert result[0][0] == "SGB IX"
+        assert len(result[0][1]) == 1
+        assert result[0][1][0].chunk.metadata.gesetz == "SGB IX"
+        assert result[0][1][0].score == 0.9
+        assert result[0][1][0].rank == 1
+        assert result[1][0] == "BGB"
+        assert len(result[1][1]) == 1
+        assert result[1][1][0].chunk.metadata.gesetz == "BGB"
+
+
 class TestQdrantStoreRecommend:
     """Tests fuer die recommend() Methode."""
 
