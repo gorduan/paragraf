@@ -67,7 +67,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 03-01-PLAN.md -- Design tokens, dependencies, cn() utility, vitest setup, Button/Card/Input/Badge primitives
+- [x] 03-01-PLAN.md -- Design tokens, dependencies, cn() utility, vitest setup, Button/Card/Input/Badge primitives
 - [ ] 03-02-PLAN.md -- Radix primitives (Dialog/Select/Tooltip/Tabs), SearchPage + Sidebar migration
 
 ### Phase 4: Recommend & Pagination
