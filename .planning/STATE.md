@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 7 context gathered
-last_updated: "2026-03-27T12:25:05.057Z"
+status: executing
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-03-27T12:54:41.849Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 10
   completed_phases: 6
-  total_plans: 15
-  completed_plans: 15
+  total_plans: 18
+  completed_plans: 16
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Juristen und Buerger finden in Sekunden die relevanten Paragraphen -- mit semantischer Suche, Querverweisen zwischen Gesetzen und gruppierten Ergebnissen.
-**Current focus:** Phase 06 — cross-reference-pipeline
+**Current focus:** Phase 07 — query-expansion-chunking
 
 ## Current Position
 
-Phase: 7
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 07 (query-expansion-chunking) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-03-27
 
 Progress: [░░░░░░░░░░] 0%
@@ -66,6 +66,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 06 P01 | 5min | 2 tasks | 6 files |
 | Phase 06 P02 | 5min | 2 tasks | 5 files |
 | Phase 06 P03 | 4min | 2 tasks | 3 files |
+| Phase 07 P01 | 5min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,8 @@ Recent decisions affecting current work:
 - [Phase 06]: set_payload with wait=False for batch extraction performance; snapshot before extraction per D-09
 - [Phase 06]: Nested field indexes on references_out[].gesetz and references_out[].paragraph per Pitfall 4
 - [Phase 06]: paragraf_references MCP tool follows register_*_tools pattern with richtung parameter for directional queries
+- [Phase 07]: Reimplemented arabic-to-roman normalization inline to avoid coupling QueryExpander to GesetzParser
+- [Phase 07]: Max 3 expansion terms per matched token to prevent query dilution
 
 ### Pending Todos
 
@@ -116,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T12:25:05.051Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-query-expansion-chunking/07-CONTEXT.md
+Last session: 2026-03-27T12:54:41.843Z
+Stopped at: Completed 07-01-PLAN.md
+Resume file: None

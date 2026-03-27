@@ -23,7 +23,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 - [x] **SRCH-04**: Qdrant Scroll API -- paginierte Ergebnisse mit Offset/Limit
 - [x] **SRCH-05**: Grouped Recommendations -- Empfehlungen nach Gesetz gruppiert
 - [x] **SRCH-06**: Full-Text-Suche als Toggle neben semantischer Suche
-- [ ] **SRCH-07**: Query Expansion mit juristischem Synonym-Woerterbuch (konservativ, nur Abkuerzungen + Kernsynonyme)
+- [x] **SRCH-07**: Query Expansion mit juristischem Synonym-Woerterbuch (konservativ, nur Abkuerzungen + Kernsynonyme)
 - [x] **SRCH-08**: Batch Search Endpoint fuer parallele Queries
 
 ### Cross-References
@@ -104,7 +104,7 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | SRCH-04 | Phase 4: Recommend & Pagination | Complete |
 | SRCH-05 | Phase 5: Grouping & Discovery API | Complete |
 | SRCH-06 | Phase 2: Search Indexes & Full-Text | Complete |
-| SRCH-07 | Phase 7: Query Expansion & Chunking | Pending |
+| SRCH-07 | Phase 7: Query Expansion & Chunking | Complete |
 | SRCH-08 | Phase 4: Recommend & Pagination | Complete |
 | XREF-01 | Phase 6: Cross-Reference Pipeline | Complete |
 | XREF-02 | Phase 6: Cross-Reference Pipeline | Complete |
