@@ -166,13 +166,13 @@ Plans:
   2. An interactive force-directed citation graph shows relationships between paragraphs/laws with clickable nodes
   3. The citation graph visualization matches the design system tokens and is readable at various zoom levels
   4. Discovery search UI allows selecting positive and negative examples via checkbox or drag-and-drop to refine explorative search
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 09-01: TBD
-- [ ] 09-02: TBD
-- [ ] 09-03: TBD
+- [ ] 09-01-PLAN.md -- API client extensions, citation parser, CitationLink/CitationTooltip, LookupPage rendering, Sidebar+App graph route
+- [ ] 09-02-PLAN.md -- d3-force graph-utils, GraphCanvas, GraphSidePanel, GraphLegend, GraphPage with dual-level toggle
+- [ ] 09-03-PLAN.md -- DiscoveryExampleBar, UndoSnackbar, SearchModeToggle extension, ResultCard +/- buttons, SearchPage discovery integration
 
 ### Phase 10: Dashboard, Export & Polish
 **Goal**: The application is feature-complete with snapshot management in the dashboard, document export, responsive design, and accessibility compliance
