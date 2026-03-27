@@ -49,11 +49,11 @@ Plans:
   2. Payload range filter on the `absatz` field allows numeric range queries (e.g., paragraphs 1-10)
   3. Backend exposes a full-text search endpoint that returns results based on exact keyword matches
   4. Full-text search can be toggled independently of semantic search via API parameter
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md -- Models, QdrantStore service methods (fulltext_search, index creation, range filter), unit tests
+- [ ] 02-02-PLAN.md -- REST endpoint branching, migration endpoint, MCP tool extension (suchmodus, absatz range)
 
 ### Phase 3: Design System Foundation
 **Goal**: The frontend has a consistent design token system and reusable primitive components that all subsequent UI work builds upon
