@@ -117,7 +117,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 06-01-PLAN.md -- Reference model, CrossReferenceExtractor service with regex extraction, unit tests
+- [x] 06-01-PLAN.md -- Reference model, CrossReferenceExtractor service with regex extraction, unit tests
 - [ ] 06-02-PLAN.md -- QdrantStore reference methods, REST endpoints, Pydantic API models, docker-compose ENV
 - [ ] 06-03-PLAN.md -- MCP tool paragraf_references, server registration, unit tests
 

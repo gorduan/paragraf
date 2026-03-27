@@ -28,7 +28,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 
 ### Cross-References
 
-- [ ] **XREF-01**: Regex-basierte Querverweis-Extraktion aus deutschem Gesetzestext (SS X Abs. Y SGB Z, i.V.m., etc.)
+- [x] **XREF-01**: Regex-basierte Querverweis-Extraktion aus deutschem Gesetzestext (SS X Abs. Y SGB Z, i.V.m., etc.)
 - [ ] **XREF-02**: Querverweise als Array im Qdrant-Payload speichern (pro Paragraph)
 - [ ] **XREF-03**: Re-Indexierung aller Gesetze mit Querverweis-Daten (nach Snapshot)
 - [ ] **XREF-04**: Zitationsnetzwerk-API -- zu einem Paragraphen alle referenzierten und referenzierenden Normen abrufen
@@ -106,7 +106,7 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | SRCH-06 | Phase 2: Search Indexes & Full-Text | Complete |
 | SRCH-07 | Phase 7: Query Expansion & Chunking | Pending |
 | SRCH-08 | Phase 4: Recommend & Pagination | Complete |
-| XREF-01 | Phase 6: Cross-Reference Pipeline | Pending |
+| XREF-01 | Phase 6: Cross-Reference Pipeline | Complete |
 | XREF-02 | Phase 6: Cross-Reference Pipeline | Pending |
 | XREF-03 | Phase 6: Cross-Reference Pipeline | Pending |
 | XREF-04 | Phase 6: Cross-Reference Pipeline | Pending |

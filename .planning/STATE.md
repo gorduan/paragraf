@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 6 context gathered
-last_updated: "2026-03-27T11:08:00.425Z"
+status: executing
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-03-27T11:35:47.243Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 10
   completed_phases: 5
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 15
+  completed_plans: 13
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Juristen und Buerger finden in Sekunden die relevanten Paragraphen -- mit semantischer Suche, Querverweisen zwischen Gesetzen und gruppierten Ergebnissen.
-**Current focus:** Phase 05 — grouping-discovery-api
+**Current focus:** Phase 06 — cross-reference-pipeline
 
 ## Current Position
 
-Phase: 6
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 06 (cross-reference-pipeline) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-03-27
 
 Progress: [░░░░░░░░░░] 0%
@@ -63,6 +63,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05 P01 | 3min | 2 tasks | 5 files |
 | Phase 05 P02 | 3min | 2 tasks | 2 files |
 | Phase 05 P03 | 4min | 2 tasks | 5 files |
+| Phase 06 P01 | 5min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,9 @@ Recent decisions affecting current work:
 - [Phase 05]: Discovery endpoint uses first positive_id as target, remaining form context pairs with negatives
 - [Phase 05]: Dual-input _resolve_examples uses asyncio.gather for parallel ID resolution (Pitfall 5)
 - [Phase 05]: Context pairs built from remaining positives crossed with negatives per Research Pattern 2
+- [Phase 06]: Regex patterns built from LAW_REGISTRY keys sorted by length descending for longest-match-first
+- [Phase 06]: i.V.m. chains handled via dedicated pattern before single citations for correct law propagation
+- [Phase 06]: Context keywords normalized: vgl.->siehe, gem.->gemaess; unknown laws stored as verified=False
 
 ### Pending Todos
 
@@ -106,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T11:08:00.420Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-cross-reference-pipeline/06-CONTEXT.md
+Last session: 2026-03-27T11:35:47.237Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None
