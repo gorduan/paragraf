@@ -54,6 +54,7 @@ def register_search_tools(mcp: FastMCP) -> None:
         suchmodus: str = "semantisch",
         absatz_von: int | None = None,
         absatz_bis: int | None = None,
+        cursor: str | None = None,
     ) -> str:
         """Durchsucht deutsche Gesetze nach relevanten Paragraphen.
 
@@ -75,6 +76,8 @@ def register_search_tools(mcp: FastMCP) -> None:
                        'hybrid' (beides kombiniert, wenn unsicher)
             absatz_von: Optional: Minimum Absatz-Nummer (1-basiert)
             absatz_bis: Optional: Maximum Absatz-Nummer (1-basiert)
+            cursor: Optional: Cursor fuer naechste Seite (aus vorheriger Antwort).
+                    Wenn angegeben, werden paginierte Ergebnisse zurueckgegeben.
 
         Returns:
             Relevante Gesetzestexte mit Quellenangaben und RDG-Disclaimer.
@@ -87,6 +90,44 @@ def register_search_tools(mcp: FastMCP) -> None:
         max_ergebnisse = max(1, min(10, max_ergebnisse))
 
         await ctx.info(f"Suche: '{anfrage}'" + (f" in {gesetzbuch}" if gesetzbuch else ""))
+
+        # Per D-14: Cursor-based pagination for MCP
+        if cursor is not None:
+            browse_filter = SearchFilter(
+                gesetz=gesetzbuch,
+                abschnitt=abschnitt,
+                absatz_von=absatz_von,
+                absatz_bis=absatz_bis,
+            )
+            results, next_cursor = await qdrant.scroll_search(
+                search_filter=browse_filter,
+                limit=max_ergebnisse,
+                cursor=cursor,
+            )
+            if not results:
+                return "Keine weiteren Ergebnisse." + DISCLAIMER
+
+            output = f"## Suchergebnisse (Seite)\n\n**{len(results)} Ergebnisse:**\n\n"
+            for r in results:
+                meta = r.chunk.metadata
+                output += f"### {meta.paragraph} {meta.gesetz}"
+                if meta.titel:
+                    output += f" – {meta.titel}"
+                output += "\n"
+                if meta.abschnitt:
+                    output += f"*Abschnitt: {meta.abschnitt}*\n"
+                output += r.chunk.text + "\n\n---\n\n"
+
+            if next_cursor:
+                output += (
+                    f"\n**Naechste Seite:** Verwende cursor='{next_cursor}'"
+                    " fuer weitere Ergebnisse.\n"
+                )
+            else:
+                output += "\n**Letzte Seite erreicht.**\n"
+
+            output += DISCLAIMER
+            return output
 
         # Filter aufbauen
         search_filter = SearchFilter(

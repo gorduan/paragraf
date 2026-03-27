@@ -19,6 +19,7 @@ from paragraf.services.reranker import RerankerService
 from paragraf.tools.ingest import register_ingest_tools
 from paragraf.tools.lookup import register_lookup_tools
 from paragraf.tools.search import register_search_tools
+from paragraf.tools.recommend import register_recommend_tools
 from paragraf.tools.snapshot import register_snapshot_tools
 
 logger = logging.getLogger(__name__)
@@ -150,6 +151,7 @@ def create_server() -> FastMCP:
     register_lookup_tools(mcp)
     register_ingest_tools(mcp)
     register_snapshot_tools(mcp)
+    register_recommend_tools(mcp)
 
     # Prompts registrieren
     register_prompts(mcp)
