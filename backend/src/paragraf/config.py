@@ -55,6 +55,12 @@ class Settings(BaseSettings):
     scroll_page_size: int = 10
     recommend_default_limit: int = 10
 
+    # ── Grouping & Discovery ─────────────────────────────────────
+    group_size_default: int = 3
+    group_max_groups: int = 10
+    discovery_max_positive: int = 5
+    discovery_max_negative: int = 5
+
     @property
     def raw_dir(self) -> Path:
         return self.data_dir / "raw"

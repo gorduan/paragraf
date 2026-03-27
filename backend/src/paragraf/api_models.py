@@ -289,3 +289,102 @@ class BatchSearchResponse(BaseModel):
     results: list[SearchResponse]
     total_queries: int
     load_warning: bool = Field(False, description="True wenn Auslastung hoch")
+
+
+# ── Grouping & Discovery ──────────────────────────────────────────────────
+
+
+class GroupedSearchRequest(BaseModel):
+    anfrage: str = Field(description="Suchanfrage in natuerlicher Sprache")
+    gesetzbuch: str | None = Field(None, description="Filter nach Gesetzbuch")
+    abschnitt: str | None = Field(None, description="Filter nach Abschnitt")
+    group_size: int = Field(
+        default=3, ge=1, le=10, description="Ergebnisse pro Gruppe (max)"
+    )
+    max_groups: int = Field(
+        default=10, ge=1, le=20, description="Maximale Anzahl Gruppen"
+    )
+    search_type: Literal["semantic", "fulltext", "hybrid_fulltext"] = Field(
+        "semantic", description="Suchmodus"
+    )
+
+
+class DiscoverRequest(BaseModel):
+    positive_ids: list[str] | None = Field(
+        None, max_length=5, description="Positive Punkt-IDs"
+    )
+    positive_paragraphs: list[LookupRequest] | None = Field(
+        None, max_length=5, description="Positive Paragraphen"
+    )
+    negative_ids: list[str] | None = Field(
+        None, max_length=5, description="Negative Punkt-IDs"
+    )
+    negative_paragraphs: list[LookupRequest] | None = Field(
+        None, max_length=5, description="Negative Paragraphen"
+    )
+    limit: int = Field(10, ge=1, le=50, description="Anzahl Ergebnisse")
+    gesetzbuch: str | None = Field(None, description="Filter nach Gesetzbuch")
+    abschnitt: str | None = Field(None, description="Filter nach Abschnitt")
+
+
+class GroupedRecommendRequest(BaseModel):
+    point_ids: list[str] | None = Field(
+        None,
+        min_length=1,
+        max_length=5,
+        description="Liste von Qdrant Point-IDs (UUID-Strings)",
+    )
+    paragraph: str | None = Field(None, description="Paragraph als Alternative zu Point-ID")
+    gesetz: str | None = Field(None, description="Gesetz als Alternative zu Point-ID")
+    exclude_same_law: bool = Field(
+        True, description="Ergebnisse aus dem gleichen Gesetz ausschliessen"
+    )
+    gesetzbuch: str | None = Field(None, description="Filter nach Gesetzbuch")
+    abschnitt: str | None = Field(None, description="Filter nach Abschnitt")
+    absatz_von: int | None = Field(None, description="Absatz-Range Minimum")
+    absatz_bis: int | None = Field(None, description="Absatz-Range Maximum")
+    group_size: int = Field(3, ge=1, le=10, description="Ergebnisse pro Gruppe (max)")
+    max_groups: int = Field(10, ge=1, le=20, description="Maximale Anzahl Gruppen")
+
+
+class GroupedResultGroup(BaseModel):
+    gesetz: str = Field(description="Gesetzbuch-Abkuerzung")
+    results: list[SearchResultItem] = Field(description="Ergebnisse in dieser Gruppe")
+    total: int = Field(description="Anzahl Ergebnisse in dieser Gruppe")
+
+
+class GroupedSearchResponse(BaseModel):
+    query: str
+    groups: list[GroupedResultGroup]
+    total_groups: int
+    disclaimer: str = (
+        "Dies ist eine allgemeine Rechtsinformation, keine Rechtsberatung "
+        "im Sinne des Rechtsdienstleistungsgesetzes (RDG). Fuer eine individuelle "
+        "Beratung wenden Sie sich an eine Rechtsanwaeltin/einen Rechtsanwalt oder "
+        "eine EUTB-Beratungsstelle (www.teilhabeberatung.de)."
+    )
+
+
+class DiscoverResponse(BaseModel):
+    positive_ids: list[str] = Field(description="Verwendete positive Point-IDs")
+    negative_ids: list[str] = Field(description="Verwendete negative Point-IDs")
+    results: list[SearchResultItem]
+    total: int
+    disclaimer: str = (
+        "Dies ist eine allgemeine Rechtsinformation, keine Rechtsberatung "
+        "im Sinne des Rechtsdienstleistungsgesetzes (RDG). Fuer eine individuelle "
+        "Beratung wenden Sie sich an eine Rechtsanwaeltin/einen Rechtsanwalt oder "
+        "eine EUTB-Beratungsstelle (www.teilhabeberatung.de)."
+    )
+
+
+class GroupedRecommendResponse(BaseModel):
+    source_ids: list[str] = Field(description="Verwendete Point-IDs als Basis")
+    groups: list[GroupedResultGroup]
+    total_groups: int
+    disclaimer: str = (
+        "Dies ist eine allgemeine Rechtsinformation, keine Rechtsberatung "
+        "im Sinne des Rechtsdienstleistungsgesetzes (RDG). Fuer eine individuelle "
+        "Beratung wenden Sie sich an eine Rechtsanwaeltin/einen Rechtsanwalt oder "
+        "eine EUTB-Beratungsstelle (www.teilhabeberatung.de)."
+    )

@@ -531,6 +531,161 @@ class QdrantStore:
         next_cursor = str(next_offset) if next_offset is not None else None
         return results, next_cursor
 
+    # ── Grouping & Discovery ─────────────────────────────────────────────────
+
+    async def discover(
+        self,
+        target_id: str,
+        context_pairs: list[tuple[str, str]],
+        limit: int = 10,
+        search_filter: SearchFilter | None = None,
+    ) -> list[SearchResult]:
+        """Discovery API: Explorative Suche mit Positiv/Negativ-Kontext."""
+        qdrant_filter = self._build_filter(search_filter)
+
+        context = (
+            [
+                models.ContextPair(positive=pos, negative=neg)
+                for pos, neg in context_pairs
+            ]
+            if context_pairs
+            else None
+        )
+
+        results = await self.client.query_points(
+            collection_name=self.collection_name,
+            query=models.DiscoverQuery(
+                discover=models.DiscoverInput(
+                    target=target_id,
+                    context=context,
+                ),
+            ),
+            using=DENSE_VECTOR_NAME,
+            limit=limit,
+            query_filter=qdrant_filter,
+            with_payload=True,
+            search_params=models.SearchParams(
+                quantization=models.QuantizationSearchParams(
+                    rescore=True,
+                    oversampling=1.5,
+                ),
+            ),
+        )
+        return self._points_to_results(results)
+
+    async def grouped_search(
+        self,
+        query: str,
+        group_size: int = 3,
+        max_groups: int = 10,
+        search_filter: SearchFilter | None = None,
+    ) -> list[tuple[str, list[SearchResult]]]:
+        """Grouped Search: Ergebnisse nach Gesetz gruppiert via query_points_groups."""
+        if self.embedding is None:
+            raise RuntimeError("Kein EmbeddingService konfiguriert")
+
+        dense_vec, _ = self.embedding.encode_query(query)
+        qdrant_filter = self._build_filter(search_filter)
+
+        result = await self.client.query_points_groups(
+            collection_name=self.collection_name,
+            query=dense_vec,
+            using=DENSE_VECTOR_NAME,
+            group_by="gesetz",
+            group_size=group_size,
+            limit=max_groups,
+            query_filter=qdrant_filter,
+            with_payload=True,
+            search_params=models.SearchParams(
+                quantization=models.QuantizationSearchParams(
+                    rescore=True,
+                    oversampling=1.5,
+                ),
+            ),
+        )
+        return self._groups_to_grouped_results(result)
+
+    async def grouped_recommend(
+        self,
+        point_ids: list[str],
+        group_size: int = 3,
+        max_groups: int = 10,
+        search_filter: SearchFilter | None = None,
+        exclude_gesetz: str | None = None,
+    ) -> list[tuple[str, list[SearchResult]]]:
+        """Grouped Recommendations: Empfehlungen nach Gesetz gruppiert."""
+        qdrant_filter = self._build_filter(search_filter)
+
+        # Per D-02: exclude_same_law via must_not Bedingung
+        if exclude_gesetz:
+            must_not = [
+                models.FieldCondition(
+                    key="gesetz",
+                    match=models.MatchValue(value=exclude_gesetz),
+                )
+            ]
+            if qdrant_filter is None:
+                qdrant_filter = models.Filter(must_not=must_not)
+            else:
+                qdrant_filter.must_not = must_not
+
+        result = await self.client.query_points_groups(
+            collection_name=self.collection_name,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=point_ids,
+                    strategy=models.RecommendStrategy.AVERAGE_VECTOR,
+                ),
+            ),
+            using=DENSE_VECTOR_NAME,
+            group_by="gesetz",
+            group_size=group_size,
+            limit=max_groups,
+            query_filter=qdrant_filter,
+            with_payload=True,
+            search_params=models.SearchParams(
+                quantization=models.QuantizationSearchParams(
+                    rescore=True,
+                    oversampling=1.5,
+                ),
+            ),
+        )
+        return self._groups_to_grouped_results(result)
+
+    @staticmethod
+    def _groups_to_grouped_results(
+        groups_result: Any,
+    ) -> list[tuple[str, list[SearchResult]]]:
+        """Konvertiert GroupsResult zu Liste von (gesetz, results) Tupeln."""
+        grouped: list[tuple[str, list[SearchResult]]] = []
+        for group in groups_result.groups:
+            gesetz = str(group.id)
+            search_results: list[SearchResult] = []
+            for rank, point in enumerate(group.hits, start=1):
+                payload = point.payload or {}
+                metadata = ChunkMetadata(
+                    gesetz=payload.get("gesetz", ""),
+                    paragraph=payload.get("paragraph", ""),
+                    absatz=payload.get("absatz"),
+                    titel=payload.get("titel", ""),
+                    abschnitt=payload.get("abschnitt", ""),
+                    hierarchie_pfad=payload.get("hierarchie_pfad", ""),
+                    norm_id=payload.get("norm_id", ""),
+                    stand=payload.get("stand"),
+                    quelle=payload.get("quelle", "gesetze-im-internet.de"),
+                    chunk_typ=payload.get("chunk_typ", "paragraph"),
+                )
+                chunk = LawChunk(
+                    id=payload.get("chunk_id", ""),
+                    text=payload.get("text", ""),
+                    metadata=metadata,
+                )
+                search_results.append(
+                    SearchResult(chunk=chunk, score=point.score or 0.0, rank=rank)
+                )
+            grouped.append((gesetz, search_results))
+        return grouped
+
     @staticmethod
     def _records_to_results(records: list[Any]) -> list[SearchResult]:
         """Konvertiert Qdrant-Scroll-Records zu SearchResult-Liste (score=0.0)."""
