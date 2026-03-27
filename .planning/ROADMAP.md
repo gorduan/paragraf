@@ -84,7 +84,7 @@ Plans:
 
 Plans:
 - [x] 04-01-PLAN.md -- Settings, Pydantic models, QdrantStore service methods (recommend, scroll_search, _resolve_point_id), unit tests
-- [ ] 04-02-PLAN.md -- REST endpoints (/api/recommend, /api/search/batch, cursor in /api/search), docker-compose ENV vars
+- [x] 04-02-PLAN.md -- REST endpoints (/api/recommend, /api/search/batch, cursor in /api/search), docker-compose ENV vars
 - [ ] 04-03-PLAN.md -- MCP tool paragraf_similar, cursor in paragraf_search, unit tests
 
 ### Phase 5: Grouping & Discovery API
