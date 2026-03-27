@@ -49,11 +49,11 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit seman
 
 **Frontend-Verbesserungen (mit /frontend-design, /ui-ux-pro-max, /ckm-ui-styling):**
 - [ ] Professionelles UI-Redesign mit Design-System und konsistenter visueller Sprache
-- [ ] "Aehnliche Paragraphen"-Button auf ResultCard (Recommend API)
-- [ ] Ergebnis-Gruppierung nach Gesetz/Rechtsgebiet in der Suche
-- [ ] Erweiterte Filter-UI: Abschnitt + Chunk-Typ + Absatz-Range
-- [ ] Vergleich direkt aus Suchergebnissen heraus (onCompare wiring)
-- [ ] Paginierung fuer Suche und Law Browser
+- [x] "Aehnliche Paragraphen"-Button auf ResultCard (Recommend API) — Validated in Phase 8: Search Results UX
+- [x] Ergebnis-Gruppierung nach Gesetz/Rechtsgebiet in der Suche — Validated in Phase 8: Search Results UX
+- [x] Erweiterte Filter-UI: Abschnitt + Chunk-Typ + Absatz-Range — Validated in Phase 8: Search Results UX
+- [x] Vergleich direkt aus Suchergebnissen heraus (onCompare wiring) — Validated in Phase 8: Search Results UX
+- [x] Paginierung fuer Suche und Law Browser — Validated in Phase 8: Search Results UX
 - [ ] Zitations-Graph: Interaktive Visualisierung von Querverweisen
 - [ ] Export: PDF/Markdown-Export von Ergebnissen und Vergleichen
 - [ ] Responsive Design-Verbesserungen und Accessibility-Audit
@@ -71,7 +71,7 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit seman
 - Brownfield: Funktionierendes System mit ~20 Python-Dateien Backend + React-Frontend
 - Qdrant v1.13.2 bietet Recommend, Discovery, Grouping, Scroll, Quantization, Snapshots — Discovery + Grouping jetzt genutzt (Phase 5)
 - bge-m3 unterstuetzt ColBERT Multi-Vector Output — aktuell nur Dense + Sparse genutzt
-- Frontend hat teilweise vorbereitete aber nicht verdrahtete Features (onCompare, abschnitt-Filter)
+- Frontend hat vollstaendige Search Results UX mit Recommend, Gruppierung, Filter, Compare, Pagination (Phase 8)
 - MCP-Tools spiegeln die meisten Backend-Capabilities wider (Discovery + Grouping seit Phase 5)
 - Gesetze referenzieren sich intensiv gegenseitig — Querverweis-Pipeline seit Phase 6 aktiv (Extraktion + API + MCP-Tool)
 - Frontend-Design soll mit /frontend-design, /ui-ux-pro-max und /ckm-ui-styling Skills professionell gestaltet werden
@@ -112,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after Phase 7 (Query Expansion & Chunking) completion*
+*Last updated: 2026-03-27 after Phase 8 (Search Results UX) completion*
