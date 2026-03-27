@@ -80,12 +80,12 @@ Plans:
   3. Batch search endpoint accepts multiple queries and returns results in parallel
   4. MCP tool `paragraf_similar` returns similar paragraphs for a given paragraph
   5. All MCP search tools accept `abschnitt` (section) filter parameter
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
-- [ ] 04-03: TBD
+- [ ] 04-01-PLAN.md -- Settings, Pydantic models, QdrantStore service methods (recommend, scroll_search, _resolve_point_id), unit tests
+- [ ] 04-02-PLAN.md -- REST endpoints (/api/recommend, /api/search/batch, cursor in /api/search), docker-compose ENV vars
+- [ ] 04-03-PLAN.md -- MCP tool paragraf_similar, cursor in paragraf_search, unit tests
 
 ### Phase 5: Grouping & Discovery API
 **Goal**: Search results can be grouped by law/legal area and users can perform explorative search with positive/negative examples via the Discovery API
