@@ -7,6 +7,7 @@ import logging
 
 from mcp.server.fastmcp import Context, FastMCP
 
+from paragraf.config import settings
 from paragraf.models.law import GESETZ_DOWNLOAD_SLUGS, LAW_REGISTRY
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,14 @@ def register_ingest_tools(mcp: FastMCP) -> None:
         await app.ensure_ready()
         parser = app.parser
         qdrant = app.qdrant
+
+        # Auto-Snapshot vor Indexierung (per D-03)
+        try:
+            snapshot_name = await qdrant.create_snapshot()
+            await qdrant.delete_oldest_snapshots(max_count=settings.snapshot_max_count)
+            await ctx.info(f"Sicherungs-Snapshot erstellt: {snapshot_name}")
+        except Exception as e:
+            logger.warning("Auto-Snapshot fehlgeschlagen: %s (Indexierung wird fortgesetzt)", e)
 
         await ctx.info("Starte Indexierung...")
 
