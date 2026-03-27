@@ -29,10 +29,10 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit seman
 ### Active
 
 **Qdrant-Features:**
-- [ ] Recommend API: "Aehnliche Paragraphen" zu einem gegebenen Paragraphen finden
+- [x] Recommend API: "Aehnliche Paragraphen" zu einem gegebenen Paragraphen finden — Validated in Phase 4: Recommend & Pagination
 - [ ] Discovery API: Explorative Suche mit Positiv/Negativ-Beispielen
 - [ ] Grouping API: Suchergebnisse nach Gesetz/Rechtsgebiet gruppieren
-- [ ] Scroll API: Paginierung ueber grosse Ergebnismengen
+- [x] Scroll API: Paginierung ueber grosse Ergebnismengen — Validated in Phase 4: Recommend & Pagination
 - [x] Full-Text Index auf `text`-Feld fuer exakte Wortsuche — Validated in Phase 2: Search Indexes Full-Text
 - [x] Payload Range-Filter fuer numerische Felder (absatz) — Validated in Phase 2: Search Indexes Full-Text
 - [x] Scalar Quantization fuer speichereffizientere Vektoren — Validated in Phase 1: Snapshot Safety Net
@@ -43,8 +43,8 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit seman
 - [ ] Zitationsnetzwerk: Graph-basierte Navigation zwischen referenzierten Normen
 - [ ] Query Expansion: Synonym-/Paraphrasen-Erweiterung fuer besseren Recall
 - [ ] Multi-Hop MCP-Prompts: Kombinierte Suchen fuer komplexe Rechtsfragen
-- [ ] Abschnitt-Filter vollstaendig in MCP-Tools exponieren
-- [ ] Batch Search Endpoint fuer parallele Queries
+- [x] Abschnitt-Filter vollstaendig in MCP-Tools exponieren — Validated in Phase 4: Recommend & Pagination
+- [x] Batch Search Endpoint fuer parallele Queries — Validated in Phase 4: Recommend & Pagination
 - [ ] Semantic Chunking: Intelligentere Segmentierung langer Paragraphen
 
 **Frontend-Verbesserungen (mit /frontend-design, /ui-ux-pro-max, /ckm-ui-styling):**
