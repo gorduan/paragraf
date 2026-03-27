@@ -337,11 +337,19 @@ All tokens defined in `frontend/src/styles/index.css` inside the existing `@them
   --spacing-3xl: 64px;
 
   /* Typography */
-  --font-size-caption: 12px;
-  --font-size-body: 14px;
-  --font-size-subheading: 16px;
-  --font-size-heading: 20px;
-  --font-size-display: 28px;
+  --text-caption: 12px;
+  --text-caption--line-height: 1.5;
+  --text-body: 14px;
+  --text-body--line-height: 1.5;
+  --text-subheading: 16px;
+  --text-subheading--line-height: 1.4;
+  --text-heading: 20px;
+  --text-heading--line-height: 1.3;
+  --text-display: 28px;
+  --text-display--line-height: 1.2;
+
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
 
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
