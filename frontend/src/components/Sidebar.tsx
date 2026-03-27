@@ -6,6 +6,7 @@ import {
   Library,
   HeartHandshake,
   Database,
+  Network,
   Settings,
 } from "lucide-react";
 import { ServerStatus } from "./ServerStatus";
@@ -17,6 +18,7 @@ export type Page =
   | "laws"
   | "counseling"
   | "index"
+  | "graph"
   | "settings";
 
 interface NavItem {
@@ -59,10 +61,16 @@ const NAV_ITEMS: NavItem[] = [
     shortcut: "6",
   },
   {
+    id: "graph",
+    label: "Zitationsgraph",
+    icon: <Network size={20} />,
+    shortcut: "7",
+  },
+  {
     id: "settings",
     label: "Einstellungen",
     icon: <Settings size={20} />,
-    shortcut: "7",
+    shortcut: "8",
   },
 ];
 

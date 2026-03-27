@@ -86,6 +86,13 @@ export default function App() {
   }, [bookmarks]);
 
   // Page labels for announcements
+  // Placeholder for Plan 02
+  const GraphPage = () => (
+    <div className="p-8 text-lg text-slate-600 dark:text-slate-300">
+      Zitationsgraph — wird in Plan 02 implementiert
+    </div>
+  );
+
   const PAGE_LABELS: Record<Page, string> = {
     search: "Suche",
     lookup: "Nachschlagen",
@@ -93,6 +100,7 @@ export default function App() {
     laws: "Gesetze",
     counseling: "EUTB-Beratungsstellen",
     index: "Index-Management",
+    graph: "Zitationsgraph",
     settings: "Einstellungen",
   };
 
@@ -114,7 +122,8 @@ export default function App() {
           "4": "laws",
           "5": "counseling",
           "6": "index",
-          "7": "settings",
+          "7": "graph",
+          "8": "settings",
         };
         if (pageMap[e.key]) {
           e.preventDefault();
@@ -159,6 +168,8 @@ export default function App() {
         return <CounselingPage />;
       case "index":
         return <IndexPage />;
+      case "graph":
+        return <GraphPage />;
       case "settings":
         return <SettingsPage />;
     }

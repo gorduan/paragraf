@@ -8,6 +8,7 @@ import {
   Check,
   GitCompare,
   Sparkles,
+  Network,
 } from "lucide-react";
 import { BookmarkContext, CompareContext } from "../App";
 import type { SearchResultItem } from "../lib/api";
@@ -18,6 +19,7 @@ import { RecommendSection } from "./RecommendSection";
 interface ResultCardProps {
   result: SearchResultItem;
   onCompare?: (ref: string) => void;
+  onGraphNavigate?: (gesetz: string, paragraph: string) => void;
   showScore?: boolean;
   defaultExpanded?: boolean;
 }
@@ -25,6 +27,7 @@ interface ResultCardProps {
 export function ResultCard({
   result,
   onCompare,
+  onGraphNavigate,
   showScore = true,
   defaultExpanded = false,
 }: ResultCardProps) {
@@ -156,6 +159,16 @@ export function ResultCard({
                 <GitCompare size={14} aria-hidden="true" />
               )}
               {compareSelected ? "Ausgewaehlt" : "Vergleichen"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onGraphNavigate?.(result.gesetz, result.paragraph)}
+              aria-label={`Zitationen fuer ${result.paragraph} ${result.gesetz}`}
+              className="gap-1"
+            >
+              <Network size={14} aria-hidden="true" />
+              Zitationen
             </Button>
           </div>
 

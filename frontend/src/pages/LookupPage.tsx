@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { api, type LookupResponse, type LawInfo } from "../lib/api";
+import { api, type LookupResponse, type LawInfo, type ReferenceItem } from "../lib/api";
+import { parseCitations } from "../lib/citation-parser";
+import { CitationTooltip } from "../components/CitationTooltip";
 import { Disclaimer } from "../components/Disclaimer";
 import { Loader, BookOpen } from "lucide-react";
 
@@ -10,6 +12,8 @@ export function LookupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [laws, setLaws] = useState<LawInfo[]>([]);
+  const [refs, setRefs] = useState<ReferenceItem[]>([]);
+  const [pendingLookup, setPendingLookup] = useState(0);
 
   useEffect(() => {
     api.laws().then((res) => setLaws(res.gesetze)).catch(() => {});
@@ -27,18 +31,34 @@ export function LookupPage() {
     if (!paragraph.trim()) return;
     setLoading(true);
     setError(null);
+    setRefs([]);
     try {
       // Normalize paragraph input
       let p = paragraph.trim();
       if (!p.startsWith("§") && !p.startsWith("Art")) p = `§ ${p}`;
       const res = await api.lookup({ gesetz, paragraph: p });
       setResult(res);
+
+      // Fetch citation network data for this paragraph
+      if (res.found) {
+        api
+          .references(gesetz, p)
+          .then((refRes) => setRefs(refRes.outgoing))
+          .catch(() => {});
+      }
     } catch (e: any) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
   };
+
+  // Trigger lookup when navigating from a citation link
+  useEffect(() => {
+    if (pendingLookup > 0) {
+      handleLookup();
+    }
+  }, [pendingLookup]);
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -137,9 +157,25 @@ export function LookupPage() {
 
               <hr className="my-4 border-slate-200 dark:border-slate-700" />
 
-              <pre className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-sans leading-relaxed">
-                {result.text}
-              </pre>
+              <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-sans leading-relaxed">
+                {parseCitations(result.text, refs).map((segment, i) =>
+                  segment.type === "text" ? (
+                    <span key={i}>{segment.content}</span>
+                  ) : (
+                    <CitationTooltip
+                      key={i}
+                      reference={segment.reference!}
+                      onNavigate={(g, p) => {
+                        setGesetz(g);
+                        setParagraph(p);
+                        setResult(null);
+                        setRefs([]);
+                        setPendingLookup((c) => c + 1);
+                      }}
+                    />
+                  )
+                )}
+              </div>
 
               <p className="text-xs text-slate-400 mt-4">
                 Quelle: {result.quelle}
