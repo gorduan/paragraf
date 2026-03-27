@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search, X, ChevronDown } from "lucide-react";
 import { api, type LawInfo } from "../lib/api";
 import { Button } from "@/components/ui/Button";
+import { SearchModeToggle } from "./SearchModeToggle";
 
 interface SearchBarProps {
-  onSearch: (query: string, gesetzbuch?: string) => void;
+  onSearch: (query: string, gesetzbuch?: string, searchType?: "semantic" | "fulltext" | "hybrid_fulltext") => void;
   placeholder?: string;
   showFilter?: boolean;
   autoFocus?: boolean;
@@ -27,6 +28,7 @@ export function SearchBar({
     }
   });
   const [showHistory, setShowHistory] = useState(false);
+  const [searchMode, setSearchMode] = useState<"semantic" | "fulltext" | "hybrid_fulltext">("semantic");
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -49,7 +51,7 @@ export function SearchBar({
   const doSearch = (q: string) => {
     if (!q.trim()) return;
     const gb = filter === "Alle Gesetze" ? undefined : filter;
-    onSearch(q.trim(), gb);
+    onSearch(q.trim(), gb, searchMode);
     // Add to history
     const newHistory = [q.trim(), ...history.filter((h) => h !== q.trim())].slice(0, 20);
     setHistory(newHistory);
@@ -166,6 +168,7 @@ export function SearchBar({
           Suche starten
         </Button>
       </div>
+      <SearchModeToggle value={searchMode} onChange={setSearchMode} />
     </search>
   );
 }
