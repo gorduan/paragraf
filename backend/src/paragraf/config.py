@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     chunk_min_length_for_split: int = 800
     chunk_satz_min_length: int = 100
 
+    # ── Multi-Hop ──────────────────────────────────────────
+    multi_hop_max_depth: int = 3
+    multi_hop_results_per_hop: int = 5
+
     @property
     def raw_dir(self) -> Path:
         return self.data_dir / "raw"

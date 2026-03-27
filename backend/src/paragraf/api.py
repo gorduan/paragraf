@@ -32,6 +32,7 @@ from paragraf.api_models import (
     GroupedSearchRequest,
     GroupedSearchResponse,
     HealthResponse,
+    HopResultItem,
     IndexProgressEvent,
     IndexRequest,
     IndexResultResponse,
@@ -44,6 +45,8 @@ from paragraf.api_models import (
     LawStructureResponse,
     LookupRequest,
     LookupResponse,
+    MultiHopRequest,
+    MultiHopResponse,
     RecommendRequest,
     RecommendResponse,
     SearchRequest,
@@ -73,8 +76,10 @@ from paragraf.models.law import (
 )
 from paragraf.server import AppContext
 from paragraf.services.embedding import EmbeddingService
+from paragraf.services.multi_hop import MultiHopService
 from paragraf.services.parser import GesetzParser
 from paragraf.services.qdrant_store import QdrantStore
+from paragraf.services.query_expander import QueryExpander
 from paragraf.services.reranker import RerankerService
 
 logger = logging.getLogger(__name__)
@@ -234,10 +239,34 @@ def _result_to_item(r) -> SearchResultItem:  # noqa: ANN001
     )
 
 
+def _rrf_merge(
+    results_a: list[SearchResult],
+    results_b: list[SearchResult],
+    k: int = 60,
+) -> list[SearchResult]:
+    """Reciprocal Rank Fusion zweier Ergebnis-Listen."""
+    scores: dict[str, float] = {}
+    result_map: dict[str, SearchResult] = {}
+    for rank, r in enumerate(results_a):
+        scores[r.chunk.id] = scores.get(r.chunk.id, 0) + 1 / (k + rank + 1)
+        result_map[r.chunk.id] = r
+    for rank, r in enumerate(results_b):
+        scores[r.chunk.id] = scores.get(r.chunk.id, 0) + 1 / (k + rank + 1)
+        result_map[r.chunk.id] = r
+    sorted_ids = sorted(scores, key=lambda x: scores[x], reverse=True)
+    return [
+        SearchResult(chunk=result_map[cid].chunk, score=scores[cid], rank=i)
+        for i, cid in enumerate(sorted_ids)
+    ]
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 
 def _register_routes(app: FastAPI) -> None:
+
+    # Query Expander (CPU-only, instantiate once)
+    query_expander = QueryExpander()
 
     # ── Health ────────────────────────────────────────────────────────────
 
@@ -310,6 +339,12 @@ def _register_routes(app: FastAPI) -> None:
             absatz_bis=body.absatz_bis,
         )
 
+        # Query Expansion
+        expanded_terms: list[str] = []
+        search_query = body.anfrage
+        if body.expand and settings.query_expansion_enabled:
+            search_query, expanded_terms = query_expander.expand(body.anfrage)
+
         # Per D-08: Cursor-basierte Pagination via Scroll API (kein Reranking)
         if body.cursor is not None:
             results, next_cursor = await ctx.qdrant.scroll_search(
@@ -329,7 +364,7 @@ def _register_routes(app: FastAPI) -> None:
         if body.search_type == "fulltext":
             # Fulltext-Suche: MatchText + Sparse Scoring, kein Reranking
             raw_results = await ctx.qdrant.fulltext_search(
-                query=body.anfrage,
+                query=search_query,
                 top_k=max_ergebnisse,
                 search_filter=search_filter,
             )
@@ -339,17 +374,18 @@ def _register_routes(app: FastAPI) -> None:
                 results=items,
                 total=len(items),
                 search_type="fulltext",
+                expanded_terms=expanded_terms,
             )
 
         elif body.search_type == "hybrid_fulltext":
             # Hybrid: Semantische + Fulltext-Suche unabhaengig, Merge, Reranking
             semantic_results = await ctx.qdrant.hybrid_search(
-                query=body.anfrage,
+                query=search_query,
                 top_k=settings.retrieval_top_k,
                 search_filter=search_filter,
             )
             fulltext_results = await ctx.qdrant.fulltext_search(
-                query=body.anfrage,
+                query=search_query,
                 top_k=settings.retrieval_top_k,
                 search_filter=search_filter,
             )
@@ -391,19 +427,38 @@ def _register_routes(app: FastAPI) -> None:
                 results=items,
                 total=len(items),
                 search_type="hybrid_fulltext",
+                expanded_terms=expanded_terms,
             )
 
         else:
             # Standard: Semantische Suche (bestehende Logik)
-            raw_results = await ctx.qdrant.hybrid_search(
-                query=body.anfrage,
-                top_k=settings.retrieval_top_k,
-                search_filter=search_filter,
-            )
+            # Parallel strategy: run original + expanded query, merge with RRF
+            if (
+                settings.query_expansion_strategy == "parallel"
+                and expanded_terms
+            ):
+                original_results, expanded_results = await asyncio.gather(
+                    ctx.qdrant.hybrid_search(
+                        body.anfrage, top_k=settings.retrieval_top_k,
+                        search_filter=search_filter,
+                    ),
+                    ctx.qdrant.hybrid_search(
+                        search_query, top_k=settings.retrieval_top_k,
+                        search_filter=search_filter,
+                    ),
+                )
+                raw_results = _rrf_merge(original_results, expanded_results, k=60)
+            else:
+                raw_results = await ctx.qdrant.hybrid_search(
+                    query=search_query,
+                    top_k=settings.retrieval_top_k,
+                    search_filter=search_filter,
+                )
 
             if not raw_results:
                 return SearchResponse(
                     query=body.anfrage, results=[], total=0, search_type="semantic",
+                    expanded_terms=expanded_terms,
                 )
 
             reranked = await ctx.reranker.arerank(
@@ -414,6 +469,7 @@ def _register_routes(app: FastAPI) -> None:
             if not reranked:
                 return SearchResponse(
                     query=body.anfrage, results=[], total=0, search_type="semantic",
+                    expanded_terms=expanded_terms,
                 )
 
             # Deduplizierung
@@ -432,7 +488,8 @@ def _register_routes(app: FastAPI) -> None:
 
             items = [_result_to_item(r) for r in deduplicated]
             return SearchResponse(
-                query=body.anfrage, results=items, total=len(items), search_type="semantic",
+                query=body.anfrage, results=items, total=len(items),
+                search_type="semantic", expanded_terms=expanded_terms,
             )
 
     # ── Recommend ──────────────────────────────────────────────────────────
@@ -1388,6 +1445,33 @@ def _register_routes(app: FastAPI) -> None:
         except Exception as e:
             logger.error("Snapshot-Loeschung fehlgeschlagen: %s", e)
             return JSONResponse(status_code=500, content={"detail": str(e)})
+
+    # ── Multi-Hop Search ────────────────────────────────────────────────────
+
+    @app.post("/api/search/multi-hop", response_model=MultiHopResponse)
+    async def search_multi_hop(
+        body: MultiHopRequest, request: Request,
+    ) -> MultiHopResponse:
+        """Mehrstufige Suche mit Querverweis-Traversal."""
+        ctx = _get_ctx(request)
+        await ctx.ensure_ready()
+        multi_hop = MultiHopService(ctx.qdrant, ctx.reranker, query_expander)
+        sf = SearchFilter(gesetz=body.gesetzbuch) if body.gesetzbuch else None
+        result = await multi_hop.search_with_hops(
+            query=body.anfrage,
+            tiefe=body.tiefe,
+            max_per_hop=body.max_ergebnisse_pro_hop,
+            search_filter=sf,
+            expand=body.expand,
+        )
+        return MultiHopResponse(
+            query=result["query"],
+            expanded_terms=result["expanded_terms"],
+            hops=result["hops"],
+            results=[HopResultItem(**r) for r in result["results"]],
+            total=result["total"],
+            visited_paragraphs=result["visited_paragraphs"],
+        )
 
     # ── Cross-Reference Endpoints ────────────────────────────────────────────
 

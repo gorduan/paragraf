@@ -23,6 +23,7 @@ class SearchRequest(BaseModel):
     absatz_bis: int | None = Field(None, description="Absatz-Range Maximum (1-basiert)")
     cursor: str | None = Field(None, description="Cursor fuer naechste Seite (aus next_cursor)")
     page_size: int = Field(10, ge=1, le=100, description="Ergebnisse pro Seite")
+    expand: bool = Field(True, description="Query Expansion aktivieren")
 
 
 class LookupRequest(BaseModel):
@@ -70,6 +71,7 @@ class SearchResponse(BaseModel):
     total: int
     search_type: str = Field("semantic", description="Verwendeter Suchmodus")
     next_cursor: str | None = Field(None, description="Cursor fuer naechste Seite (null = letzte Seite)")
+    expanded_terms: list[str] = Field(default_factory=list, description="Expandierte Suchbegriffe")
     disclaimer: str = (
         "Dies ist eine allgemeine Rechtsinformation, keine Rechtsberatung "
         "im Sinne des Rechtsdienstleistungsgesetzes (RDG). Fuer eine individuelle "
@@ -439,3 +441,41 @@ class ReferenceNetworkResponse(BaseModel):
     outgoing: list[ReferenceItem] = Field(description="Ausgehende Querverweise")
     incoming: list[IncomingReferenceItem] = Field(description="Eingehende Querverweise")
     incoming_count: int = Field(description="Gesamtzahl eingehender Querverweise")
+
+
+# ── Multi-Hop ──────────────────────────────────────────────────────────────
+
+
+class MultiHopRequest(BaseModel):
+    anfrage: str = Field(description="Suchanfrage in natuerlicher Sprache")
+    gesetzbuch: str | None = Field(None, description="Filter nach Gesetzbuch")
+    tiefe: int = Field(1, ge=1, le=3, description="Traversal-Tiefe (1-3 Hops)")
+    max_ergebnisse_pro_hop: int = Field(5, ge=1, le=10, description="Ergebnisse pro Hop")
+    expand: bool = Field(True, description="Query Expansion aktivieren")
+
+
+class HopResultItem(BaseModel):
+    """Ein Ergebnis innerhalb eines Hops."""
+
+    paragraph: str
+    gesetz: str
+    titel: str
+    text: str
+    score: float
+    hop: int = Field(description="Hop-Nummer (0 = initiale Suche)")
+    via_reference: str | None = Field(None, description="Querverweis der zu diesem Ergebnis fuehrte")
+
+
+class MultiHopResponse(BaseModel):
+    query: str
+    expanded_terms: list[str] = Field(default_factory=list)
+    hops: int = Field(description="Anzahl durchgefuehrter Hops")
+    results: list[HopResultItem]
+    total: int
+    visited_paragraphs: list[str] = Field(description="Alle besuchten Paragraphen")
+    disclaimer: str = (
+        "Dies ist eine allgemeine Rechtsinformation, keine Rechtsberatung "
+        "im Sinne des Rechtsdienstleistungsgesetzes (RDG). Fuer eine individuelle "
+        "Beratung wenden Sie sich an eine Rechtsanwaeltin/einen Rechtsanwalt oder "
+        "eine EUTB-Beratungsstelle (www.teilhabeberatung.de)."
+    )

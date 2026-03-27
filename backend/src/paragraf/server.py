@@ -15,6 +15,7 @@ from paragraf.prompts import register_prompts
 from paragraf.services.embedding import EmbeddingService
 from paragraf.services.parser import GesetzParser
 from paragraf.services.qdrant_store import QdrantStore
+from paragraf.services.query_expander import QueryExpander
 from paragraf.services.reranker import RerankerService
 from paragraf.tools.ingest import register_ingest_tools
 from paragraf.tools.lookup import register_lookup_tools
@@ -41,6 +42,7 @@ class AppContext:
     reranker: RerankerService
     parser: GesetzParser
     data_dir: Path
+    query_expander: QueryExpander = field(default_factory=QueryExpander)
     _initialized: bool = field(default=False, repr=False)
 
     async def ensure_ready(self) -> None:
