@@ -63,6 +63,45 @@ export interface IndexRequest {
 
 // ── Response Types ───────────────────────────────────────────────────────────
 
+export interface ReferenceItem {
+  gesetz: string;
+  paragraph: string;
+  absatz: number | null;
+  raw: string;
+  verified: boolean;
+  kontext: string | null;
+}
+
+export interface IncomingReferenceItem {
+  gesetz: string;
+  paragraph: string;
+  chunk_id: string;
+  text_preview: string;
+}
+
+export interface ReferenceNetworkResponse {
+  gesetz: string;
+  paragraph: string;
+  outgoing: ReferenceItem[];
+  incoming: IncomingReferenceItem[];
+  incoming_count: number;
+}
+
+export interface DiscoverRequest {
+  positive_paragraphs: { gesetz: string; paragraph: string }[];
+  negative_paragraphs?: { gesetz: string; paragraph: string }[];
+  limit?: number;
+  gesetzbuch?: string | null;
+}
+
+export interface DiscoverResponse {
+  positive_ids: string[];
+  negative_ids: string[];
+  results: SearchResultItem[];
+  total: number;
+  disclaimer: string;
+}
+
 export interface SearchResultItem {
   paragraph: string;
   gesetz: string;
@@ -74,6 +113,7 @@ export interface SearchResultItem {
   quelle: string;
   chunk_typ: string;
   absatz: number | null;
+  references_out?: ReferenceItem[];
 }
 
 export interface SearchResponse {
@@ -367,4 +407,15 @@ export const api = {
 
   indexEutb: () =>
     fetchJson<IndexResultResponse>("/api/index/eutb", { method: "POST" }),
+
+  references: (gesetz: string, paragraph: string) =>
+    fetchJson<ReferenceNetworkResponse>(
+      `/api/references/${encodeURIComponent(gesetz)}/${encodeURIComponent(paragraph)}`
+    ),
+
+  discover: (body: DiscoverRequest) =>
+    fetchJson<DiscoverResponse>("/api/discover", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
