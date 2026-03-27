@@ -12,6 +12,34 @@ export interface SearchRequest {
   gesetzbuch?: string | null;
   abschnitt?: string | null;
   max_ergebnisse?: number;
+  search_type?: "semantic" | "fulltext" | "hybrid_fulltext";
+  absatz_von?: number | null;
+  absatz_bis?: number | null;
+  cursor?: string | null;
+  page_size?: number;
+  expand?: boolean;
+  chunk_typ?: string | null;
+}
+
+export interface RecommendRequest {
+  point_ids?: string[] | null;
+  paragraph?: string | null;
+  gesetz?: string | null;
+  limit?: number;
+  exclude_same_law?: boolean;
+  gesetzbuch?: string | null;
+  abschnitt?: string | null;
+  absatz_von?: number | null;
+  absatz_bis?: number | null;
+}
+
+export interface GroupedSearchRequest {
+  anfrage: string;
+  gesetzbuch?: string | null;
+  abschnitt?: string | null;
+  group_size?: number;
+  max_groups?: number;
+  search_type?: "semantic" | "fulltext" | "hybrid_fulltext";
 }
 
 export interface LookupRequest {
@@ -52,6 +80,29 @@ export interface SearchResponse {
   query: string;
   results: SearchResultItem[];
   total: number;
+  search_type?: string;
+  next_cursor?: string | null;
+  expanded_terms?: string[];
+  disclaimer: string;
+}
+
+export interface RecommendResponse {
+  source_ids: string[];
+  results: SearchResultItem[];
+  total: number;
+  disclaimer: string;
+}
+
+export interface GroupedResultGroup {
+  gesetz: string;
+  results: SearchResultItem[];
+  total: number;
+}
+
+export interface GroupedSearchResponse {
+  query: string;
+  groups: GroupedResultGroup[];
+  total_groups: number;
   disclaimer: string;
 }
 
@@ -214,6 +265,18 @@ export const api = {
 
   search: (body: SearchRequest) =>
     fetchJson<SearchResponse>("/api/search", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  recommend: (body: RecommendRequest) =>
+    fetchJson<RecommendResponse>("/api/recommend", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  searchGrouped: (body: GroupedSearchRequest) =>
+    fetchJson<GroupedSearchResponse>("/api/search/grouped", {
       method: "POST",
       body: JSON.stringify(body),
     }),
