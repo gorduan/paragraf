@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     # ── Cross-References ─────────────────────────────────────────
     xref_resolution_strategy: Literal["filter", "precomputed"] = "filter"
 
+    # ── Query Expansion ──────────────────────────────────────────
+    query_expansion_strategy: Literal["append", "parallel"] = "append"
+    query_expansion_enabled: bool = True
+    synonyms_json_path: str = ""
+
     @property
     def raw_dir(self) -> Path:
         return self.data_dir / "raw"
