@@ -37,11 +37,11 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 
 ### MCP Tools
 
-- [ ] **MCP-01**: MCP-Tool `paragraf_similar` -- aehnliche Paragraphen via Recommend API
+- [x] **MCP-01**: MCP-Tool `paragraf_similar` -- aehnliche Paragraphen via Recommend API
 - [ ] **MCP-02**: MCP-Tool `paragraf_discover` -- explorative Suche mit Positiv/Negativ-Beispielen
 - [ ] **MCP-03**: MCP-Tool `paragraf_references` -- Querverweise eines Paragraphen abrufen
 - [ ] **MCP-04**: Multi-Hop MCP-Prompt -- Paragraphen finden, Querverweise folgen, Rechtslage zusammenfassen
-- [ ] **MCP-05**: Abschnitt-Filter vollstaendig in allen MCP-Such-Tools exponieren
+- [x] **MCP-05**: Abschnitt-Filter vollstaendig in allen MCP-Such-Tools exponieren
 - [ ] **MCP-06**: MCP-Tool `paragraf_snapshot` -- Backup erstellen/wiederherstellen
 - [ ] **MCP-07**: MCP-Tool `paragraf_grouped_search` -- gruppierte Suchergebnisse
 
@@ -112,11 +112,11 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | XREF-04 | Phase 6: Cross-Reference Pipeline | Pending |
 | XREF-05 | Phase 9: Cross-Reference & Discovery UX | Pending |
 | XREF-06 | Phase 9: Cross-Reference & Discovery UX | Pending |
-| MCP-01 | Phase 4: Recommend & Pagination | Pending |
+| MCP-01 | Phase 4: Recommend & Pagination | Complete |
 | MCP-02 | Phase 5: Grouping & Discovery API | Pending |
 | MCP-03 | Phase 6: Cross-Reference Pipeline | Pending |
 | MCP-04 | Phase 7: Query Expansion & Chunking | Pending |
-| MCP-05 | Phase 4: Recommend & Pagination | Pending |
+| MCP-05 | Phase 4: Recommend & Pagination | Complete |
 | MCP-06 | Phase 1: Snapshot Safety Net | Pending |
 | MCP-07 | Phase 5: Grouping & Discovery API | Pending |
 | UI-01 | Phase 3: Design System Foundation | Complete |
