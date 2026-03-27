@@ -34,23 +34,27 @@ class TestMultiHopPrompts:
     def test_legal_analysis_registered(self):
         """paragraf_legal_analysis ist registriert und enthaelt paragraf_search."""
         mcp = self._get_registered_mcp()
-        # Access the prompt function directly
-        from paragraf.prompts import register_prompts
-
-        # Test by calling the function
-        result = mcp._prompts["paragraf_legal_analysis"].fn(thema="GdB")
+        # Access prompt manager to find the registered prompt
+        prompt_mgr = mcp._prompt_manager
+        prompt = prompt_mgr._prompts.get("paragraf_legal_analysis")
+        assert prompt is not None, "paragraf_legal_analysis not registered"
+        result = prompt.fn(thema="GdB")
         assert "paragraf_search" in result
 
     def test_norm_chain_registered(self):
         """paragraf_norm_chain ist registriert und enthaelt paragraf_references."""
         mcp = self._get_registered_mcp()
-        result = mcp._prompts["paragraf_norm_chain"].fn(
-            start_paragraph="152", start_gesetz="SGB IX"
-        )
+        prompt_mgr = mcp._prompt_manager
+        prompt = prompt_mgr._prompts.get("paragraf_norm_chain")
+        assert prompt is not None, "paragraf_norm_chain not registered"
+        result = prompt.fn(start_paragraph="152", start_gesetz="SGB IX")
         assert "paragraf_references" in result
 
     def test_compare_areas_registered(self):
         """paragraf_compare_areas ist registriert und enthaelt paragraf_search."""
         mcp = self._get_registered_mcp()
-        result = mcp._prompts["paragraf_compare_areas"].fn(thema="Eingliederungshilfe")
+        prompt_mgr = mcp._prompt_manager
+        prompt = prompt_mgr._prompts.get("paragraf_compare_areas")
+        assert prompt is not None, "paragraf_compare_areas not registered"
+        result = prompt.fn(thema="Eingliederungshilfe")
         assert "paragraf_search" in result

@@ -105,3 +105,83 @@ def register_prompts(mcp: FastMCP) -> None:
             f"WICHTIG: Nur allgemeine Informationen. Keine Einzelfallpruefung.\n"
             f"Verweise auf EUTB oder Rechtsberatung fuer individuelle Klaerung."
         )
+
+    @mcp.prompt()
+    def paragraf_legal_analysis(thema: str, gesetzbuch: str = "") -> str:
+        """Umfassende Rechtsanalyse: Suche + Querverweise folgen + Zusammenfassung.
+
+        Args:
+            thema: Das Thema der Rechtsanalyse, z.B. "Eingliederungshilfe",
+                   "Grad der Behinderung", "Pflegegeld"
+            gesetzbuch: Optionaler Fokus auf ein bestimmtes Gesetzbuch, z.B. "SGB IX"
+        """
+        filter_hint = (
+            f" Filtere die Suche nach '{gesetzbuch}'." if gesetzbuch else ""
+        )
+        return (
+            f"Fuehre eine umfassende Rechtsanalyse zum Thema '{thema}' durch.\n\n"
+            f"Gehe dabei in folgenden Schritten vor:\n"
+            f"1. Suche mit 'paragraf_search' nach '{thema}'.{filter_hint}\n"
+            f"2. Fuer die Top-3-Ergebnisse: Rufe 'paragraf_references' auf, "
+            f"um Querverweise zu finden.\n"
+            f"3. Schlage wichtige Querverweise mit 'paragraf_lookup' nach.\n"
+            f"4. Fasse zusammen:\n"
+            f"   - Hauptnormen zum Thema\n"
+            f"   - Relevante Querverweise und deren Bedeutung\n"
+            f"   - Widersprueche oder Ergaenzungen zwischen den Normen\n"
+            f"5. Gib immer die exakten Paragraphen-Referenzen an.\n"
+            f"6. Weise am Ende auf EUTB-Beratungsstellen hin "
+            f"(www.teilhabeberatung.de, Tel: 0800 11 10 111)."
+        )
+
+    @mcp.prompt()
+    def paragraf_norm_chain(start_paragraph: str, start_gesetz: str) -> str:
+        """Verfolgt Kette von Querverweisen ab einem Startparagraphen.
+
+        Args:
+            start_paragraph: Der Startparagraph, z.B. "152"
+            start_gesetz: Das Gesetzbuch, z.B. "SGB IX"
+        """
+        return (
+            f"Verfolge die Kette von Querverweisen ab {start_paragraph} {start_gesetz}.\n\n"
+            f"Gehe dabei in folgenden Schritten vor:\n"
+            f"1. Schlage den Startparagraphen mit 'paragraf_lookup' nach: "
+            f"{start_paragraph} in {start_gesetz}.\n"
+            f"2. Rufe 'paragraf_references' fuer ausgehende Querverweise auf.\n"
+            f"3. Fuer jeden wichtigen Querverweis:\n"
+            f"   - Schlage ihn mit 'paragraf_lookup' nach\n"
+            f"   - Rufe 'paragraf_references' fuer dessen Querverweise auf\n"
+            f"   - Wiederhole bis zu 3 Ebenen tief\n"
+            f"4. Baue eine Verweiskette, die zeigt, wie die Normen zusammenhaengen.\n"
+            f"5. Fasse die rechtliche Kette und ihre Bedeutung zusammen.\n"
+            f"6. Gib immer die exakten Paragraphen-Referenzen an."
+        )
+
+    @mcp.prompt()
+    def paragraf_compare_areas(
+        thema: str, rechtsgebiete: str = "SGB IX, SGB XII, SGB XI",
+    ) -> str:
+        """Vergleicht Regelungen zu einem Thema in verschiedenen Rechtsgebieten.
+
+        Args:
+            thema: Das Thema des Vergleichs, z.B. "Eingliederungshilfe",
+                   "Pflegeleistungen", "Teilhabe"
+            rechtsgebiete: Komma-getrennte Gesetzbuecher, z.B. "SGB IX, SGB XII, SGB XI"
+        """
+        gebiete_list = [g.strip() for g in rechtsgebiete.split(",")]
+        steps = "\n".join(
+            f"   - Suche mit 'paragraf_search' nach '{thema}' gefiltert auf '{g}'"
+            for g in gebiete_list
+        )
+        return (
+            f"Vergleiche die Regelungen zum Thema '{thema}' in den Rechtsgebieten "
+            f"{rechtsgebiete}.\n\n"
+            f"Gehe dabei in folgenden Schritten vor:\n"
+            f"1. Fuer jedes Rechtsgebiet:\n{steps}\n"
+            f"2. Vergleiche die gefundenen Regelungen:\n"
+            f"   - Gemeinsamkeiten zwischen den Rechtsgebieten\n"
+            f"   - Unterschiede in Voraussetzungen, Leistungsumfang, Zustaendigkeit\n"
+            f"3. Pruefe Querverweise zwischen den Gebieten mit 'paragraf_references'.\n"
+            f"4. Erstelle eine strukturierte Vergleichstabelle.\n"
+            f"5. Gib immer die exakten Paragraphen-Referenzen an."
+        )
