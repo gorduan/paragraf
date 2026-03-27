@@ -202,3 +202,32 @@ class GpuInfoResponse(BaseModel):
     cuda_available: bool = False
     gpu_name: str = ""
     vram_total_mb: int = 0
+
+
+# ── Snapshot-Modelle ─────────────────────────────────────────────────────────
+
+
+class SnapshotInfo(BaseModel):
+    name: str = Field(description="Snapshot-Dateiname")
+    creation_time: str | None = Field(None, description="Erstellungszeitpunkt")
+    size: int = Field(0, description="Groesse in Bytes")
+
+
+class SnapshotListResponse(BaseModel):
+    snapshots: list[SnapshotInfo]
+    total: int
+
+
+class SnapshotCreateResponse(BaseModel):
+    erfolg: bool
+    name: str = Field(description="Name des erstellten Snapshots")
+    nachricht: str = Field(default="", description="Statusmeldung")
+    geloeschte_snapshots: list[str] = Field(
+        default_factory=list,
+        description="Namen der automatisch geloeschten aeltesten Snapshots",
+    )
+
+
+class SnapshotRestoreResponse(BaseModel):
+    erfolg: bool
+    nachricht: str = Field(description="Statusmeldung")

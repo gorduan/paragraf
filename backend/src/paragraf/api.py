@@ -39,6 +39,10 @@ from paragraf.api_models import (
     SearchResponse,
     SearchResultItem,
     SettingsResponse,
+    SnapshotCreateResponse,
+    SnapshotInfo,
+    SnapshotListResponse,
+    SnapshotRestoreResponse,
 )
 from qdrant_client import models as qdrant_models
 
@@ -113,6 +117,8 @@ async def api_lifespan(app: FastAPI) -> AsyncIterator[None]:
             await embedding.initialize()
             await qdrant.connect()
             await qdrant.ensure_collection(vector_size=embedding.dimension)
+            await qdrant.enable_scalar_quantization()
+            logger.info("Scalar Quantization aktiviert (Int8, Dense-Vektoren)")
             await reranker.initialize()
             app.state.ctx._initialized = True
             logger.info("=== Alle Services initialisiert ===")
@@ -620,6 +626,21 @@ def _register_routes(app: FastAPI) -> None:
             def _event(data: IndexProgressEvent) -> str:
                 return f"data: {data.model_dump_json()}\n\n"
 
+            # Auto-Snapshot vor Indexierung (per D-03)
+            try:
+                snapshot_name = await ctx.qdrant.create_snapshot()
+                await ctx.qdrant.delete_oldest_snapshots(
+                    max_count=settings.snapshot_max_count,
+                )
+                logger.info("Auto-Snapshot erstellt: %s", snapshot_name)
+                yield _event(IndexProgressEvent(
+                    gesetz="system",
+                    schritt="snapshot",
+                    nachricht=f"Sicherungs-Snapshot erstellt: {snapshot_name}",
+                ))
+            except Exception as e:
+                logger.warning("Auto-Snapshot fehlgeschlagen: %s (Indexierung wird fortgesetzt)", e)
+
             if body.gesetzbuch:
                 law_def = LAW_REGISTRY.get(body.gesetzbuch)
                 if not law_def:
@@ -869,3 +890,100 @@ def _register_routes(app: FastAPI) -> None:
             return IndexResultResponse(erfolg=False, fehler=["openpyxl nicht installiert"])
         except Exception as e:
             return IndexResultResponse(erfolg=False, fehler=[str(e)])
+
+    # ── Snapshot-Endpunkte ────────────────────────────────────────────────────
+
+    @app.post("/api/snapshots", response_model=SnapshotCreateResponse)
+    async def create_snapshot(request: Request) -> SnapshotCreateResponse | JSONResponse:
+        """Erstellt einen Snapshot der Qdrant-Collection."""
+        ctx = _get_ctx(request)
+        try:
+            name = await ctx.qdrant.create_snapshot()
+            deleted = await ctx.qdrant.delete_oldest_snapshots(
+                max_count=settings.snapshot_max_count,
+            )
+            logger.info("Snapshot erstellt: %s (geloescht: %s)", name, deleted)
+            return SnapshotCreateResponse(
+                erfolg=True,
+                name=name,
+                nachricht=f"Snapshot '{name}' erfolgreich erstellt",
+                geloeschte_snapshots=deleted,
+            )
+        except Exception as e:
+            logger.error("Snapshot-Erstellung fehlgeschlagen: %s", e)
+            return JSONResponse(status_code=500, content={"detail": str(e)})
+
+    @app.get("/api/snapshots", response_model=SnapshotListResponse)
+    async def list_snapshots(request: Request) -> SnapshotListResponse | JSONResponse:
+        """Listet alle Snapshots der Collection."""
+        ctx = _get_ctx(request)
+        try:
+            snapshots = await ctx.qdrant.list_snapshots()
+            return SnapshotListResponse(
+                snapshots=[
+                    SnapshotInfo(
+                        name=s.name,
+                        creation_time=str(s.creation_time) if s.creation_time else None,
+                        size=s.size if hasattr(s, "size") else 0,
+                    )
+                    for s in snapshots
+                ],
+                total=len(snapshots),
+            )
+        except Exception as e:
+            logger.error("Snapshot-Liste fehlgeschlagen: %s", e)
+            return JSONResponse(status_code=500, content={"detail": str(e)})
+
+    @app.post("/api/snapshots/{snapshot_name}/restore", response_model=SnapshotRestoreResponse)
+    async def restore_snapshot(
+        snapshot_name: str, request: Request,
+    ) -> SnapshotRestoreResponse | JSONResponse:
+        """Stellt die Collection aus einem Snapshot wieder her."""
+        ctx = _get_ctx(request)
+        try:
+            # Validate snapshot exists
+            snapshots = await ctx.qdrant.list_snapshots()
+            names = [s.name for s in snapshots]
+            if snapshot_name not in names:
+                return JSONResponse(
+                    status_code=404,
+                    content={
+                        "detail": f"Snapshot '{snapshot_name}' nicht gefunden."
+                        f" Verfuegbar: {', '.join(names)}"
+                    },
+                )
+            await ctx.qdrant.restore_snapshot(snapshot_name)
+            logger.info("Snapshot wiederhergestellt: %s", snapshot_name)
+            return SnapshotRestoreResponse(
+                erfolg=True,
+                nachricht=f"Collection aus Snapshot '{snapshot_name}' wiederhergestellt",
+            )
+        except Exception as e:
+            logger.error("Snapshot-Wiederherstellung fehlgeschlagen: %s", e)
+            return JSONResponse(status_code=500, content={"detail": str(e)})
+
+    @app.delete("/api/snapshots/{snapshot_name}")
+    async def delete_snapshot(
+        snapshot_name: str, request: Request,
+    ) -> JSONResponse:
+        """Loescht einen Snapshot."""
+        ctx = _get_ctx(request)
+        try:
+            snapshots = await ctx.qdrant.list_snapshots()
+            names = [s.name for s in snapshots]
+            if snapshot_name not in names:
+                return JSONResponse(
+                    status_code=404,
+                    content={"detail": f"Snapshot '{snapshot_name}' nicht gefunden"},
+                )
+            await ctx.qdrant.delete_snapshot(snapshot_name)
+            logger.info("Snapshot geloescht: %s", snapshot_name)
+            return JSONResponse(
+                content={
+                    "erfolg": True,
+                    "nachricht": f"Snapshot '{snapshot_name}' geloescht",
+                }
+            )
+        except Exception as e:
+            logger.error("Snapshot-Loeschung fehlgeschlagen: %s", e)
+            return JSONResponse(status_code=500, content={"detail": str(e)})
