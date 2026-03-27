@@ -102,7 +102,7 @@ Plans:
 Plans:
 - [x] 05-01-PLAN.md -- Settings, Pydantic models, QdrantStore service methods (discover, grouped_search, grouped_recommend), unit tests
 - [x] 05-02-PLAN.md -- REST endpoints (/api/discover, /api/search/grouped, /api/recommend/grouped), docker-compose ENV vars
-- [ ] 05-03-PLAN.md -- MCP tools paragraf_discover, paragraf_grouped_search, paragraf_similar_grouped, unit tests
+- [x] 05-03-PLAN.md -- MCP tools paragraf_discover, paragraf_grouped_search, paragraf_similar_grouped, unit tests
 
 ### Phase 6: Cross-Reference Pipeline
 **Goal**: The system extracts legal cross-references from paragraph text, stores them as structured payload, and exposes a citation network API for navigating between referencing and referenced norms
