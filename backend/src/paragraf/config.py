@@ -50,6 +50,11 @@ class Settings(BaseSettings):
     # ── Snapshots ─────────────────────────────────────────
     snapshot_max_count: int = 3
 
+    # ── Recommend & Pagination ───────────────────────────────────
+    batch_max_queries: int = 10
+    scroll_page_size: int = 10
+    recommend_default_limit: int = 10
+
     @property
     def raw_dir(self) -> Path:
         return self.data_dir / "raw"

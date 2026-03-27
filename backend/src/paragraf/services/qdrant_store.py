@@ -441,6 +441,96 @@ class QdrantStore:
             )
             return self._records_to_results(records)
 
+    # ── Recommend & Pagination ────────────────────────────────────────────────
+
+    async def _resolve_point_id(self, paragraph: str, gesetz: str) -> str | None:
+        """Loest paragraph+gesetz zu Qdrant Point-UUID auf."""
+        search_filter = SearchFilter(gesetz=gesetz, paragraph=paragraph, chunk_typ="paragraph")
+        qdrant_filter = self._build_filter(search_filter)
+        records, _ = await self.client.scroll(
+            collection_name=self.collection_name,
+            scroll_filter=qdrant_filter,
+            limit=1,
+            with_payload=["chunk_id"],
+        )
+        if not records:
+            return None
+        chunk_id = records[0].payload.get("chunk_id", "")
+        return str(uuid.uuid5(uuid.NAMESPACE_URL, chunk_id))
+
+    async def recommend(
+        self,
+        point_ids: list[str],
+        limit: int = 10,
+        search_filter: SearchFilter | None = None,
+        exclude_gesetz: str | None = None,
+        score_threshold: float | None = None,
+    ) -> list[SearchResult]:
+        """Findet aehnliche Paragraphen via Qdrant Recommend API.
+
+        Verwendet query_points mit RecommendQuery und AVERAGE_VECTOR Strategie.
+        Per D-03: Nur positive Beispiele (keine Negative Examples).
+        """
+        qdrant_filter = self._build_filter(search_filter)
+
+        # Per D-02: exclude_same_law via must_not Bedingung
+        if exclude_gesetz:
+            must_not = [
+                models.FieldCondition(
+                    key="gesetz",
+                    match=models.MatchValue(value=exclude_gesetz),
+                )
+            ]
+            if qdrant_filter is None:
+                qdrant_filter = models.Filter(must_not=must_not)
+            else:
+                qdrant_filter.must_not = must_not
+
+        results = await self.client.query_points(
+            collection_name=self.collection_name,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=point_ids,
+                    strategy=models.RecommendStrategy.AVERAGE_VECTOR,
+                ),
+            ),
+            using=DENSE_VECTOR_NAME,
+            query_filter=qdrant_filter,
+            limit=limit,
+            with_payload=True,
+            score_threshold=score_threshold,
+            search_params=models.SearchParams(
+                quantization=models.QuantizationSearchParams(
+                    rescore=True,
+                    oversampling=1.5,
+                ),
+            ),
+        )
+        return self._points_to_results(results)
+
+    async def scroll_search(
+        self,
+        search_filter: SearchFilter | None = None,
+        limit: int = 10,
+        cursor: str | None = None,
+    ) -> tuple[list[SearchResult], str | None]:
+        """Paginierte Suche via Qdrant Scroll API.
+
+        Per D-06: Cursor-basierte Pagination. Cursor ist eine Point-ID (UUID-String).
+        Per Pitfall 3: Ergebnisse sind nach ID sortiert, nicht nach Relevanz.
+        """
+        qdrant_filter = self._build_filter(search_filter)
+        records, next_offset = await self.client.scroll(
+            collection_name=self.collection_name,
+            scroll_filter=qdrant_filter,
+            limit=limit,
+            offset=cursor,
+            with_payload=True,
+        )
+        results = self._records_to_results(records)
+        next_cursor = str(next_offset) if next_offset is not None else None
+        return results, next_cursor
+
     @staticmethod
     def _records_to_results(records: list[Any]) -> list[SearchResult]:
         """Konvertiert Qdrant-Scroll-Records zu SearchResult-Liste (score=0.0)."""

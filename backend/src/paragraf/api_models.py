@@ -21,6 +21,8 @@ class SearchRequest(BaseModel):
     )
     absatz_von: int | None = Field(None, description="Absatz-Range Minimum (1-basiert)")
     absatz_bis: int | None = Field(None, description="Absatz-Range Maximum (1-basiert)")
+    cursor: str | None = Field(None, description="Cursor fuer naechste Seite (aus next_cursor)")
+    page_size: int = Field(10, ge=1, le=100, description="Ergebnisse pro Seite")
 
 
 class LookupRequest(BaseModel):
@@ -67,6 +69,7 @@ class SearchResponse(BaseModel):
     results: list[SearchResultItem]
     total: int
     search_type: str = Field("semantic", description="Verwendeter Suchmodus")
+    next_cursor: str | None = Field(None, description="Cursor fuer naechste Seite (null = letzte Seite)")
     disclaimer: str = (
         "Dies ist eine allgemeine Rechtsinformation, keine Rechtsberatung "
         "im Sinne des Rechtsdienstleistungsgesetzes (RDG). Fuer eine individuelle "
@@ -240,3 +243,49 @@ class SnapshotCreateResponse(BaseModel):
 class SnapshotRestoreResponse(BaseModel):
     erfolg: bool
     nachricht: str = Field(description="Statusmeldung")
+
+
+# ── Recommend & Pagination ──────────────────────────────────────────────────
+
+
+class RecommendRequest(BaseModel):
+    point_ids: list[str] | None = Field(
+        None,
+        min_length=1,
+        max_length=5,
+        description="Liste von Qdrant Point-IDs (UUID-Strings)",
+    )
+    paragraph: str | None = Field(None, description="Paragraph als Alternative zu Point-ID")
+    gesetz: str | None = Field(None, description="Gesetz als Alternative zu Point-ID")
+    limit: int = Field(10, ge=1, le=50, description="Anzahl aehnlicher Ergebnisse")
+    exclude_same_law: bool = Field(True, description="Ergebnisse aus dem gleichen Gesetz ausschliessen")
+    gesetzbuch: str | None = Field(None, description="Filter nach Gesetzbuch")
+    abschnitt: str | None = Field(None, description="Filter nach Abschnitt")
+    absatz_von: int | None = Field(None, description="Absatz-Range Minimum")
+    absatz_bis: int | None = Field(None, description="Absatz-Range Maximum")
+
+
+class RecommendResponse(BaseModel):
+    source_ids: list[str] = Field(description="Verwendete Point-IDs als Basis")
+    results: list[SearchResultItem]
+    total: int
+    disclaimer: str = (
+        "Dies ist eine allgemeine Rechtsinformation, keine Rechtsberatung "
+        "im Sinne des Rechtsdienstleistungsgesetzes (RDG). Fuer eine individuelle "
+        "Beratung wenden Sie sich an eine Rechtsanwaeltin/einen Rechtsanwalt oder "
+        "eine EUTB-Beratungsstelle (www.teilhabeberatung.de)."
+    )
+
+
+class BatchSearchRequest(BaseModel):
+    queries: list[SearchRequest] = Field(
+        min_length=1,
+        max_length=10,
+        description="Liste von Suchanfragen (max. 10)",
+    )
+
+
+class BatchSearchResponse(BaseModel):
+    results: list[SearchResponse]
+    total_queries: int
+    load_warning: bool = Field(False, description="True wenn Auslastung hoch")
