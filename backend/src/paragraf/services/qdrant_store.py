@@ -276,6 +276,12 @@ class QdrantStore:
                 query=models.FusionQuery(fusion=models.Fusion.RRF),
                 limit=top_k,
                 with_payload=True,
+                search_params=models.SearchParams(
+                    quantization=models.QuantizationSearchParams(
+                        rescore=True,
+                        oversampling=1.5,
+                    ),
+                ),
             )
         except (ResponseHandlingException, Exception) as exc:
             # Fallback: nur Dense-Search wenn Hybrid fehlschlaegt
@@ -290,6 +296,12 @@ class QdrantStore:
                 limit=top_k,
                 query_filter=qdrant_filter,
                 with_payload=True,
+                search_params=models.SearchParams(
+                    quantization=models.QuantizationSearchParams(
+                        rescore=True,
+                        oversampling=1.5,
+                    ),
+                ),
             )
 
         return self._points_to_results(results)
@@ -314,9 +326,97 @@ class QdrantStore:
             limit=top_k,
             query_filter=qdrant_filter,
             with_payload=True,
+            search_params=models.SearchParams(
+                quantization=models.QuantizationSearchParams(
+                    rescore=True,
+                    oversampling=1.5,
+                ),
+            ),
         )
 
         return self._points_to_results(results)
+
+    # ── Snapshot-CRUD ────────────────────────────────────────────────────────────
+
+    async def create_snapshot(self) -> str:
+        """Erstellt einen Snapshot der Collection und gibt den Namen zurueck."""
+        snapshot = await self.client.create_snapshot(
+            collection_name=self.collection_name, wait=True
+        )
+        logger.info("Snapshot erstellt: %s", snapshot.name)
+        return snapshot.name
+
+    async def list_snapshots(self) -> list:
+        """Listet alle Snapshots der Collection auf."""
+        return await self.client.list_snapshots(
+            collection_name=self.collection_name
+        )
+
+    async def restore_snapshot(self, snapshot_name: str) -> bool:
+        """Stellt einen Snapshot wieder her."""
+        location = f"file:///qdrant/snapshots/{self.collection_name}/{snapshot_name}"
+        await self.client.recover_snapshot(
+            collection_name=self.collection_name,
+            location=location,
+            wait=True,
+        )
+        logger.info("Snapshot wiederhergestellt: %s", snapshot_name)
+        return True
+
+    async def delete_snapshot(self, snapshot_name: str) -> bool:
+        """Loescht einen Snapshot."""
+        await self.client.delete_snapshot(
+            collection_name=self.collection_name,
+            snapshot_name=snapshot_name,
+            wait=True,
+        )
+        logger.info("Snapshot geloescht: %s", snapshot_name)
+        return True
+
+    async def delete_oldest_snapshots(self, max_count: int = 3) -> list[str]:
+        """Loescht die aeltesten Snapshots, wenn mehr als max_count vorhanden sind."""
+        snapshots = await self.list_snapshots()
+        if len(snapshots) <= max_count:
+            return []
+
+        sorted_snapshots = sorted(snapshots, key=lambda s: s.creation_time)
+        to_delete = sorted_snapshots[: len(snapshots) - max_count]
+        deleted_names: list[str] = []
+
+        for snap in to_delete:
+            await self.delete_snapshot(snap.name)
+            deleted_names.append(snap.name)
+
+        logger.info(
+            "%d alte Snapshots geloescht (max_count=%d)", len(deleted_names), max_count
+        )
+        return deleted_names
+
+    # ── Quantization ─────────────────────────────────────────────────────────────
+
+    async def enable_scalar_quantization(self) -> None:
+        """Aktiviert Scalar Quantization (INT8) fuer die Collection.
+
+        Idempotent: ueberspringt, wenn Quantization bereits aktiv ist.
+        """
+        collection_info = await self.client.get_collection(self.collection_name)
+        if collection_info.config.quantization_config is not None:
+            logger.info(
+                "Scalar Quantization bereits aktiv fuer '%s'", self.collection_name
+            )
+            return
+
+        await self.client.update_collection(
+            collection_name=self.collection_name,
+            quantization_config=models.ScalarQuantization(
+                scalar=models.ScalarQuantizationConfig(
+                    type=models.ScalarType.INT8,
+                    quantile=0.99,
+                    always_ram=True,
+                ),
+            ),
+        )
+        logger.info("Scalar Quantization aktiviert fuer '%s'", self.collection_name)
 
     @staticmethod
     def _points_to_results(results: Any) -> list[SearchResult]:
