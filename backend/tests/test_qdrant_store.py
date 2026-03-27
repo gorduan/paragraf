@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -489,3 +490,180 @@ class TestQdrantStoreFulltext:
         store._client = AsyncMock()
         with pytest.raises(RuntimeError, match="Kein EmbeddingService"):
             await store.fulltext_search("Test")
+
+
+class TestQdrantStoreRecommend:
+    """Tests fuer die recommend() Methode."""
+
+    @pytest.mark.asyncio
+    async def test_recommend_calls_query_points_with_recommend_query(self):
+        """recommend() ruft query_points mit RecommendQuery und AVERAGE_VECTOR auf."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_response = MagicMock()
+        mock_response.points = []
+        store._client.query_points.return_value = mock_response
+
+        await store.recommend(point_ids=["uuid-1"], limit=5)
+
+        store._client.query_points.assert_called_once()
+        call_kwargs = store._client.query_points.call_args.kwargs
+        assert call_kwargs["using"] == DENSE_VECTOR_NAME
+        assert call_kwargs["limit"] == 5
+        assert call_kwargs["with_payload"] is True
+        # Verify RecommendQuery
+        query = call_kwargs["query"]
+        assert isinstance(query, models.RecommendQuery)
+        assert query.recommend.positive == ["uuid-1"]
+        assert query.recommend.strategy == models.RecommendStrategy.AVERAGE_VECTOR
+
+    @pytest.mark.asyncio
+    async def test_recommend_exclude_same_law(self):
+        """Wenn exclude_gesetz gesetzt ist, enthaelt der Filter must_not."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_response = MagicMock()
+        mock_response.points = []
+        store._client.query_points.return_value = mock_response
+
+        await store.recommend(point_ids=["uuid-1"], exclude_gesetz="SGB IX")
+
+        call_kwargs = store._client.query_points.call_args.kwargs
+        query_filter = call_kwargs["query_filter"]
+        assert query_filter is not None
+        assert len(query_filter.must_not) == 1
+        assert query_filter.must_not[0].key == "gesetz"
+        assert query_filter.must_not[0].match.value == "SGB IX"
+
+    @pytest.mark.asyncio
+    async def test_recommend_with_search_filter(self):
+        """Wenn search_filter gesetzt ist, wird _build_filter aufgerufen und kombiniert."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_response = MagicMock()
+        mock_response.points = []
+        store._client.query_points.return_value = mock_response
+
+        await store.recommend(
+            point_ids=["uuid-1"],
+            search_filter=SearchFilter(gesetz="BGB"),
+            exclude_gesetz="SGB IX",
+        )
+
+        call_kwargs = store._client.query_points.call_args.kwargs
+        query_filter = call_kwargs["query_filter"]
+        assert query_filter is not None
+        # Must have must condition for gesetz=BGB
+        assert any(c.key == "gesetz" and c.match.value == "BGB" for c in query_filter.must)
+        # Must have must_not for SGB IX
+        assert any(c.key == "gesetz" and c.match.value == "SGB IX" for c in query_filter.must_not)
+
+    @pytest.mark.asyncio
+    async def test_recommend_quantization_params(self):
+        """recommend() uebergibt QuantizationSearchParams an query_points."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_response = MagicMock()
+        mock_response.points = []
+        store._client.query_points.return_value = mock_response
+
+        await store.recommend(point_ids=["uuid-1"])
+
+        call_kwargs = store._client.query_points.call_args.kwargs
+        search_params = call_kwargs["search_params"]
+        assert search_params.quantization.rescore is True
+        assert search_params.quantization.oversampling == 1.5
+
+
+class TestResolvePointId:
+    """Tests fuer die _resolve_point_id() Methode."""
+
+    @pytest.mark.asyncio
+    async def test_resolve_point_id_found(self):
+        """_resolve_point_id findet Record und gibt uuid5 des chunk_id zurueck."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_record = MagicMock()
+        mock_record.payload = {"chunk_id": "SGB_IX_§152"}
+        store._client.scroll.return_value = ([mock_record], None)
+
+        result = await store._resolve_point_id(paragraph="§ 152", gesetz="SGB IX")
+
+        expected = str(uuid.uuid5(uuid.NAMESPACE_URL, "SGB_IX_§152"))
+        assert result == expected
+        store._client.scroll.assert_called_once()
+        call_kwargs = store._client.scroll.call_args.kwargs
+        assert call_kwargs["limit"] == 1
+
+    @pytest.mark.asyncio
+    async def test_resolve_point_id_not_found(self):
+        """_resolve_point_id gibt None zurueck wenn kein Record gefunden."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        store._client.scroll.return_value = ([], None)
+
+        result = await store._resolve_point_id(paragraph="§ 999", gesetz="UNKNOWN")
+
+        assert result is None
+
+
+class TestQdrantStoreScroll:
+    """Tests fuer die scroll_search() Methode."""
+
+    @pytest.mark.asyncio
+    async def test_scroll_search_first_page(self):
+        """scroll_search mit cursor=None ruft scroll mit offset=None auf."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        mock_record = MagicMock()
+        mock_record.payload = {
+            "chunk_id": "test",
+            "text": "Test text",
+            "gesetz": "SGB IX",
+            "paragraph": "§ 1",
+            "titel": "Test",
+            "abschnitt": "",
+            "hierarchie_pfad": "",
+            "norm_id": "",
+            "stand": None,
+            "quelle": "gesetze-im-internet.de",
+            "chunk_typ": "paragraph",
+            "absatz": None,
+        }
+        store._client.scroll.return_value = ([mock_record], "next-uuid")
+
+        results, next_cursor = await store.scroll_search(
+            search_filter=SearchFilter(gesetz="SGB IX"),
+            limit=10,
+            cursor=None,
+        )
+
+        assert next_cursor == "next-uuid"
+        assert len(results) == 1
+        call_kwargs = store._client.scroll.call_args.kwargs
+        assert call_kwargs["offset"] is None
+        assert call_kwargs["limit"] == 10
+
+    @pytest.mark.asyncio
+    async def test_scroll_search_with_cursor(self):
+        """scroll_search mit cursor uebergibt diesen als offset."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        store._client.scroll.return_value = ([], None)
+
+        await store.scroll_search(cursor="some-uuid")
+
+        call_kwargs = store._client.scroll.call_args.kwargs
+        assert call_kwargs["offset"] == "some-uuid"
+
+    @pytest.mark.asyncio
+    async def test_scroll_search_last_page(self):
+        """Wenn scroll next_offset=None zurueckgibt, ist next_cursor None."""
+        store = QdrantStore()
+        store._client = AsyncMock()
+        store._client.scroll.return_value = ([], None)
+
+        results, next_cursor = await store.scroll_search()
+
+        assert next_cursor is None
+        assert results == []
