@@ -52,7 +52,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md -- Models, QdrantStore service methods (fulltext_search, index creation, range filter), unit tests
+- [x] 02-01-PLAN.md -- Models, QdrantStore service methods (fulltext_search, index creation, range filter), unit tests
 - [ ] 02-02-PLAN.md -- REST endpoint branching, migration endpoint, MCP tool extension (suchmodus, absatz range)
 
 ### Phase 3: Design System Foundation

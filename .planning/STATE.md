@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-03-27T04:05:23.093Z"
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-03-27T04:46:36.089Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 10
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Juristen und Buerger finden in Sekunden die relevanten Paragraphen -- mit semantischer Suche, Querverweisen zwischen Gesetzen und gruppierten Ergebnissen.
-**Current focus:** Phase 01 — snapshot-safety-net
+**Current focus:** Phase 02 — search-indexes-full-text
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
+Phase: 02 (search-indexes-full-text) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
 Last activity: 2026-03-27
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01 P01 | 4min | 2 tasks | 4 files |
+| Phase 02 P01 | 7min | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,9 @@ Recent decisions affecting current work:
 - [Roadmap]: Use `query_points` / `query_points_groups` exclusively, not legacy endpoints
 - [Phase 01]: Snapshots stored inside existing qdrant_data volume via QDRANT__STORAGE__SNAPSHOTS_PATH
 - [Phase 01]: INT8 scalar quantization with quantile=0.99, always_ram=True, rescore=True, oversampling=1.5
+- [Phase 02]: WORD tokenizer for full-text index (not multilingual -- unavailable in Qdrant v1.13.2)
+- [Phase 02]: Sparse vector scoring for fulltext_search ranking (MatchText filter + sparse query)
+- [Phase 02]: Auto chunk_typ=absatz constraint when range filter active (D-05)
 
 ### Pending Todos
 
@@ -80,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T04:05:23.087Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-search-indexes-full-text/02-CONTEXT.md
+Last session: 2026-03-27T04:46:36.085Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None
