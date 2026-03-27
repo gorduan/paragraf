@@ -131,12 +131,12 @@ Plans:
   3. Multi-hop MCP prompt chains paragraph search with citation traversal to answer complex legal questions
   4. Parser chunks long paragraphs at legal structure boundaries (Absatz, Satz, Nummer) instead of arbitrary token limits
   5. Collection is re-indexed with improved chunking (after snapshot backup)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 07-01: TBD
-- [ ] 07-02: TBD
-- [ ] 07-03: TBD
+- [ ] 07-01-PLAN.md -- QueryExpander service, curated synonym dictionary, config settings, unit tests
+- [ ] 07-02-PLAN.md -- Parser Satz-level chunking at legal structure boundaries, config thresholds, unit tests
+- [ ] 07-03-PLAN.md -- MultiHopService, REST integration (expand in search, multi-hop endpoint), MCP prompts, docker-compose ENV
 
 ### Phase 8: Search Results UX
 **Goal**: Users interact with search results through a polished interface with recommend buttons, grouped views, advanced filters, inline comparison, pagination controls, and full-text search toggle
