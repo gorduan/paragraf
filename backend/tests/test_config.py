@@ -39,3 +39,13 @@ class TestSettings:
     def test_transport_literal(self):
         s = Settings(mcp_transport="streamable-http")
         assert s.mcp_transport == "streamable-http"
+
+    def test_xref_resolution_strategy_default(self):
+        """xref_resolution_strategy ist standardmaessig 'filter'."""
+        s = Settings()
+        assert s.xref_resolution_strategy == "filter"
+
+    def test_xref_resolution_strategy_precomputed(self):
+        """xref_resolution_strategy akzeptiert 'precomputed'."""
+        s = Settings(xref_resolution_strategy="precomputed")
+        assert s.xref_resolution_strategy == "precomputed"

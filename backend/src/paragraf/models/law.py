@@ -201,6 +201,20 @@ class GesetzInfo(BaseModel):
     anzahl_normen: int = Field(0, description="Anzahl der Einzelnormen")
 
 
+class Reference(BaseModel):
+    """Ein einzelner Querverweis auf einen anderen Paragraphen."""
+
+    gesetz: str = Field(description="Zielgesetz-Abkuerzung, z.B. 'SGB IX'")
+    paragraph: str = Field(description="Ziel-Paragraph, z.B. '§ 152'")
+    absatz: int | None = Field(None, description="Ziel-Absatz (1-basiert)")
+    raw: str = Field(description="Original-Zitationstext aus dem Gesetz")
+    verified: bool = Field(description="True wenn gesetz in LAW_REGISTRY")
+    kontext: str | None = Field(
+        None,
+        description="Kontext-Keyword: 'i.V.m.', 'gemaess', 'nach', 'siehe', null",
+    )
+
+
 class ChunkMetadata(BaseModel):
     """Metadaten, die jedem Vektor-Chunk zugeordnet werden."""
 
@@ -217,6 +231,10 @@ class ChunkMetadata(BaseModel):
     stand: str | None = Field(None, description="Fassungsdatum")
     quelle: str = Field("gesetze-im-internet.de", description="Datenquelle")
     chunk_typ: str = Field("paragraph", description="paragraph | absatz | abschnitt")
+    references_out: list[Reference] = Field(
+        default_factory=list,
+        description="Ausgehende Querverweise dieses Paragraphen",
+    )
 
 
 class LawChunk(BaseModel):

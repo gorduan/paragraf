@@ -13,6 +13,7 @@ from paragraf.models.law import (
     EUTBBeratungsstelle,
     Gesetzbuch,
     LawChunk,
+    Reference,
     SearchFilter,
     SearchResult,
 )
@@ -197,6 +198,71 @@ class TestSearchFilter:
         f = SearchFilter(absatz_bis=7)
         assert f.absatz_von is None
         assert f.absatz_bis == 7
+
+
+class TestReference:
+    """Tests fuer das Reference-Modell (Querverweise)."""
+
+    def test_all_required_fields(self):
+        """Reference model akzeptiert alle erforderlichen Felder."""
+        ref = Reference(
+            gesetz="SGB IX",
+            paragraph="§ 152",
+            absatz=1,
+            raw="§ 152 Abs. 1 SGB IX",
+            verified=True,
+            kontext="gemaess",
+        )
+        assert ref.gesetz == "SGB IX"
+        assert ref.paragraph == "§ 152"
+        assert ref.absatz == 1
+        assert ref.raw == "§ 152 Abs. 1 SGB IX"
+        assert ref.verified is True
+        assert ref.kontext == "gemaess"
+
+    def test_kontext_none(self):
+        """Reference model kontext akzeptiert None."""
+        ref = Reference(
+            gesetz="BGB", paragraph="§ 823", absatz=None,
+            raw="§ 823 BGB", verified=True, kontext=None,
+        )
+        assert ref.kontext is None
+
+    def test_kontext_string_values(self):
+        """Reference model kontext akzeptiert verschiedene Kontext-Keywords."""
+        for kw in ["i.V.m.", "gemaess", "nach", "siehe"]:
+            ref = Reference(
+                gesetz="GG", paragraph="Art. 3", absatz=None,
+                raw="Art. 3 GG", verified=True, kontext=kw,
+            )
+            assert ref.kontext == kw
+
+    def test_verified_is_bool(self):
+        """Reference model verified ist bool."""
+        ref = Reference(
+            gesetz="BGB", paragraph="§ 1", absatz=None,
+            raw="§ 1 BGB", verified=True, kontext=None,
+        )
+        assert isinstance(ref.verified, bool)
+
+
+class TestChunkMetadataReferencesOut:
+    """Tests fuer ChunkMetadata.references_out Feld."""
+
+    def test_references_out_defaults_empty(self):
+        """ChunkMetadata.references_out ist standardmaessig eine leere Liste."""
+        meta = ChunkMetadata(gesetz="SGB IX", paragraph="§ 1")
+        assert meta.references_out == []
+
+    def test_references_out_with_references(self):
+        """ChunkMetadata.references_out kann Reference-Objekte enthalten."""
+        ref = Reference(
+            gesetz="BGB", paragraph="§ 823", absatz=None,
+            raw="§ 823 BGB", verified=True, kontext=None,
+        )
+        meta = ChunkMetadata(gesetz="SGB IX", paragraph="§ 1", references_out=[ref])
+        assert len(meta.references_out) == 1
+        assert meta.references_out[0].gesetz == "BGB"
 
 
 class TestSearchRequestSearchType:

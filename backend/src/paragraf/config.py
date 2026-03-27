@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     discovery_max_positive: int = 5
     discovery_max_negative: int = 5
 
+    # ── Cross-References ─────────────────────────────────────────
+    xref_resolution_strategy: Literal["filter", "precomputed"] = "filter"
+
     @property
     def raw_dir(self) -> Path:
         return self.data_dir / "raw"
