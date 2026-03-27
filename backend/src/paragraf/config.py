@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     # ── Daten ───────────────────────────────────────────────
     data_dir: Path = Path("./data")
 
+    # ── Snapshots ─────────────────────────────────────────
+    snapshot_max_count: int = 3
+
     @property
     def raw_dir(self) -> Path:
         return self.data_dir / "raw"
