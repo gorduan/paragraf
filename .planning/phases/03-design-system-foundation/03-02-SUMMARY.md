@@ -60,7 +60,7 @@ completed: 2026-03-27
 - **Duration:** 5 min
 - **Started:** 2026-03-27T06:27:25Z
 - **Completed:** 2026-03-27T06:32:25Z
-- **Tasks:** 2 of 3 (Task 3 pending human-verify checkpoint)
+- **Tasks:** 3 of 3
 - **Files modified:** 8
 
 ## Accomplishments
@@ -76,7 +76,7 @@ Each task was committed atomically:
 
 1. **Task 1: Build 4 Radix-based primitives (Dialog, Select, Tooltip, Tabs)** - `f6fab2a` (feat)
 2. **Task 2: Migrate SearchPage, SearchBar, ResultCard, Sidebar to design system** - `b53c07f` (feat)
-3. **Task 3: Visual verification of design system migration** - PENDING (checkpoint:human-verify)
+3. **Task 3: Visual verification of design system migration** - `59f435e` (approved, spacing token collision fixed)
 
 ## Files Created/Modified
 - `frontend/src/components/ui/Dialog.tsx` - Radix dialog with focus trap, overlay, close button, sr-only label
@@ -95,7 +95,7 @@ Each task was committed atomically:
 
 ## Deviations from Plan
 
-None - plan executed exactly as written.
+- Named spacing tokens (--spacing-xs/sm/md/lg/xl) in @theme collided with Tailwind 4's size system (max-w-md resolved to 16px instead of 28rem). Fixed by removing named tokens and using Tailwind numeric equivalents (px-3, p-6, etc.).
 
 ## Known Stubs
 
@@ -112,8 +112,8 @@ None - no external service configuration required.
 ## Next Phase Readiness
 - All 8 primitive components complete: Button, Card, Input, Badge (Plan 01), Dialog, Select, Tooltip, Tabs (Plan 02)
 - SearchPage and Sidebar serve as reference migrations for future page migration work
-- Task 3 (human visual verification) pending -- requires dev server startup and browser inspection
+- Task 3 human visual verification approved — layout, colors, navigation all correct
 
 ---
 *Phase: 03-design-system-foundation*
-*Completed: 2026-03-27 (pending Task 3 checkpoint)*
+*Completed: 2026-03-27*
