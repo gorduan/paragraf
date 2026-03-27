@@ -30,8 +30,8 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit seman
 
 **Qdrant-Features:**
 - [x] Recommend API: "Aehnliche Paragraphen" zu einem gegebenen Paragraphen finden — Validated in Phase 4: Recommend & Pagination
-- [ ] Discovery API: Explorative Suche mit Positiv/Negativ-Beispielen
-- [ ] Grouping API: Suchergebnisse nach Gesetz/Rechtsgebiet gruppieren
+- [x] Discovery API: Explorative Suche mit Positiv/Negativ-Beispielen — Validated in Phase 5: Grouping & Discovery API
+- [x] Grouping API: Suchergebnisse nach Gesetz/Rechtsgebiet gruppieren — Validated in Phase 5: Grouping & Discovery API
 - [x] Scroll API: Paginierung ueber grosse Ergebnismengen — Validated in Phase 4: Recommend & Pagination
 - [x] Full-Text Index auf `text`-Feld fuer exakte Wortsuche — Validated in Phase 2: Search Indexes Full-Text
 - [x] Payload Range-Filter fuer numerische Felder (absatz) — Validated in Phase 2: Search Indexes Full-Text
@@ -69,10 +69,10 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit seman
 ## Context
 
 - Brownfield: Funktionierendes System mit ~20 Python-Dateien Backend + React-Frontend
-- Qdrant v1.13.2 bietet Recommend, Discovery, Grouping, Scroll, Quantization, Snapshots — alles ungenutzt
+- Qdrant v1.13.2 bietet Recommend, Discovery, Grouping, Scroll, Quantization, Snapshots — Discovery + Grouping jetzt genutzt (Phase 5)
 - bge-m3 unterstuetzt ColBERT Multi-Vector Output — aktuell nur Dense + Sparse genutzt
 - Frontend hat teilweise vorbereitete aber nicht verdrahtete Features (onCompare, abschnitt-Filter)
-- MCP-Tools spiegeln nicht alle Backend-Capabilities wider
+- MCP-Tools spiegeln die meisten Backend-Capabilities wider (Discovery + Grouping seit Phase 5)
 - Gesetze referenzieren sich intensiv gegenseitig — dieses Netzwerk ist aktuell unsichtbar
 - Frontend-Design soll mit /frontend-design, /ui-ux-pro-max und /ckm-ui-styling Skills professionell gestaltet werden
 
