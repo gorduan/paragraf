@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-03-27T11:35:47.243Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-03-27T11:45:42.115Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 10
   completed_phases: 5
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 14
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 06 (cross-reference-pipeline) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-03-27
 
@@ -64,6 +64,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05 P02 | 3min | 2 tasks | 2 files |
 | Phase 05 P03 | 4min | 2 tasks | 5 files |
 | Phase 06 P01 | 5min | 2 tasks | 6 files |
+| Phase 06 P02 | 5min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,9 @@ Recent decisions affecting current work:
 - [Phase 06]: Regex patterns built from LAW_REGISTRY keys sorted by length descending for longest-match-first
 - [Phase 06]: i.V.m. chains handled via dedicated pattern before single citations for correct law propagation
 - [Phase 06]: Context keywords normalized: vgl.->siehe, gem.->gemaess; unknown laws stored as verified=False
+- [Phase 06]: NestedCondition for incoming reference queries on references_out nested payload
+- [Phase 06]: set_payload with wait=False for batch extraction performance; snapshot before extraction per D-09
+- [Phase 06]: Nested field indexes on references_out[].gesetz and references_out[].paragraph per Pitfall 4
 
 ### Pending Todos
 
@@ -110,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T11:35:47.237Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-03-27T11:45:42.109Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None
