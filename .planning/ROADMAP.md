@@ -170,7 +170,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 09-01-PLAN.md -- API client extensions, citation parser, CitationLink/CitationTooltip, LookupPage rendering, Sidebar+App graph route
+- [x] 09-01-PLAN.md -- API client extensions, citation parser, CitationLink/CitationTooltip, LookupPage rendering, Sidebar+App graph route
 - [ ] 09-02-PLAN.md -- d3-force graph-utils, GraphCanvas, GraphSidePanel, GraphLegend, GraphPage with dual-level toggle
 - [ ] 09-03-PLAN.md -- DiscoveryExampleBar, UndoSnackbar, SearchModeToggle extension, ResultCard +/- buttons, SearchPage discovery integration
 

@@ -32,7 +32,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 - [x] **XREF-02**: Querverweise als Array im Qdrant-Payload speichern (pro Paragraph)
 - [x] **XREF-03**: Re-Indexierung aller Gesetze mit Querverweis-Daten (nach Snapshot)
 - [x] **XREF-04**: Zitationsnetzwerk-API -- zu einem Paragraphen alle referenzierten und referenzierenden Normen abrufen
-- [ ] **XREF-05**: Klickbare Querverweis-Links in der Paragraphen-Anzeige
+- [x] **XREF-05**: Klickbare Querverweis-Links in der Paragraphen-Anzeige
 - [ ] **XREF-06**: Interaktive Zitationsgraph-Visualisierung (gerichteter Graph)
 
 ### MCP Tools
@@ -110,7 +110,7 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | XREF-02 | Phase 6: Cross-Reference Pipeline | Complete |
 | XREF-03 | Phase 6: Cross-Reference Pipeline | Complete |
 | XREF-04 | Phase 6: Cross-Reference Pipeline | Complete |
-| XREF-05 | Phase 9: Cross-Reference & Discovery UX | Pending |
+| XREF-05 | Phase 9: Cross-Reference & Discovery UX | Complete |
 | XREF-06 | Phase 9: Cross-Reference & Discovery UX | Pending |
 | MCP-01 | Phase 4: Recommend & Pagination | Complete |
 | MCP-02 | Phase 5: Grouping & Discovery API | Complete |

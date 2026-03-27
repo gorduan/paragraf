@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 9 context gathered
-last_updated: "2026-03-27T17:08:06.877Z"
+status: executing
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-03-27T18:35:14.101Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 10
   completed_phases: 8
-  total_plans: 21
-  completed_plans: 21
+  total_plans: 24
+  completed_plans: 22
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Juristen und Buerger finden in Sekunden die relevanten Paragraphen -- mit semantischer Suche, Querverweisen zwischen Gesetzen und gruppierten Ergebnissen.
-**Current focus:** Phase 08 — search-results-ux
+**Current focus:** Phase 09 — cross-reference-discovery-ux
 
 ## Current Position
 
-Phase: 9
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 09 (cross-reference-discovery-ux) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-03-27
 
 Progress: [░░░░░░░░░░] 0%
@@ -72,6 +72,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 08 P01 | 3min | 2 tasks | 5 files |
 | Phase 08 P02 | 3min | 2 tasks | 3 files |
 | Phase 08 P03 | 3min | 2 tasks | 5 files |
+| Phase 09 P01 | 7min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -119,6 +120,8 @@ Recent decisions affecting current work:
 - [Phase 08]: CompareContext wired directly in ResultCard, removing onCompare prop conditional
 - [Phase 08]: executeSearch extracted as shared function for all search triggers (search, filter, view mode)
 - [Phase 08]: View mode switch triggers immediate re-fetch rather than just toggling display
+- [Phase 09]: Depth-limited nesting: CitationTooltip renders nested CitationLinks only at depth < 1
+- [Phase 09]: pendingLookup counter pattern for citation navigation re-lookup in LookupPage
 
 ### Pending Todos
 
@@ -132,6 +135,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T17:08:06.872Z
-Stopped at: Phase 9 context gathered
-Resume file: .planning/phases/09-cross-reference-discovery-ux/09-CONTEXT.md
+Last session: 2026-03-27T18:35:14.095Z
+Stopped at: Completed 09-01-PLAN.md
+Resume file: None
