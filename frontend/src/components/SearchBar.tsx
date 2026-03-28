@@ -9,6 +9,8 @@ interface SearchBarProps {
   placeholder?: string;
   showFilter?: boolean;
   autoFocus?: boolean;
+  isDiscoveryMode?: boolean;
+  onDiscoveryToggle?: (active: boolean) => void;
 }
 
 export function SearchBar({
@@ -16,6 +18,8 @@ export function SearchBar({
   placeholder = "Suchbegriff eingeben...",
   showFilter = true,
   autoFocus = false,
+  isDiscoveryMode = false,
+  onDiscoveryToggle,
 }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("Alle Gesetze");
@@ -168,7 +172,7 @@ export function SearchBar({
           Suche starten
         </Button>
       </div>
-      <SearchModeToggle value={searchMode} onChange={setSearchMode} />
+      <SearchModeToggle value={searchMode} onChange={setSearchMode} isDiscoveryMode={isDiscoveryMode} onDiscoveryToggle={onDiscoveryToggle} />
     </search>
   );
 }

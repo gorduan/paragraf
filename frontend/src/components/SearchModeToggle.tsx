@@ -5,6 +5,8 @@ type SearchMode = "semantic" | "fulltext" | "hybrid_fulltext";
 interface SearchModeToggleProps {
   value: SearchMode;
   onChange: (mode: SearchMode) => void;
+  isDiscoveryMode?: boolean;
+  onDiscoveryToggle?: (active: boolean) => void;
 }
 
 const MODES: { value: SearchMode; label: string }[] = [
@@ -13,7 +15,17 @@ const MODES: { value: SearchMode; label: string }[] = [
   { value: "hybrid_fulltext", label: "Hybrid" },
 ];
 
-export function SearchModeToggle({ value, onChange }: SearchModeToggleProps) {
+export function SearchModeToggle({
+  value,
+  onChange,
+  isDiscoveryMode = false,
+  onDiscoveryToggle,
+}: SearchModeToggleProps) {
+  const baseStyle = "px-3 py-1.5 text-sm font-medium transition-colors";
+  const activeStyle = "bg-primary-500 text-white";
+  const inactiveStyle =
+    "bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600";
+
   return (
     <div
       role="radiogroup"
@@ -24,18 +36,34 @@ export function SearchModeToggle({ value, onChange }: SearchModeToggleProps) {
         <button
           key={mode.value}
           role="radio"
-          aria-checked={value === mode.value}
-          onClick={() => onChange(mode.value)}
+          aria-checked={!isDiscoveryMode && value === mode.value}
+          onClick={() => {
+            if (isDiscoveryMode) {
+              onDiscoveryToggle?.(false);
+            }
+            onChange(mode.value);
+          }}
           className={cn(
-            "px-3 py-1.5 text-sm font-medium transition-colors",
-            value === mode.value
-              ? "bg-primary-500 text-white"
-              : "bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+            baseStyle,
+            !isDiscoveryMode && value === mode.value
+              ? activeStyle
+              : inactiveStyle
           )}
         >
           {mode.label}
         </button>
       ))}
+      <button
+        role="radio"
+        aria-checked={isDiscoveryMode}
+        onClick={() => onDiscoveryToggle?.(!isDiscoveryMode)}
+        className={cn(
+          baseStyle,
+          isDiscoveryMode ? activeStyle : inactiveStyle
+        )}
+      >
+        Entdecken
+      </button>
     </div>
   );
 }

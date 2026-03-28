@@ -7,6 +7,8 @@ import { FilterChips } from "../components/FilterChips";
 import { ViewToggle, type ViewMode } from "../components/ViewToggle";
 import { GroupedResults } from "../components/GroupedResults";
 import { LoadMoreButton } from "../components/LoadMoreButton";
+import { DiscoveryExampleBar, type DiscoveryExample } from "../components/DiscoveryExampleBar";
+import { UndoSnackbar } from "../components/UndoSnackbar";
 import { CompareContext } from "../App";
 import { api, type SearchResultItem, type GroupedResultGroup } from "../lib/api";
 import { Loader, ArrowRight } from "lucide-react";
@@ -49,6 +51,17 @@ export function SearchPage() {
 
   // Compare context
   const { items: compareItems } = useContext(CompareContext);
+
+  // ── Discovery state (per D-11, D-12, D-13, D-14) ──────────────────────────
+  const [isDiscoveryMode, setIsDiscoveryMode] = useState(false);
+  const [discoveryExamples, setDiscoveryExamples] = useState<DiscoveryExample[]>([]);
+  const [previousResults, setPreviousResults] = useState<SearchResultItem[] | null>(null);
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
+  const [undoSnapshot, setUndoSnapshot] = useState<{
+    examples: DiscoveryExample[];
+    results: SearchResultItem[];
+  } | null>(null);
+  const [showUndo, setShowUndo] = useState(false);
 
   // ── Core search logic ────────────────────────────────────────────────────
 
@@ -208,6 +221,87 @@ export function SearchPage() {
     if (query) executeSearch(query, searchMode, empty, currentGesetzbuch);
   };
 
+  // ── Discovery handlers (per D-11, D-12, D-13, D-14) ───────────────────────
+
+  function handleDiscoveryToggle(active: boolean) {
+    setIsDiscoveryMode(active);
+    if (!active) {
+      setDiscoveryExamples([]);
+      if (previousResults) {
+        setResults(previousResults);
+        setPreviousResults(null);
+      }
+    }
+  }
+
+  function handleExampleToggle(gesetz: string, paragraph: string, polarity: "positive" | "negative" | null) {
+    setDiscoveryExamples(prev => {
+      const filtered = prev.filter(e => !(e.gesetz === gesetz && e.paragraph === paragraph));
+      if (polarity === null) return filtered;
+      // Enforce max 5 per polarity
+      const samePolarity = filtered.filter(e => e.polarity === polarity);
+      if (samePolarity.length >= 5) return prev;
+      return [...filtered, { gesetz, paragraph, titel: "", polarity }];
+    });
+  }
+
+  function handleRemoveExample(example: DiscoveryExample) {
+    setDiscoveryExamples(prev =>
+      prev.filter(e => !(e.gesetz === example.gesetz && e.paragraph === example.paragraph))
+    );
+  }
+
+  async function handleExecuteDiscovery() {
+    const positives = discoveryExamples.filter(e => e.polarity === "positive");
+    if (positives.length === 0) return;
+    setDiscoveryLoading(true);
+    setPreviousResults(results);
+    try {
+      const resp = await api.discover({
+        positive_paragraphs: positives.map(e => ({ gesetz: e.gesetz, paragraph: e.paragraph })),
+        negative_paragraphs: discoveryExamples
+          .filter(e => e.polarity === "negative")
+          .map(e => ({ gesetz: e.gesetz, paragraph: e.paragraph })),
+        limit: 20,
+      });
+      setResults(resp.results);
+      setTotal(resp.total);
+    } catch {
+      setError("Entdeckungssuche fehlgeschlagen. Bitte versuchen Sie es erneut.");
+    } finally {
+      setDiscoveryLoading(false);
+    }
+  }
+
+  function handleDiscoveryReset() {
+    setUndoSnapshot({ examples: [...discoveryExamples], results: results });
+    setDiscoveryExamples([]);
+    if (previousResults) {
+      setResults(previousResults);
+      setPreviousResults(null);
+    }
+    setShowUndo(true);
+  }
+
+  function handleUndo() {
+    if (undoSnapshot) {
+      setDiscoveryExamples(undoSnapshot.examples);
+      setResults(undoSnapshot.results);
+      setUndoSnapshot(null);
+    }
+    setShowUndo(false);
+  }
+
+  function handleUndoDismiss() {
+    setShowUndo(false);
+    setUndoSnapshot(null);
+  }
+
+  function getPolarity(gesetz: string, paragraph: string): "positive" | "negative" | null {
+    const ex = discoveryExamples.find(e => e.gesetz === gesetz && e.paragraph === paragraph);
+    return ex?.polarity ?? null;
+  }
+
   // ── JSX ──────────────────────────────────────────────────────────────────
 
   return (
@@ -225,6 +319,8 @@ export function SearchPage() {
         onSearch={handleSearch}
         placeholder="z.B. 'Pflegegeld bei Pflegegrad 3' oder 'Zusatzurlaub Schwerbehinderung'"
         autoFocus
+        isDiscoveryMode={isDiscoveryMode}
+        onDiscoveryToggle={handleDiscoveryToggle}
       />
 
       {/* Filter Panel (per D-08 -- collapsible below SearchBar) */}
@@ -236,6 +332,19 @@ export function SearchPage() {
       <div className="mt-2">
         <FilterChips filters={filters} onRemove={handleFilterRemove} onClearAll={handleFilterClearAll} />
       </div>
+
+      {/* Discovery Example Bar (per D-13) */}
+      {isDiscoveryMode && (
+        <div className="mt-4">
+          <DiscoveryExampleBar
+            examples={discoveryExamples}
+            onRemove={handleRemoveExample}
+            onExecute={handleExecuteDiscovery}
+            onReset={handleDiscoveryReset}
+            loading={discoveryLoading}
+          />
+        </div>
+      )}
 
       {/* Loading */}
       {loading && (
@@ -283,7 +392,12 @@ export function SearchPage() {
           <ul className="space-y-3" role="list">
             {results.map((r, i) => (
               <li key={`${r.paragraph}-${r.gesetz}-${i}`}>
-                <ResultCard result={r} />
+                <ResultCard
+                  result={r}
+                  discoveryMode={isDiscoveryMode}
+                  discoveryPolarity={getPolarity(r.gesetz, r.paragraph)}
+                  onDiscoveryToggle={handleExampleToggle}
+                />
               </li>
             ))}
           </ul>
@@ -326,6 +440,15 @@ export function SearchPage() {
             Tastenkuerzel: <kbd className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-xs">Ctrl+K</kbd> fuer Suche
           </p>
         </div>
+      )}
+
+      {/* Undo Snackbar (per D-14) */}
+      {showUndo && (
+        <UndoSnackbar
+          message="Beispiele entfernt"
+          onUndo={handleUndo}
+          onDismiss={handleUndoDismiss}
+        />
       )}
     </div>
   );

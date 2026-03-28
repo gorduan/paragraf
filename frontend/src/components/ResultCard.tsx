@@ -9,12 +9,15 @@ import {
   GitCompare,
   Sparkles,
   Network,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import { BookmarkContext, CompareContext } from "../App";
 import type { SearchResultItem } from "../lib/api";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { RecommendSection } from "./RecommendSection";
+import { cn } from "@/lib/utils";
 
 interface ResultCardProps {
   result: SearchResultItem;
@@ -22,6 +25,9 @@ interface ResultCardProps {
   onGraphNavigate?: (gesetz: string, paragraph: string) => void;
   showScore?: boolean;
   defaultExpanded?: boolean;
+  discoveryMode?: boolean;
+  discoveryPolarity?: "positive" | "negative" | null;
+  onDiscoveryToggle?: (gesetz: string, paragraph: string, polarity: "positive" | "negative" | null) => void;
 }
 
 export function ResultCard({
@@ -30,6 +36,9 @@ export function ResultCard({
   onGraphNavigate,
   showScore = true,
   defaultExpanded = false,
+  discoveryMode = false,
+  discoveryPolarity = null,
+  onDiscoveryToggle,
 }: ResultCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [copied, setCopied] = useState(false);
@@ -56,6 +65,55 @@ export function ResultCard({
       aria-label={`${result.paragraph} ${result.gesetz}${result.titel ? ` – ${result.titel}` : ""}`}
     >
       {/* Header */}
+      <div className="flex items-center">
+        {/* Discovery +/- buttons */}
+        {discoveryMode && (
+          <div className="flex flex-col gap-0.5 pl-2 py-1">
+            <button
+              role="checkbox"
+              aria-checked={discoveryPolarity === "positive"}
+              aria-label={`Positives Beispiel: ${result.paragraph} ${result.gesetz}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDiscoveryToggle?.(
+                  result.gesetz,
+                  result.paragraph,
+                  discoveryPolarity === "positive" ? null : "positive"
+                );
+              }}
+              className={cn(
+                "min-h-10 min-w-10 flex items-center justify-center rounded transition-colors",
+                discoveryPolarity === "positive"
+                  ? "text-success-500"
+                  : "text-neutral-400 hover:text-success-400"
+              )}
+            >
+              <ThumbsUp size={20} aria-hidden="true" />
+            </button>
+            <button
+              role="checkbox"
+              aria-checked={discoveryPolarity === "negative"}
+              aria-label={`Negatives Beispiel: ${result.paragraph} ${result.gesetz}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDiscoveryToggle?.(
+                  result.gesetz,
+                  result.paragraph,
+                  discoveryPolarity === "negative" ? null : "negative"
+                );
+              }}
+              className={cn(
+                "min-h-10 min-w-10 flex items-center justify-center rounded transition-colors",
+                discoveryPolarity === "negative"
+                  ? "text-error-500"
+                  : "text-neutral-400 hover:text-error-400"
+              )}
+            >
+              <ThumbsDown size={20} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+
       <button
         onClick={() => setExpanded(!expanded)}
         aria-expanded={expanded}
@@ -88,6 +146,7 @@ export function ResultCard({
           <ChevronDown size={16} className="text-slate-400" aria-hidden="true" />
         )}
       </button>
+      </div>
 
       {/* Expanded Content */}
       {expanded && (
