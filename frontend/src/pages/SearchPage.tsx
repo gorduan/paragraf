@@ -286,19 +286,19 @@ export function SearchPage() {
     setShowUndo(true);
   }
 
-  function handleUndo() {
+  const handleUndo = useCallback(() => {
     if (undoSnapshot) {
       setDiscoveryExamples(undoSnapshot.examples);
       setResults(undoSnapshot.results);
       setUndoSnapshot(null);
     }
     setShowUndo(false);
-  }
+  }, [undoSnapshot]);
 
-  function handleUndoDismiss() {
+  const handleUndoDismiss = useCallback(() => {
     setShowUndo(false);
     setUndoSnapshot(null);
-  }
+  }, []);
 
   function getPolarity(gesetz: string, paragraph: string): "positive" | "negative" | null {
     const ex = discoveryExamples.find(e => e.gesetz === gesetz && e.paragraph === paragraph);

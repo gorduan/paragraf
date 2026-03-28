@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 
 interface UndoSnackbarProps {
@@ -14,10 +14,13 @@ export function UndoSnackbar({
   onDismiss,
   duration = 5000,
 }: UndoSnackbarProps) {
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+
   useEffect(() => {
-    const timer = setTimeout(onDismiss, duration);
+    const timer = setTimeout(() => onDismissRef.current(), duration);
     return () => clearTimeout(timer);
-  }, [onDismiss, duration]);
+  }, [duration]);
 
   return (
     <div

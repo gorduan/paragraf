@@ -49,8 +49,8 @@ export function DiscoveryExampleBar({
                 className={cn(
                   "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm border transition-colors",
                   isPositive
-                    ? "bg-success-50 dark:bg-success-900 text-success-700 dark:text-success-300 border-success-200 dark:border-success-700 hover:bg-success-100 dark:hover:bg-success-800"
-                    : "bg-error-50 dark:bg-error-900 text-error-700 dark:text-error-300 border-error-200 dark:border-error-700 hover:bg-error-100 dark:hover:bg-error-800"
+                    ? "bg-success-50 dark:bg-success-900 text-success-700 dark:text-success-200 border-success-200 dark:border-success-700 hover:bg-success-100 dark:hover:bg-success-800"
+                    : "bg-error-50 dark:bg-error-900 text-error-700 dark:text-error-200 border-error-200 dark:border-error-700 hover:bg-error-100 dark:hover:bg-error-800"
                 )}
               >
                 <span>
