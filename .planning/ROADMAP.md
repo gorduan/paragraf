@@ -185,13 +185,13 @@ Plans:
   2. Users can export search results and comparisons as PDF or Markdown documents
   3. Application meets WCAG 2.1 AA accessibility standards (keyboard navigation, screen reader support, contrast ratios)
   4. Application is usable on tablet-sized screens with no layout breakage or hidden content
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 10-01: TBD
-- [ ] 10-02: TBD
-- [ ] 10-03: TBD
+- [ ] 10-01-PLAN.md -- Snapshot API client, relative-time utility, SnapshotSection/SnapshotCard components, IndexPage integration
+- [ ] 10-02-PLAN.md -- jsPDF install, unified ExportData types, PDF/Markdown generation, ExportDropdown/ExportButton components
+- [ ] 10-03-PLAN.md -- Responsive sidebar hamburger, export integration into all pages, WCAG 2.1 AA accessibility polish
 
 ## Progress
 
