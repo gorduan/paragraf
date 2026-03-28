@@ -280,6 +280,31 @@ export interface GpuInfoResponse {
   vram_total_mb: number;
 }
 
+// ── Snapshot Types ───────────────────────────────────────────────────────────
+
+export interface SnapshotInfo {
+  name: string;
+  creation_time: string | null;
+  size: number;
+}
+
+export interface SnapshotListResponse {
+  snapshots: SnapshotInfo[];
+  total: number;
+}
+
+export interface SnapshotCreateResponse {
+  erfolg: boolean;
+  name: string;
+  nachricht: string;
+  geloeschte_snapshots: string[];
+}
+
+export interface SnapshotRestoreResponse {
+  erfolg: boolean;
+  nachricht: string;
+}
+
 // ── API Client ───────────────────────────────────────────────────────────────
 
 async function fetchJson<T>(
@@ -428,4 +453,28 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  createSnapshot: () =>
+    fetchJson<SnapshotCreateResponse>("/api/snapshots", {
+      method: "POST",
+    }),
+
+  listSnapshots: () =>
+    fetchJson<SnapshotListResponse>("/api/snapshots"),
+
+  restoreSnapshot: (name: string) =>
+    fetchJson<SnapshotRestoreResponse>(
+      `/api/snapshots/${encodeURIComponent(name)}/restore`,
+      { method: "POST" }
+    ),
+
+  deleteSnapshot: async (name: string): Promise<void> => {
+    const res = await fetch(
+      `${BASE_URL}/api/snapshots/${encodeURIComponent(name)}`,
+      { method: "DELETE" }
+    );
+    if (!res.ok) {
+      throw new Error(`API Fehler: ${res.status} ${res.statusText}`);
+    }
+  },
 };
