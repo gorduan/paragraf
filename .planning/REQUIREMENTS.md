@@ -42,7 +42,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 - [x] **MCP-03**: MCP-Tool `paragraf_references` -- Querverweise eines Paragraphen abrufen
 - [x] **MCP-04**: Multi-Hop MCP-Prompt -- Paragraphen finden, Querverweise folgen, Rechtslage zusammenfassen
 - [x] **MCP-05**: Abschnitt-Filter vollstaendig in allen MCP-Such-Tools exponieren
-- [ ] **MCP-06**: MCP-Tool `paragraf_snapshot` -- Backup erstellen/wiederherstellen
+- [x] **MCP-06**: MCP-Tool `paragraf_snapshot` -- Backup erstellen/wiederherstellen
 - [x] **MCP-07**: MCP-Tool `paragraf_grouped_search` -- gruppierte Suchergebnisse
 
 ### Frontend UX (mit /frontend-design, /ui-ux-pro-max, /ckm-ui-styling)
@@ -102,28 +102,28 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | SRCH-02 | Phase 5: Grouping & Discovery API | Complete |
 | SRCH-03 | Phase 5: Grouping & Discovery API | Complete |
 | SRCH-04 | Phase 4: Recommend & Pagination | Complete |
-| SRCH-05 | Phase 5: Grouping & Discovery API | Complete |
+| SRCH-05 | Phase 5: Grouping & Discovery API / Phase 11: Frontend API Wiring | Complete |
 | SRCH-06 | Phase 2: Search Indexes & Full-Text | Complete |
-| SRCH-07 | Phase 7: Query Expansion & Chunking | Complete |
-| SRCH-08 | Phase 4: Recommend & Pagination | Complete |
-| XREF-01 | Phase 6: Cross-Reference Pipeline | Complete |
-| XREF-02 | Phase 6: Cross-Reference Pipeline | Complete |
-| XREF-03 | Phase 6: Cross-Reference Pipeline | Complete |
+| SRCH-07 | Phase 7: Query Expansion & Chunking / Phase 12: Search UX Polish | Complete |
+| SRCH-08 | Phase 4: Recommend & Pagination / Phase 11: Frontend API Wiring | Complete |
+| XREF-01 | Phase 6: Cross-Reference Pipeline / Phase 11: Frontend API Wiring | Complete |
+| XREF-02 | Phase 6: Cross-Reference Pipeline / Phase 11: Frontend API Wiring | Complete |
+| XREF-03 | Phase 6: Cross-Reference Pipeline / Phase 11: Frontend API Wiring | Complete |
 | XREF-04 | Phase 6: Cross-Reference Pipeline | Complete |
-| XREF-05 | Phase 9: Cross-Reference & Discovery UX | Complete |
+| XREF-05 | Phase 9: Cross-Reference & Discovery UX / Phase 12: Search UX Polish | Complete |
 | XREF-06 | Phase 9: Cross-Reference & Discovery UX | Complete |
 | MCP-01 | Phase 4: Recommend & Pagination | Complete |
 | MCP-02 | Phase 5: Grouping & Discovery API | Complete |
 | MCP-03 | Phase 6: Cross-Reference Pipeline | Complete |
-| MCP-04 | Phase 7: Query Expansion & Chunking | Complete |
+| MCP-04 | Phase 7: Query Expansion & Chunking / Phase 11: Frontend API Wiring | Complete |
 | MCP-05 | Phase 4: Recommend & Pagination | Complete |
-| MCP-06 | Phase 1: Snapshot Safety Net | Pending |
+| MCP-06 | Phase 1: Snapshot Safety Net / Phase 13: Tracking Artifact Cleanup | Complete |
 | MCP-07 | Phase 5: Grouping & Discovery API | Complete |
 | UI-01 | Phase 3: Design System Foundation | Complete |
 | UI-02 | Phase 8: Search Results UX | Complete |
 | UI-03 | Phase 8: Search Results UX | Complete |
 | UI-04 | Phase 8: Search Results UX | Complete |
-| UI-05 | Phase 8: Search Results UX | Complete |
+| UI-05 | Phase 8: Search Results UX / Phase 12: Search UX Polish | Complete |
 | UI-06 | Phase 8: Search Results UX | Complete |
 | UI-07 | Phase 8: Search Results UX | Complete |
 | UI-08 | Phase 9: Cross-Reference & Discovery UX | Complete |
@@ -132,7 +132,7 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | UI-11 | Phase 10: Dashboard, Export & Polish | Complete |
 | UI-12 | Phase 10: Dashboard, Export & Polish | Complete |
 | CHUNK-01 | Phase 7: Query Expansion & Chunking | Complete |
-| CHUNK-02 | Phase 7: Query Expansion & Chunking | Complete |
+| CHUNK-02 | Phase 7: Query Expansion & Chunking / Phase 11: Frontend API Wiring | Complete |
 
 **Coverage:**
 - v1 requirements: 40 total

@@ -22,6 +22,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 8: Search Results UX** - Recommend button, grouped view, filters, compare, pagination, full-text toggle
 - [ ] **Phase 9: Cross-Reference & Discovery UX** - Clickable citation links, interactive graph, discovery mode UI
 - [x] **Phase 10: Dashboard, Export & Polish** - Snapshot management, PDF/Markdown export, accessibility, responsive polish (completed 2026-03-28)
+- [ ] **Phase 11: Frontend API Wiring** - Wire all backend-only endpoints into frontend API client and add UI surfaces (gap closure)
+- [ ] **Phase 12: Search UX Polish** - Fix broken interactive elements, add missing click handlers and expansion toggle (gap closure)
+- [ ] **Phase 13: Tracking Artifact Cleanup** - Fix stale checkboxes, progress table, and SUMMARY frontmatter (gap closure)
 
 ## Phase Details
 
@@ -193,20 +196,63 @@ Plans:
 - [x] 10-02-PLAN.md -- jsPDF install, unified ExportData types, PDF/Markdown generation, ExportDropdown/ExportButton components
 - [x] 10-03-PLAN.md -- Responsive sidebar hamburger, export integration into all pages, WCAG 2.1 AA accessibility polish
 
+### Phase 11: Frontend API Wiring
+**Goal**: All backend endpoints that currently have no frontend consumer are wired into the API client with minimal UI surfaces, closing the integration gap between backend and web UI
+**Depends on**: Phase 8 (search UX), Phase 9 (cross-ref UX), Phase 10 (dashboard)
+**Requirements**: XREF-01, XREF-02, XREF-03, CHUNK-02, MCP-04, SRCH-05, SRCH-08
+**Gap Closure**: Closes integration gaps 1, 2, 4, 5, 6 from milestone audit
+**Success Criteria** (what must be TRUE):
+  1. `api.ts` exposes `multiHop()`, `recommendGrouped()`, `searchBatch()` methods
+  2. Multi-hop search has a UI surface in the frontend (tab, mode, or dedicated section)
+  3. `/api/references/extract` is triggered automatically from IndexPage after indexing completes
+  4. `_result_to_item()` propagates `references_out` from chunk metadata to `SearchResultItem`
+**UI hint**: yes
+
+Plans: (to be created via `/gsd:plan-phase 11`)
+
+### Phase 12: Search UX Polish
+**Goal**: All interactive elements in search results work correctly — citation deep-links, compare badge clicks, and query expansion opt-out are functional
+**Depends on**: Phase 11
+**Requirements**: XREF-05, UI-05, SRCH-07
+**Gap Closure**: Closes integration gaps 3, 7 and minor UX items from milestone audit
+**Success Criteria** (what must be TRUE):
+  1. ResultCard "Zitationen" button navigates to GraphPage (onGraphNavigate passed from SearchPage)
+  2. Compare counter badge in SearchPage has onClick handler navigating to ComparePage
+  3. Query expansion toggle UI allows users to disable expansion per search
+  4. Filter announcement includes filtered result count for screen readers
+**UI hint**: yes
+
+Plans: (to be created via `/gsd:plan-phase 12`)
+
+### Phase 13: Tracking Artifact Cleanup
+**Goal**: All planning artifacts accurately reflect the completed state of the milestone — no stale checkboxes, progress entries, or missing frontmatter
+**Depends on**: Phase 12
+**Requirements**: MCP-06
+**Gap Closure**: Closes all tracking/documentation gaps from milestone audit
+**Success Criteria** (what must be TRUE):
+  1. MCP-06 checkbox in REQUIREMENTS.md is `[x]` and traceability shows `Complete`
+  2. All SUMMARY frontmatter `requirements_completed` fields are populated (07-03, 09-04, 09-05, 10-02, 10-03)
+  3. ROADMAP.md progress table reflects actual completion state of all phases
+
+Plans: (to be created via `/gsd:plan-phase 13`)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Snapshot Safety Net | 1/2 | In Progress|  |
-| 2. Search Indexes & Full-Text | 0/2 | Not started | - |
-| 3. Design System Foundation | 0/2 | Not started | - |
-| 4. Recommend & Pagination | 0/3 | Not started | - |
-| 5. Grouping & Discovery API | 0/3 | Not started | - |
-| 6. Cross-Reference Pipeline | 3/3 | Complete   | 2026-03-27 |
-| 7. Query Expansion & Chunking | 0/3 | Not started | - |
-| 8. Search Results UX | 0/3 | Not started | - |
-| 9. Cross-Reference & Discovery UX | 3/5 | Gap closure | - |
-| 10. Dashboard, Export & Polish | 3/3 | Complete    | 2026-03-28 |
+| 1. Snapshot Safety Net | 2/2 | Complete | 2026-03-27 |
+| 2. Search Indexes & Full-Text | 2/2 | Complete | 2026-03-27 |
+| 3. Design System Foundation | 2/2 | Complete | 2026-03-27 |
+| 4. Recommend & Pagination | 3/3 | Complete | 2026-03-27 |
+| 5. Grouping & Discovery API | 3/3 | Complete | 2026-03-27 |
+| 6. Cross-Reference Pipeline | 3/3 | Complete | 2026-03-27 |
+| 7. Query Expansion & Chunking | 3/3 | Complete | 2026-03-27 |
+| 8. Search Results UX | 3/3 | Complete | 2026-03-27 |
+| 9. Cross-Reference & Discovery UX | 5/5 | Complete | 2026-03-28 |
+| 10. Dashboard, Export & Polish | 3/3 | Complete | 2026-03-28 |
+| 11. Frontend API Wiring | 0/0 | Not started | - |
+| 12. Search UX Polish | 0/0 | Not started | - |
+| 13. Tracking Artifact Cleanup | 0/0 | Not started | - |
