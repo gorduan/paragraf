@@ -211,7 +211,7 @@ Plans:
 Plans: 2 plans
 
 Plans:
-- [ ] 11-01-PLAN.md -- Backend references_out fix + frontend API client wiring (4 new methods)
+- [x] 11-01-PLAN.md -- Backend references_out fix + frontend API client wiring (4 new methods)
 - [ ] 11-02-PLAN.md -- Multi-hop search UI surface + auto reference extraction trigger
 
 ### Phase 12: Search UX Polish
@@ -257,6 +257,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 8. Search Results UX | 3/3 | Complete | 2026-03-27 |
 | 9. Cross-Reference & Discovery UX | 5/5 | Complete | 2026-03-28 |
 | 10. Dashboard, Export & Polish | 3/3 | Complete | 2026-03-28 |
-| 11. Frontend API Wiring | 0/2 | Not started | - |
+| 11. Frontend API Wiring | 1/2 | In Progress|  |
 | 12. Search UX Polish | 0/0 | Not started | - |
 | 13. Tracking Artifact Cleanup | 0/0 | Not started | - |
