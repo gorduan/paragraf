@@ -8,6 +8,7 @@ import { LawBrowserPage } from "./pages/LawBrowserPage";
 import { CounselingPage } from "./pages/CounselingPage";
 import { IndexPage } from "./pages/IndexPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { GraphPage } from "./pages/GraphPage";
 import { useHealthCheck } from "./hooks/useHealthCheck";
 
 // ── Contexts ─────────────────────────────────────────────────────────────────
@@ -86,13 +87,6 @@ export default function App() {
   }, [bookmarks]);
 
   // Page labels for announcements
-  // Placeholder for Plan 02
-  const GraphPage = () => (
-    <div className="p-8 text-lg text-slate-600 dark:text-slate-300">
-      Zitationsgraph — wird in Plan 02 implementiert
-    </div>
-  );
-
   const PAGE_LABELS: Record<Page, string> = {
     search: "Suche",
     lookup: "Nachschlagen",
@@ -169,7 +163,7 @@ export default function App() {
       case "index":
         return <IndexPage />;
       case "graph":
-        return <GraphPage />;
+        return <GraphPage onPageChange={(p) => setPage(p as Page)} />;
       case "settings":
         return <SettingsPage />;
     }
