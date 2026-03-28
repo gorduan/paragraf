@@ -56,7 +56,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 - [x] **UI-07**: Full-Text-Suche Toggle im SearchBar
 - [ ] **UI-08**: Zitationsgraph-Visualisierung (interaktiv, klickbar)
 - [ ] **UI-09**: Export: PDF/Markdown-Export von Ergebnissen und Vergleichen
-- [ ] **UI-10**: Discovery-Suche UI: Positiv/Negativ-Beispiele per Drag-and-Drop oder Checkbox
+- [x] **UI-10**: Discovery-Suche UI: Positiv/Negativ-Beispiele per Drag-and-Drop oder Checkbox
 - [ ] **UI-11**: Responsive Design-Verbesserungen und Accessibility-Audit (WCAG 2.1 AA)
 - [ ] **UI-12**: Snapshot-Management im Index-Dashboard (erstellen, Status, wiederherstellen)
 
@@ -128,7 +128,7 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | UI-07 | Phase 8: Search Results UX | Complete |
 | UI-08 | Phase 9: Cross-Reference & Discovery UX | Pending |
 | UI-09 | Phase 10: Dashboard, Export & Polish | Pending |
-| UI-10 | Phase 9: Cross-Reference & Discovery UX | Pending |
+| UI-10 | Phase 9: Cross-Reference & Discovery UX | Complete |
 | UI-11 | Phase 10: Dashboard, Export & Polish | Pending |
 | UI-12 | Phase 10: Dashboard, Export & Polish | Pending |
 | CHUNK-01 | Phase 7: Query Expansion & Chunking | Complete |
