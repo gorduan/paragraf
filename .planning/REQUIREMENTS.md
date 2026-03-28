@@ -13,7 +13,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 - [x] **INFRA-02**: Scalar Quantization fuer Dense-Vektoren aktiviert (Sparse unberuehrt)
 - [x] **INFRA-03**: Full-Text Index auf `text`-Feld fuer exakte Wortsuche
 - [x] **INFRA-04**: Payload Range-Filter fuer numerisches `absatz`-Feld
-- [ ] **INFRA-05**: Snapshot-Button im Index-Dashboard (Frontend)
+- [x] **INFRA-05**: Snapshot-Button im Index-Dashboard (Frontend)
 
 ### Search Enhancement
 
@@ -58,7 +58,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 - [x] **UI-09**: Export: PDF/Markdown-Export von Ergebnissen und Vergleichen
 - [x] **UI-10**: Discovery-Suche UI: Positiv/Negativ-Beispiele per Drag-and-Drop oder Checkbox
 - [ ] **UI-11**: Responsive Design-Verbesserungen und Accessibility-Audit (WCAG 2.1 AA)
-- [ ] **UI-12**: Snapshot-Management im Index-Dashboard (erstellen, Status, wiederherstellen)
+- [x] **UI-12**: Snapshot-Management im Index-Dashboard (erstellen, Status, wiederherstellen)
 
 ### Semantic Chunking
 
@@ -97,7 +97,7 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | INFRA-02 | Phase 1: Snapshot Safety Net | Complete |
 | INFRA-03 | Phase 2: Search Indexes & Full-Text | Complete |
 | INFRA-04 | Phase 2: Search Indexes & Full-Text | Complete |
-| INFRA-05 | Phase 10: Dashboard, Export & Polish | Pending |
+| INFRA-05 | Phase 10: Dashboard, Export & Polish | Complete |
 | SRCH-01 | Phase 4: Recommend & Pagination | Complete |
 | SRCH-02 | Phase 5: Grouping & Discovery API | Complete |
 | SRCH-03 | Phase 5: Grouping & Discovery API | Complete |
@@ -130,7 +130,7 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | UI-09 | Phase 10: Dashboard, Export & Polish | Complete |
 | UI-10 | Phase 9: Cross-Reference & Discovery UX | Complete |
 | UI-11 | Phase 10: Dashboard, Export & Polish | Pending |
-| UI-12 | Phase 10: Dashboard, Export & Polish | Pending |
+| UI-12 | Phase 10: Dashboard, Export & Polish | Complete |
 | CHUNK-01 | Phase 7: Query Expansion & Chunking | Complete |
 | CHUNK-02 | Phase 7: Query Expansion & Chunking | Complete |
 

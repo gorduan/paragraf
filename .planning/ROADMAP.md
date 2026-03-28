@@ -189,7 +189,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 10-01-PLAN.md -- Snapshot API client, relative-time utility, SnapshotSection/SnapshotCard components, IndexPage integration
+- [x] 10-01-PLAN.md -- Snapshot API client, relative-time utility, SnapshotSection/SnapshotCard components, IndexPage integration
 - [x] 10-02-PLAN.md -- jsPDF install, unified ExportData types, PDF/Markdown generation, ExportDropdown/ExportButton components
 - [ ] 10-03-PLAN.md -- Responsive sidebar hamburger, export integration into all pages, WCAG 2.1 AA accessibility polish
 
@@ -209,4 +209,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 7. Query Expansion & Chunking | 0/3 | Not started | - |
 | 8. Search Results UX | 0/3 | Not started | - |
 | 9. Cross-Reference & Discovery UX | 3/5 | Gap closure | - |
-| 10. Dashboard, Export & Polish | 1/3 | In Progress|  |
+| 10. Dashboard, Export & Polish | 2/3 | In Progress|  |
