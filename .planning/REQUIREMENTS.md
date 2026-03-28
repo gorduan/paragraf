@@ -55,7 +55,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 - [x] **UI-06**: Paginierung fuer Suche (Scroll API) und Law Browser
 - [x] **UI-07**: Full-Text-Suche Toggle im SearchBar
 - [x] **UI-08**: Zitationsgraph-Visualisierung (interaktiv, klickbar)
-- [ ] **UI-09**: Export: PDF/Markdown-Export von Ergebnissen und Vergleichen
+- [x] **UI-09**: Export: PDF/Markdown-Export von Ergebnissen und Vergleichen
 - [x] **UI-10**: Discovery-Suche UI: Positiv/Negativ-Beispiele per Drag-and-Drop oder Checkbox
 - [ ] **UI-11**: Responsive Design-Verbesserungen und Accessibility-Audit (WCAG 2.1 AA)
 - [ ] **UI-12**: Snapshot-Management im Index-Dashboard (erstellen, Status, wiederherstellen)
@@ -127,7 +127,7 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | UI-06 | Phase 8: Search Results UX | Complete |
 | UI-07 | Phase 8: Search Results UX | Complete |
 | UI-08 | Phase 9: Cross-Reference & Discovery UX | Complete |
-| UI-09 | Phase 10: Dashboard, Export & Polish | Pending |
+| UI-09 | Phase 10: Dashboard, Export & Polish | Complete |
 | UI-10 | Phase 9: Cross-Reference & Discovery UX | Complete |
 | UI-11 | Phase 10: Dashboard, Export & Polish | Pending |
 | UI-12 | Phase 10: Dashboard, Export & Polish | Pending |
