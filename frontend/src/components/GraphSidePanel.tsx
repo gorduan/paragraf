@@ -17,6 +17,7 @@ interface GraphSidePanelProps {
   loading: boolean;
   onClose: () => void;
   onNavigate: (gesetz: string, paragraph: string) => void;
+  onDrillDown?: (gesetz: string) => void;
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -27,6 +28,7 @@ export function GraphSidePanel({
   loading,
   onClose,
   onNavigate,
+  onDrillDown,
 }: GraphSidePanelProps) {
   if (!node) return null;
 
@@ -131,7 +133,30 @@ export function GraphSidePanel({
         </p>
       )}
 
-      {/* Navigation button */}
+      {/* Law-level info when no reference data */}
+      {!loading && !referenceData && node.type === "law" && (
+        <div className="space-y-2">
+          <p className="text-body text-neutral-600 dark:text-neutral-400">
+            Verweise: <span className="font-semibold">{node.refCount}</span>
+          </p>
+        </div>
+      )}
+
+      {/* Drill-down button for law nodes */}
+      {node.type === "law" && onDrillDown && (
+        <div className="mt-6">
+          <Button
+            variant="primary"
+            size="md"
+            className="w-full"
+            onClick={() => onDrillDown(node.gesetz)}
+          >
+            Paragraphen anzeigen
+          </Button>
+        </div>
+      )}
+
+      {/* Navigation button for paragraph nodes */}
       {node.paragraph && (
         <div className="mt-6">
           <Button

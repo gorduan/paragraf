@@ -221,21 +221,6 @@ export function GraphCanvas({
     }
   }, [onNodeClick]);
 
-  const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      // Only handle click if no drag/pan occurred
-      if (movedRef.current) return;
-      if (dragRef.current || panRef.current) return;
-
-      const { x, y } = getCanvasCoords(e);
-      const node = findNodeAtPoint(x, y, nodes, transformRef.current);
-      if (node) {
-        onNodeClick(node);
-      }
-    },
-    [nodes, getCanvasCoords, onNodeClick],
-  );
-
   const handleWheel = useCallback((e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     const { x, y } = getCanvasCoords(e);
@@ -263,7 +248,6 @@ export function GraphCanvas({
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onClick={handleClick}
       onWheel={handleWheel}
     />
   );

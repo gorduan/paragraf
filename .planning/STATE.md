@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 09-05-PLAN.md
-last_updated: "2026-03-28T02:08:10.388Z"
+last_updated: "2026-03-28T02:10:43.869Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 10
@@ -75,6 +75,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 09 P01 | 7min | 2 tasks | 10 files |
 | Phase 09 P03 | 4min | 2 tasks | 7 files |
 | Phase 09 P02 | 5min | 2 tasks | 10 files |
+| Phase 09 P04 | 4min | 2 tasks | 3 files |
 | Phase 09 P05 | 2min | 2 tasks | 4 files |
 
 ## Accumulated Context
@@ -128,6 +129,8 @@ Recent decisions affecting current work:
 - [Phase 09]: Discovery mode as separate boolean rather than extending SearchMode type union
 - [Phase 09]: d3-force + native Canvas for graph rendering, progressive loading at 50 nodes, law-level drill-down to paragraphs
 - [Phase 09]: useRef callback pattern for timer-based components to avoid dependency churn
+- [Phase 09]: Use api.indexStatus() instead of api.laws() for graph data loading -- per-law indexed status needed
+- [Phase 09]: Single-click opens side panel; drill-down via button in side panel for better UX
 
 ### Pending Todos
 
@@ -141,6 +144,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T02:08:10.380Z
+Last session: 2026-03-28T02:10:43.862Z
 Stopped at: Completed 09-05-PLAN.md
 Resume file: None
