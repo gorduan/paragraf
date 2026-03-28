@@ -33,7 +33,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 - [x] **XREF-03**: Re-Indexierung aller Gesetze mit Querverweis-Daten (nach Snapshot)
 - [x] **XREF-04**: Zitationsnetzwerk-API -- zu einem Paragraphen alle referenzierten und referenzierenden Normen abrufen
 - [x] **XREF-05**: Klickbare Querverweis-Links in der Paragraphen-Anzeige
-- [ ] **XREF-06**: Interaktive Zitationsgraph-Visualisierung (gerichteter Graph)
+- [x] **XREF-06**: Interaktive Zitationsgraph-Visualisierung (gerichteter Graph)
 
 ### MCP Tools
 
@@ -54,7 +54,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 - [x] **UI-05**: Vergleich direkt aus Suchergebnissen (onCompare verdrahten)
 - [x] **UI-06**: Paginierung fuer Suche (Scroll API) und Law Browser
 - [x] **UI-07**: Full-Text-Suche Toggle im SearchBar
-- [ ] **UI-08**: Zitationsgraph-Visualisierung (interaktiv, klickbar)
+- [x] **UI-08**: Zitationsgraph-Visualisierung (interaktiv, klickbar)
 - [ ] **UI-09**: Export: PDF/Markdown-Export von Ergebnissen und Vergleichen
 - [x] **UI-10**: Discovery-Suche UI: Positiv/Negativ-Beispiele per Drag-and-Drop oder Checkbox
 - [ ] **UI-11**: Responsive Design-Verbesserungen und Accessibility-Audit (WCAG 2.1 AA)
@@ -111,7 +111,7 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | XREF-03 | Phase 6: Cross-Reference Pipeline | Complete |
 | XREF-04 | Phase 6: Cross-Reference Pipeline | Complete |
 | XREF-05 | Phase 9: Cross-Reference & Discovery UX | Complete |
-| XREF-06 | Phase 9: Cross-Reference & Discovery UX | Pending |
+| XREF-06 | Phase 9: Cross-Reference & Discovery UX | Complete |
 | MCP-01 | Phase 4: Recommend & Pagination | Complete |
 | MCP-02 | Phase 5: Grouping & Discovery API | Complete |
 | MCP-03 | Phase 6: Cross-Reference Pipeline | Complete |
@@ -126,7 +126,7 @@ Aufgeschoben fuer zukuenftiges Milestone. Dokumentiert aber nicht in aktueller R
 | UI-05 | Phase 8: Search Results UX | Complete |
 | UI-06 | Phase 8: Search Results UX | Complete |
 | UI-07 | Phase 8: Search Results UX | Complete |
-| UI-08 | Phase 9: Cross-Reference & Discovery UX | Pending |
+| UI-08 | Phase 9: Cross-Reference & Discovery UX | Complete |
 | UI-09 | Phase 10: Dashboard, Export & Polish | Pending |
 | UI-10 | Phase 9: Cross-Reference & Discovery UX | Complete |
 | UI-11 | Phase 10: Dashboard, Export & Polish | Pending |

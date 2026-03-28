@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Cross-Reference Pipeline** - Citation extraction, re-indexing, citation network API (completed 2026-03-27)
 - [ ] **Phase 7: Query Expansion & Chunking** - Legal synonym expansion, multi-hop MCP, semantic chunking
 - [ ] **Phase 8: Search Results UX** - Recommend button, grouped view, filters, compare, pagination, full-text toggle
-- [ ] **Phase 9: Cross-Reference & Discovery UX** - Clickable citation links, interactive graph, discovery mode UI
+- [x] **Phase 9: Cross-Reference & Discovery UX** - Clickable citation links, interactive graph, discovery mode UI (completed 2026-03-28)
 - [ ] **Phase 10: Dashboard, Export & Polish** - Snapshot management, PDF/Markdown export, accessibility, responsive polish
 
 ## Phase Details
@@ -171,7 +171,7 @@ Plans:
 
 Plans:
 - [x] 09-01-PLAN.md -- API client extensions, citation parser, CitationLink/CitationTooltip, LookupPage rendering, Sidebar+App graph route
-- [ ] 09-02-PLAN.md -- d3-force graph-utils, GraphCanvas, GraphSidePanel, GraphLegend, GraphPage with dual-level toggle
+- [x] 09-02-PLAN.md -- d3-force graph-utils, GraphCanvas, GraphSidePanel, GraphLegend, GraphPage with dual-level toggle
 - [x] 09-03-PLAN.md -- DiscoveryExampleBar, UndoSnackbar, SearchModeToggle extension, ResultCard +/- buttons, SearchPage discovery integration
 
 ### Phase 10: Dashboard, Export & Polish
@@ -206,5 +206,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 6. Cross-Reference Pipeline | 3/3 | Complete   | 2026-03-27 |
 | 7. Query Expansion & Chunking | 0/3 | Not started | - |
 | 8. Search Results UX | 0/3 | Not started | - |
-| 9. Cross-Reference & Discovery UX | 0/3 | Not started | - |
+| 9. Cross-Reference & Discovery UX | 3/3 | Complete   | 2026-03-28 |
 | 10. Dashboard, Export & Polish | 0/3 | Not started | - |
