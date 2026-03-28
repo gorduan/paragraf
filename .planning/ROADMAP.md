@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Cross-Reference Pipeline** - Citation extraction, re-indexing, citation network API (completed 2026-03-27)
 - [ ] **Phase 7: Query Expansion & Chunking** - Legal synonym expansion, multi-hop MCP, semantic chunking
 - [ ] **Phase 8: Search Results UX** - Recommend button, grouped view, filters, compare, pagination, full-text toggle
-- [x] **Phase 9: Cross-Reference & Discovery UX** - Clickable citation links, interactive graph, discovery mode UI (completed 2026-03-28)
+- [ ] **Phase 9: Cross-Reference & Discovery UX** - Clickable citation links, interactive graph, discovery mode UI
 - [ ] **Phase 10: Dashboard, Export & Polish** - Snapshot management, PDF/Markdown export, accessibility, responsive polish
 
 ## Phase Details
