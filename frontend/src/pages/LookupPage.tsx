@@ -3,6 +3,8 @@ import { api, type LookupResponse, type LawInfo, type ReferenceItem } from "../l
 import { parseCitations } from "../lib/citation-parser";
 import { CitationTooltip } from "../components/CitationTooltip";
 import { Disclaimer } from "../components/Disclaimer";
+import { ExportDropdown } from "../components/ExportDropdown";
+import { lookupToExportData } from "../lib/export-types";
 import { Loader, BookOpen } from "lucide-react";
 
 export function LookupPage() {
@@ -63,8 +65,8 @@ export function LookupPage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1">Paragraph nachschlagen</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <h1 className="text-heading font-semibold mb-1">Paragraph nachschlagen</h1>
+        <p className="text-body text-neutral-500 dark:text-neutral-400">
           Direkter Zugriff auf einen bestimmten Paragraphen
         </p>
       </div>
@@ -132,27 +134,30 @@ export function LookupPage() {
         <div className="mt-6">
           {result.found ? (
             <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
-              <h2 className="text-lg font-bold">
-                {result.paragraph} {result.gesetz}
-                {result.titel && (
-                  <span className="font-normal text-slate-500 dark:text-slate-400">
-                    {" "}&ndash; {result.titel}
-                  </span>
-                )}
-              </h2>
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <h2 className="text-lg font-bold">
+                  {result.paragraph} {result.gesetz}
+                  {result.titel && (
+                    <span className="font-normal text-neutral-500 dark:text-neutral-400">
+                      {" "}&ndash; {result.titel}
+                    </span>
+                  )}
+                </h2>
+                <ExportDropdown getData={() => lookupToExportData(result)} filename="paragraf-nachschlagen" />
+              </div>
 
               {result.hierarchie_pfad && (
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                   {result.hierarchie_pfad}
                 </p>
               )}
               {result.abschnitt && (
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
                   Abschnitt: {result.abschnitt}
                 </p>
               )}
               {result.stand && (
-                <p className="text-xs text-slate-400">Stand: {result.stand}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Stand: {result.stand}</p>
               )}
 
               <hr className="my-4 border-slate-200 dark:border-slate-700" />
@@ -177,7 +182,7 @@ export function LookupPage() {
                 )}
               </div>
 
-              <p className="text-xs text-slate-400 mt-4">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4">
                 Quelle: {result.quelle}
               </p>
               <Disclaimer />

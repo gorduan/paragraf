@@ -7,6 +7,8 @@ import { useState, useEffect, useCallback, useContext } from "react";
 import { Loader, AlertCircle, RefreshCw } from "lucide-react";
 import { ThemeContext } from "@/App";
 import { api } from "@/lib/api";
+import { ExportDropdown } from "@/components/ExportDropdown";
+import { type ExportData, DEFAULT_DISCLAIMER } from "@/lib/export-types";
 import type { ReferenceNetworkResponse, IndexStatusItem } from "@/lib/api";
 import {
   buildLawLevelGraph,
@@ -279,6 +281,20 @@ export function GraphPage({ onPageChange }: GraphPageProps) {
     [loadParagraphLevelGraph],
   );
 
+  // ── Export helper ──────────────────────────────────────────────────────
+
+  const graphToExportData = useCallback((): ExportData => ({
+    title: "Zitationsgraph",
+    subtitle: focusedLaw ? `${focusedLaw} — Paragraphen` : "Gesetze-Ebene",
+    date: new Date().toLocaleDateString("de-DE"),
+    items: visibleNodes.map((n) => ({
+      heading: n.label,
+      text: `Knoten im Zitationsgraph (${n.refCount} Referenzen)`,
+      metadata: n.gesetz ? { Gesetz: n.gesetz } : undefined,
+    })),
+    disclaimer: DEFAULT_DISCLAIMER,
+  }), [visibleNodes, focusedLaw]);
+
   // ── Render ──────────────────────────────────────────────────────────────
 
   // Empty state
@@ -341,6 +357,10 @@ export function GraphPage({ onPageChange }: GraphPageProps) {
             {focusedLaw}
           </span>
         )}
+
+        <div className="ml-auto">
+          <ExportDropdown getData={graphToExportData} filename="paragraf-graph" />
+        </div>
       </div>
 
       {/* Paragraph-level message when no law focused */}

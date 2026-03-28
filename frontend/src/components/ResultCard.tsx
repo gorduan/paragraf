@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { BookmarkContext, CompareContext } from "../App";
 import type { SearchResultItem } from "../lib/api";
+import { ExportButton } from "./ExportButton";
+import { singleResultToExportData } from "../lib/export-types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { RecommendSection } from "./RecommendSection";
@@ -129,7 +131,7 @@ export function ResultCard({
               {result.gesetz}
             </Badge>
             {showScore && (
-              <span className="text-xs text-slate-400" aria-label={`Relevanz-Score: ${result.score.toFixed(2)}`}>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400" aria-label={`Relevanz-Score: ${result.score.toFixed(2)}`}>
                 Score: {result.score.toFixed(2)}
               </span>
             )}
@@ -158,7 +160,7 @@ export function ResultCard({
 
             {/* Metadata */}
             {result.hierarchie_pfad && (
-              <p className="mt-3 text-xs text-slate-400">
+              <p className="mt-3 text-xs text-neutral-500 dark:text-neutral-400">
                 {result.hierarchie_pfad}
               </p>
             )}
@@ -229,6 +231,7 @@ export function ResultCard({
               <Network size={14} aria-hidden="true" />
               Zitationen
             </Button>
+            <ExportButton getData={() => singleResultToExportData(result)} />
           </div>
 
           {/* Recommend Section */}

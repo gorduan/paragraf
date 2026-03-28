@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { api, type CompareItem } from "../lib/api";
 import { Disclaimer } from "../components/Disclaimer";
+import { ExportDropdown } from "../components/ExportDropdown";
+import { compareToExportData } from "../lib/export-types";
 import { Loader, Plus, X } from "lucide-react";
 
 export function ComparePage() {
@@ -41,11 +43,16 @@ export function ComparePage() {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-1">Paragraphen vergleichen</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Bis zu 5 Paragraphen nebeneinander vergleichen
-        </p>
+      <div className="mb-8 flex items-start justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-heading font-semibold mb-1">Paragraphen vergleichen</h1>
+          <p className="text-body text-neutral-500 dark:text-neutral-400">
+            Bis zu 5 Paragraphen nebeneinander vergleichen
+          </p>
+        </div>
+        {items.length > 0 && (
+          <ExportDropdown getData={() => compareToExportData(items)} filename="paragraf-vergleich" />
+        )}
       </div>
 
       {/* Input */}
@@ -67,7 +74,7 @@ export function ComparePage() {
               <button
                 onClick={() => removeRef(i)}
                 aria-label={`Paragraph ${i + 1} entfernen`}
-                className="p-2 text-slate-400 hover:text-red-500"
+                className="p-2 min-h-11 min-w-11 text-slate-400 hover:text-red-500"
               >
                 <X size={16} aria-hidden="true" />
               </button>

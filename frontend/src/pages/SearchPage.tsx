@@ -11,6 +11,8 @@ import { DiscoveryExampleBar, type DiscoveryExample } from "../components/Discov
 import { UndoSnackbar } from "../components/UndoSnackbar";
 import { CompareContext } from "../App";
 import { api, type SearchResultItem, type GroupedResultGroup } from "../lib/api";
+import { ExportDropdown } from "../components/ExportDropdown";
+import { searchToExportData } from "../lib/export-types";
 import { Loader, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 
@@ -46,6 +48,9 @@ export function SearchPage() {
   // Expanded terms
   const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
 
+  // Accessibility announcements
+  const [announcement, setAnnouncement] = useState("");
+
   // Gesetzbuch filter from SearchBar
   const [currentGesetzbuch, setCurrentGesetzbuch] = useState<string | undefined>(undefined);
 
@@ -77,6 +82,7 @@ export function SearchPage() {
     setGroupedResults([]);
     setNextCursor(null);
     setExpandedTerms([]);
+    setAnnouncement("Wird geladen...");
 
     try {
       if (viewMode === "gruppiert") {
@@ -88,7 +94,9 @@ export function SearchPage() {
           max_groups: 10,
         });
         setGroupedResults(res.groups);
-        setTotal(res.groups.reduce((sum, g) => sum + g.total, 0));
+        const count = res.groups.reduce((sum, g) => sum + g.total, 0);
+        setTotal(count);
+        setAnnouncement(`${count} Ergebnisse gefunden`);
       } else {
         const res = await api.search({
           anfrage: q,
@@ -104,6 +112,7 @@ export function SearchPage() {
         setTotal(res.total);
         setNextCursor(res.next_cursor || null);
         setExpandedTerms(res.expanded_terms || []);
+        setAnnouncement(`${res.results.length} Ergebnisse gefunden`);
       }
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Suche fehlgeschlagen";
@@ -200,6 +209,7 @@ export function SearchPage() {
 
   const handleFilterApply = (newFilters: FilterValues) => {
     setFilters(newFilters);
+    setAnnouncement("Filter angewendet");
     if (query) {
       executeSearch(query, searchMode, newFilters, currentGesetzbuch);
     }
@@ -212,12 +222,14 @@ export function SearchPage() {
       newFilters.absatz_bis = null;
     }
     setFilters(newFilters);
+    setAnnouncement("Filter angewendet");
     if (query) executeSearch(query, searchMode, newFilters, currentGesetzbuch);
   };
 
   const handleFilterClearAll = () => {
     const empty: FilterValues = { abschnitt: null, chunk_typ: null, absatz_von: null, absatz_bis: null };
     setFilters(empty);
+    setAnnouncement("Filter angewendet");
     if (query) executeSearch(query, searchMode, empty, currentGesetzbuch);
   };
 
@@ -309,10 +321,13 @@ export function SearchPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
+      {/* Accessibility announcements */}
+      <div aria-live="polite" className="sr-only" role="status">{announcement}</div>
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-heading font-semibold mb-1">Suche</h1>
-        <p className="text-body text-neutral-500 dark:text-slate-400">
+        <p className="text-body text-neutral-500 dark:text-neutral-400">
           Semantische Suche ueber deutsche Gesetze
         </p>
       </div>
@@ -372,7 +387,7 @@ export function SearchPage() {
               {viewMode === "liste" ? results.length : total} Ergebnisse fuer &quot;{query}&quot;
             </p>
             {expandedTerms.length > 0 && (
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                 Erweitert: {expandedTerms.join(", ")}
               </p>
             )}
@@ -384,6 +399,9 @@ export function SearchPage() {
                 {compareItems.length} zum Vergleich <ArrowRight size={12} className="inline ml-1" aria-hidden="true" />
               </Badge>
             )}
+            <div className="w-full md:w-auto">
+              <ExportDropdown getData={() => searchToExportData(results, query)} filename="paragraf-suchergebnisse" />
+            </div>
             <ViewToggle value={viewMode} onChange={handleViewModeChange} />
           </div>
         </div>
@@ -427,7 +445,7 @@ export function SearchPage() {
 
       {/* Empty state */}
       {!loading && !error && results.length === 0 && groupedResults.length === 0 && query && (
-        <div className="mt-8 text-center text-slate-400" role="status" aria-live="polite">
+        <div className="mt-8 text-center text-neutral-500 dark:text-neutral-400" role="status" aria-live="polite">
           <p className="text-lg font-semibold">Keine Ergebnisse</p>
           <p className="text-body mt-1">
             Fuer Ihre Suche wurden keine passenden Paragraphen gefunden. Versuchen Sie einen anderen Suchbegriff oder passen Sie die Filter an.
@@ -437,7 +455,7 @@ export function SearchPage() {
 
       {/* Initial state */}
       {!loading && !query && (
-        <div className="mt-12 text-center text-slate-400">
+        <div className="mt-12 text-center text-neutral-500 dark:text-neutral-400">
           <p className="text-lg">Geben Sie einen Suchbegriff ein</p>
           <p className="text-sm mt-2">
             Tastenkuerzel: <kbd className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-xs">Ctrl+K</kbd> fuer Suche
