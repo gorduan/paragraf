@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { SearchModeToggle } from "./SearchModeToggle";
 
 interface SearchBarProps {
-  onSearch: (query: string, gesetzbuch?: string, searchType?: "semantic" | "fulltext" | "hybrid_fulltext") => void;
+  onSearch: (query: string, gesetzbuch?: string, searchType?: "semantic" | "fulltext" | "hybrid_fulltext" | "multi_hop") => void;
   placeholder?: string;
   showFilter?: boolean;
   autoFocus?: boolean;
@@ -32,7 +32,7 @@ export function SearchBar({
     }
   });
   const [showHistory, setShowHistory] = useState(false);
-  const [searchMode, setSearchMode] = useState<"semantic" | "fulltext" | "hybrid_fulltext">("semantic");
+  const [searchMode, setSearchMode] = useState<"semantic" | "fulltext" | "hybrid_fulltext" | "multi_hop">("semantic");
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 

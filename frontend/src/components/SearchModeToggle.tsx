@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type SearchMode = "semantic" | "fulltext" | "hybrid_fulltext";
+type SearchMode = "semantic" | "fulltext" | "hybrid_fulltext" | "multi_hop";
 
 interface SearchModeToggleProps {
   value: SearchMode;
@@ -13,6 +13,7 @@ const MODES: { value: SearchMode; label: string }[] = [
   { value: "semantic", label: "Semantisch" },
   { value: "fulltext", label: "Volltext" },
   { value: "hybrid_fulltext", label: "Hybrid" },
+  { value: "multi_hop", label: "Verweissuche" },
 ];
 
 export function SearchModeToggle({

@@ -10,11 +10,13 @@ import { LoadMoreButton } from "../components/LoadMoreButton";
 import { DiscoveryExampleBar, type DiscoveryExample } from "../components/DiscoveryExampleBar";
 import { UndoSnackbar } from "../components/UndoSnackbar";
 import { CompareContext } from "../App";
-import { api, type SearchResultItem, type GroupedResultGroup } from "../lib/api";
+import { api, type SearchResultItem, type GroupedResultGroup, type MultiHopResponse } from "../lib/api";
 import { ExportDropdown } from "../components/ExportDropdown";
 import { searchToExportData } from "../lib/export-types";
 import { Loader, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { HopResultList } from "@/components/HopResultList";
+import { DepthSlider } from "@/components/DepthSlider";
 
 export function SearchPage() {
   // Search results
@@ -43,7 +45,11 @@ export function SearchPage() {
   });
 
   // Search mode
-  const [searchMode, setSearchMode] = useState<"semantic" | "fulltext" | "hybrid_fulltext">("semantic");
+  const [searchMode, setSearchMode] = useState<"semantic" | "fulltext" | "hybrid_fulltext" | "multi_hop">("semantic");
+
+  // Multi-hop state
+  const [multiHopDepth, setMultiHopDepth] = useState(1);
+  const [multiHopResults, setMultiHopResults] = useState<MultiHopResponse | null>(null);
 
   // Expanded terms
   const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
@@ -122,6 +128,30 @@ export function SearchPage() {
     }
   }, [viewMode]);
 
+  // ── Multi-hop search ────────────────────────────────────────────────────
+
+  const fetchMultiHop = useCallback(async (q: string, depth: number, gesetz?: string) => {
+    setLoading(true);
+    setError(null);
+    setMultiHopResults(null);
+    try {
+      const res = await api.multiHop({
+        anfrage: q,
+        gesetzbuch: gesetz || undefined,
+        tiefe: depth,
+        expand: true,
+      });
+      setMultiHopResults(res);
+      setExpandedTerms(res.expanded_terms);
+      setAnnouncement(`${res.total} Ergebnisse in ${res.hops} Hops gefunden`);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Suche fehlgeschlagen";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // ── Fetch grouped helper ─────────────────────────────────────────────────
 
   const fetchGrouped = useCallback(async (
@@ -156,10 +186,12 @@ export function SearchPage() {
   const handleViewModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode);
     localStorage.setItem("paragraf_view_mode", mode);
+    if (searchMode === "multi_hop") return; // view toggle not applicable in multi-hop
+    const stdMode = searchMode as "semantic" | "fulltext" | "hybrid_fulltext";
     if (mode === "gruppiert" && query) {
-      fetchGrouped(query, searchMode, currentGesetzbuch);
+      fetchGrouped(query, stdMode, currentGesetzbuch);
     } else if (mode === "liste" && query) {
-      executeSearch(query, searchMode, filters, currentGesetzbuch);
+      executeSearch(query, stdMode, filters, currentGesetzbuch);
     }
   }, [query, searchMode, currentGesetzbuch, filters, fetchGrouped, executeSearch]);
 
@@ -168,12 +200,18 @@ export function SearchPage() {
   const handleSearch = async (
     q: string,
     gesetzbuch?: string,
-    searchType?: "semantic" | "fulltext" | "hybrid_fulltext",
+    searchType?: "semantic" | "fulltext" | "hybrid_fulltext" | "multi_hop",
   ) => {
     const mode = searchType || searchMode;
     setSearchMode(mode);
     setQuery(q);
     setCurrentGesetzbuch(gesetzbuch);
+    if (mode === "multi_hop") {
+      setMultiHopResults(null);
+      await fetchMultiHop(q, multiHopDepth, gesetzbuch);
+      return;
+    }
+    setMultiHopResults(null);
     await executeSearch(q, mode, filters, gesetzbuch);
   };
 
@@ -186,7 +224,7 @@ export function SearchPage() {
       const res = await api.search({
         anfrage: query,
         gesetzbuch: currentGesetzbuch || null,
-        search_type: searchMode,
+        search_type: searchMode as "semantic" | "fulltext" | "hybrid_fulltext",
         abschnitt: filters.abschnitt,
         chunk_typ: filters.chunk_typ,
         absatz_von: filters.absatz_von,
@@ -210,7 +248,7 @@ export function SearchPage() {
   const handleFilterApply = (newFilters: FilterValues) => {
     setFilters(newFilters);
     setAnnouncement("Filter angewendet");
-    if (query) {
+    if (query && searchMode !== "multi_hop") {
       executeSearch(query, searchMode, newFilters, currentGesetzbuch);
     }
   };
@@ -223,14 +261,14 @@ export function SearchPage() {
     }
     setFilters(newFilters);
     setAnnouncement("Filter angewendet");
-    if (query) executeSearch(query, searchMode, newFilters, currentGesetzbuch);
+    if (query && searchMode !== "multi_hop") executeSearch(query, searchMode, newFilters, currentGesetzbuch);
   };
 
   const handleFilterClearAll = () => {
     const empty: FilterValues = { abschnitt: null, chunk_typ: null, absatz_von: null, absatz_bis: null };
     setFilters(empty);
     setAnnouncement("Filter angewendet");
-    if (query) executeSearch(query, searchMode, empty, currentGesetzbuch);
+    if (query && searchMode !== "multi_hop") executeSearch(query, searchMode, empty, currentGesetzbuch);
   };
 
   // ── Discovery handlers (per D-11, D-12, D-13, D-14) ───────────────────────
@@ -341,15 +379,26 @@ export function SearchPage() {
         onDiscoveryToggle={handleDiscoveryToggle}
       />
 
+      {/* Depth Slider for multi-hop mode */}
+      {searchMode === "multi_hop" && (
+        <div className="mt-4">
+          <DepthSlider value={multiHopDepth} onChange={setMultiHopDepth} />
+        </div>
+      )}
+
       {/* Filter Panel (per D-08 -- collapsible below SearchBar) */}
+      {searchMode !== "multi_hop" && (
       <div className="mt-4">
         <FilterPanel onApply={handleFilterApply} initialValues={filters} />
       </div>
+      )}
 
       {/* Active Filter Chips (per D-10) */}
+      {searchMode !== "multi_hop" && (
       <div className="mt-2">
         <FilterChips filters={filters} onRemove={handleFilterRemove} onClearAll={handleFilterClearAll} />
       </div>
+      )}
 
       {/* Discovery Example Bar (per D-13) */}
       {isDiscoveryMode && (
@@ -379,8 +428,25 @@ export function SearchPage() {
         </div>
       )}
 
+      {/* Multi-hop results */}
+      {!loading && searchMode === "multi_hop" && multiHopResults && (
+        <section className="mt-6" aria-label="Ergebnisse der Verweissuche">
+          <p className="text-body text-slate-500 dark:text-slate-400 mb-4" aria-live="polite">
+            {multiHopResults.total} Ergebnisse in {multiHopResults.hops} Hops fuer &quot;{query}&quot;
+          </p>
+          <HopResultList
+            results={multiHopResults.results}
+            visitedCount={multiHopResults.visited_paragraphs.length}
+            expandedTerms={multiHopResults.expanded_terms}
+          />
+          <div className="mt-4">
+            <Disclaimer />
+          </div>
+        </section>
+      )}
+
       {/* Results Header: count + expanded terms + view toggle + compare counter */}
-      {!loading && (results.length > 0 || groupedResults.length > 0) && (
+      {!loading && searchMode !== "multi_hop" && (results.length > 0 || groupedResults.length > 0) && (
         <div className="mt-6 flex items-center justify-between flex-wrap gap-2">
           <div>
             <p className="text-body text-slate-500 dark:text-slate-400" aria-live="polite">
@@ -408,7 +474,7 @@ export function SearchPage() {
       )}
 
       {/* Results: Flat list view */}
-      {!loading && viewMode === "liste" && results.length > 0 && (
+      {!loading && searchMode !== "multi_hop" && viewMode === "liste" && results.length > 0 && (
         <section className="mt-4 space-y-3" aria-label="Suchergebnisse">
           <ul className="space-y-3" role="list">
             {results.map((r, i) => (
@@ -434,7 +500,7 @@ export function SearchPage() {
       )}
 
       {/* Results: Grouped view */}
-      {!loading && viewMode === "gruppiert" && groupedResults.length > 0 && (
+      {!loading && searchMode !== "multi_hop" && viewMode === "gruppiert" && groupedResults.length > 0 && (
         <section className="mt-4" aria-label="Gruppierte Suchergebnisse">
           <GroupedResults groups={groupedResults} />
           <div className="mt-4">
@@ -444,7 +510,7 @@ export function SearchPage() {
       )}
 
       {/* Empty state */}
-      {!loading && !error && results.length === 0 && groupedResults.length === 0 && query && (
+      {!loading && !error && results.length === 0 && groupedResults.length === 0 && !multiHopResults && query && (
         <div className="mt-8 text-center text-neutral-500 dark:text-neutral-400" role="status" aria-live="polite">
           <p className="text-lg font-semibold">Keine Ergebnisse</p>
           <p className="text-body mt-1">
