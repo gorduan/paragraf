@@ -53,7 +53,6 @@ Source: `frontend/src/styles/index.css` lines 60-64, D-14 from CONTEXT.md
 
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
-| Caption | 12px | 400 (regular) | 1.5 |
 | Body | 14px | 400 (regular) | 1.5 |
 | Subheading | 16px | 600 (semibold) | 1.4 |
 | Heading | 20px | 600 (semibold) | 1.3 |
@@ -62,7 +61,7 @@ Source: `frontend/src/styles/index.css` lines 60-64, D-14 from CONTEXT.md
 Usage in this phase:
 - Snapshot section heading: `text-heading font-semibold` (20px/600)
 - Snapshot list item name: `text-body font-semibold` (14px/600)
-- Snapshot timestamp + file size: `text-caption` (12px/400)
+- Snapshot timestamp + file size: `text-body text-neutral-400` (14px/400, reduced opacity via muted color to create visual hierarchy without a separate size token)
 - Export dropdown labels: `text-body` (14px/400)
 - Accessibility audit: verify all text uses these tokens, no raw px values
 
@@ -77,18 +76,30 @@ Source: `frontend/src/styles/index.css` lines 67-78
 | Dominant (60%) | neutral-50 `#f8fafc` (light) / neutral-950 `#020617` (dark) | Page background, main content area |
 | Secondary (30%) | white / neutral-900 `#0f172a` (dark) | Cards, sidebar, snapshot list cards, export toolbar |
 | Accent (10%) | primary-600 `#4f46e5` | Primary CTA buttons (Snapshot erstellen, Export), active nav item, focus rings |
-| Destructive | error-500 `#ef4444` | Snapshot restore button, snapshot delete button |
+| Destructive | error-500 `#ef4444` | Snapshot delete button, restore warning icon |
 | Success | success-500 `#22c55e` | Snapshot creation success toast, restore complete indicator |
 | Warning | warning-500 `#f59e0b` | Auto-snapshot toggle warning, restore confirmation dialog icon |
 
 Accent reserved for:
 - "Snapshot erstellen" primary button
-- "Exportieren" primary button / dropdown trigger
+- "Alles exportieren" primary button / dropdown trigger
 - Active sidebar navigation item highlight
 - Focus-visible ring on interactive elements
 - Export format selection (active state)
 
 Source: `frontend/src/styles/index.css` lines 6-58, Phase 3 design tokens
+
+---
+
+## Visual Hierarchy
+
+### IndexPage Layout Anchor
+
+The donut chart remains the primary visual focal point of the IndexPage. The SnapshotSection is secondary content placed below the existing dashboard stats area. On desktop (>= 1024px), the SnapshotSection sits below the fold — users scroll past the donut chart and stats cards to reach it. On mobile/tablet, the stacked layout naturally places snapshots further down.
+
+### Snapshot Action Icons
+
+Snapshot action icons (restore via `RotateCcw`, delete via `Trash2` from lucide-react) render as icon-only ghost buttons with a Radix Tooltip on hover/focus. Tooltip labels: "Wiederherstellen" and "Loeschen". Each icon button has a 44px minimum touch target. No text labels accompany the icons — the tooltip and aria-label provide the label.
 
 ---
 
@@ -106,11 +117,11 @@ Source: `frontend/src/styles/index.css` lines 6-58, Phase 3 design tokens
 | Empty state body | Erstellen Sie einen Snapshot, um den aktuellen Stand der Datenbank zu sichern. |
 | Restore confirmation title | Snapshot wiederherstellen? |
 | Restore confirmation body | Die aktuelle Datenbank wird durch den Stand von "{name}" ({timestamp}) ersetzt. Dieser Vorgang kann nicht rueckgaengig gemacht werden. |
-| Restore button | Wiederherstellen |
+| Restore button | Jetzt wiederherstellen |
 | Restore success | Datenbank wurde aus Snapshot "{name}" wiederhergestellt |
 | Delete confirmation title | Snapshot loeschen? |
 | Delete confirmation body | Der Snapshot "{name}" wird unwiderruflich geloescht. |
-| Delete button | Loeschen |
+| Delete button | Endgueltig loeschen |
 | Auto-snapshot toggle label | Auto-Snapshot vor Indexierung |
 | Auto-snapshot description | Erstellt automatisch einen Snapshot bevor eine Indexierung gestartet wird. Maximal {max} Snapshots werden aufbewahrt. |
 | Timestamp format | Relative: "vor 2 Stunden", "vor 3 Tagen" (use Intl.RelativeTimeFormat) |
@@ -119,7 +130,7 @@ Source: `frontend/src/styles/index.css` lines 6-58, Phase 3 design tokens
 
 | Element | Copy |
 |---------|------|
-| Global export button | Exportieren |
+| Global export button | Alles exportieren |
 | Format option PDF | Als PDF exportieren |
 | Format option Markdown | Als Markdown exportieren |
 | Per-item export tooltip | Dieses Ergebnis exportieren |
@@ -167,9 +178,9 @@ Source: `frontend/src/styles/index.css` lines 6-58, Phase 3 design tokens
 | Dialog | Restore/delete confirmation modals |
 | Button (primary) | Snapshot erstellen, Export trigger |
 | Button (destructive) | Restore, Delete actions |
-| Button (ghost) | Per-item export, hamburger toggle |
+| Button (ghost) | Per-item export, hamburger toggle, snapshot action icons |
 | Badge | Snapshot status indicator |
-| Tooltip | Export format hints, snapshot action descriptions |
+| Tooltip | Snapshot action icon labels (Wiederherstellen, Loeschen), export format hints |
 | Card | Snapshot list items |
 
 ### Modified Components
@@ -177,7 +188,7 @@ Source: `frontend/src/styles/index.css` lines 6-58, Phase 3 design tokens
 | Component | Modification |
 |-----------|-------------|
 | Sidebar.tsx | Add responsive hamburger at lg breakpoint, overlay mode |
-| IndexPage.tsx | Integrate SnapshotSection below existing dashboard |
+| IndexPage.tsx | Integrate SnapshotSection below existing dashboard (donut chart remains focal point, snapshots are secondary below-fold content) |
 | SearchPage.tsx | Add ExportDropdown to results toolbar |
 | ComparePage.tsx | Add ExportDropdown to comparison toolbar |
 | LookupPage.tsx | Add ExportButton for individual lookup results |
@@ -191,13 +202,13 @@ Source: `frontend/src/styles/index.css` lines 6-58, Phase 3 design tokens
 ### Snapshot Management
 
 1. **Create:** User clicks "Snapshot erstellen" -> button shows spinner -> success toast with snapshot name -> list refreshes with new entry at top.
-2. **Restore:** User clicks restore icon on snapshot card -> Dialog opens with warning copy -> user confirms -> Dialog closes, page shows spinner overlay -> success toast -> page refreshes.
-3. **Delete:** User clicks delete icon on snapshot card -> Dialog opens with delete warning -> user confirms -> item removed from list with fade-out -> success toast.
+2. **Restore:** User clicks restore icon on snapshot card -> Dialog opens with warning copy -> user clicks "Jetzt wiederherstellen" -> Dialog closes, page shows spinner overlay -> success toast -> page refreshes.
+3. **Delete:** User clicks delete icon on snapshot card -> Dialog opens with delete warning -> user clicks "Endgueltig loeschen" -> item removed from list with fade-out -> success toast.
 4. **Auto-snapshot toggle:** Switch/checkbox in SnapshotSection. State persisted in localStorage key `paragraf-auto-snapshot`. When enabled, IndexPage checks before indexing and calls create-snapshot API first.
 
 ### Export
 
-1. **Global export:** User clicks "Exportieren" dropdown -> selects PDF or Markdown -> browser downloads file. No navigation change.
+1. **Global export:** User clicks "Alles exportieren" dropdown -> selects PDF or Markdown -> browser downloads file. No navigation change.
 2. **Per-item export:** User clicks export icon on individual card -> small dropdown (PDF/Markdown) -> download triggers.
 3. **PDF generation:** Client-side via JS library. Content rendered to PDF with: heading (page title + date), body content, RDG disclaimer footer on every page.
 4. **Markdown generation:** Plain text blob assembled from visible data, copied to clipboard or downloaded as .md file.
@@ -279,16 +290,18 @@ All aria-live regions use `aria-live="polite"` unless specified:
 | Element | Light Mode | Dark Mode |
 |---------|-----------|-----------|
 | Body text on background | neutral-700 on neutral-50 (14.5:1) | neutral-200 on neutral-950 (15.3:1) |
-| Caption text | neutral-500 on white (5.9:1) | neutral-400 on neutral-900 (5.5:1) |
+| Muted text (timestamps, sizes) | neutral-400 on white (3.9:1 — use neutral-500 for AA) | neutral-400 on neutral-900 (5.5:1) |
 | Primary button text | white on primary-600 (8.6:1) | white on primary-600 (8.6:1) |
 | Destructive button text | white on error-500 (4.6:1) | white on error-500 (4.6:1) |
 | Link text | primary-600 on neutral-50 (7.8:1) | primary-400 on neutral-950 (5.1:1) |
+
+Note: Muted text in light mode uses `text-neutral-500` (not `text-neutral-400`) to meet WCAG AA 4.5:1 minimum. In dark mode, `text-neutral-400` on `neutral-900` passes at 5.5:1.
 
 ### Touch Targets (D-14)
 
 - All buttons: minimum 44px height (Button size md = h-10/40px -> needs min-h-[44px] override or use size lg = h-12/48px)
 - Sidebar nav items: minimum 44px height
-- Snapshot action icons: wrapped in 44px min tap area
+- Snapshot action icons: icon-only ghost buttons wrapped in 44px min tap area, with Tooltip for label
 - Export dropdown items: minimum 44px height per option
 - Checkbox/toggle controls: 44px tap area (padding around input)
 
