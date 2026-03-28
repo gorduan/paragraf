@@ -225,6 +225,19 @@ def _normalize_paragraph_input(text: str) -> str:
 
 def _result_to_item(r) -> SearchResultItem:  # noqa: ANN001
     meta = r.chunk.metadata
+    refs_out: list[ReferenceItem] | None = None
+    if meta.references_out:
+        refs_out = [
+            ReferenceItem(
+                gesetz=ref.gesetz,
+                paragraph=ref.paragraph,
+                absatz=ref.absatz,
+                raw=ref.raw,
+                verified=ref.verified,
+                kontext=ref.kontext,
+            )
+            for ref in meta.references_out
+        ]
     return SearchResultItem(
         paragraph=meta.paragraph,
         gesetz=meta.gesetz,
@@ -236,6 +249,7 @@ def _result_to_item(r) -> SearchResultItem:  # noqa: ANN001
         quelle=meta.quelle,
         chunk_typ=meta.chunk_typ,
         absatz=meta.absatz,
+        references_out=refs_out,
     )
 
 

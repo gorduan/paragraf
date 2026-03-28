@@ -52,6 +52,17 @@ class IndexRequest(BaseModel):
 # ── Response-Modelle ─────────────────────────────────────────────────────────
 
 
+class ReferenceItem(BaseModel):
+    """Ein Querverweis in der API-Antwort."""
+
+    gesetz: str
+    paragraph: str
+    absatz: int | None = None
+    raw: str
+    verified: bool
+    kontext: str | None = None
+
+
 class SearchResultItem(BaseModel):
     paragraph: str = Field(description="z.B. '§ 37'")
     gesetz: str = Field(description="z.B. 'SGB XI'")
@@ -63,6 +74,9 @@ class SearchResultItem(BaseModel):
     quelle: str = Field(default="gesetze-im-internet.de")
     chunk_typ: str = Field(default="paragraph")
     absatz: int | None = Field(None)
+    references_out: list[ReferenceItem] | None = Field(
+        None, description="Ausgehende Querverweise (null wenn keine)"
+    )
 
 
 class SearchResponse(BaseModel):
@@ -411,17 +425,6 @@ class ReferenceExtractResponse(BaseModel):
     total_refs: int = Field(description="Gesamtzahl extrahierter Querverweise")
     snapshot_name: str | None = Field(None, description="Name des Sicherungs-Snapshots")
     nachricht: str = Field(description="Status-Nachricht")
-
-
-class ReferenceItem(BaseModel):
-    """Ein Querverweis in der API-Antwort."""
-
-    gesetz: str
-    paragraph: str
-    absatz: int | None = None
-    raw: str
-    verified: bool
-    kontext: str | None = None
 
 
 class IncomingReferenceItem(BaseModel):
