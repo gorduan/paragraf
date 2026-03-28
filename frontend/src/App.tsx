@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, createContext, useContext } from "react";
+import { Menu } from "lucide-react";
 import { Sidebar, type Page } from "./components/Sidebar";
 import { HealthOverlay } from "./components/HealthOverlay";
 import { SearchPage } from "./pages/SearchPage";
@@ -68,7 +69,9 @@ export default function App() {
 
   const { state: healthState, health, error: healthError, retry } = useHealthCheck();
   const mainRef = useRef<HTMLElement>(null);
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
   const [pageAnnouncement, setPageAnnouncement] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Dark mode
   useEffect(() => {
@@ -108,6 +111,11 @@ export default function App() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && sidebarOpen) {
+        setSidebarOpen(false);
+        hamburgerRef.current?.focus();
+        return;
+      }
       if (e.ctrlKey || e.metaKey) {
         const pageMap: Record<string, Page> = {
           "1": "search",
@@ -127,7 +135,7 @@ export default function App() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [sidebarOpen]);
 
   const bookmarkCtx: BookmarkContextValue = {
     bookmarks,
@@ -174,24 +182,54 @@ export default function App() {
       <BookmarkContext.Provider value={bookmarkCtx}>
       <CompareContext.Provider value={compareCtx}>
         <div className="flex h-screen overflow-hidden">
-          <Sidebar
-            currentPage={page}
-            onPageChange={setPage}
-            backendState={healthState}
-          />
+          {/* Backdrop overlay for mobile/tablet */}
+          {sidebarOpen && (
+            <div
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Navigation schliessen"
+            />
+          )}
+
+          {/* Sidebar: hidden below lg unless sidebarOpen */}
+          <div className={`
+            fixed inset-y-0 left-0 z-50 w-56 transform transition-transform duration-200 ease-out
+            lg:relative lg:translate-x-0
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+            motion-reduce:transition-none
+          `}>
+            <Sidebar
+              currentPage={page}
+              onPageChange={(p) => { setPage(p); setSidebarOpen(false); }}
+              backendState={healthState}
+              onClose={() => setSidebarOpen(false)}
+            />
+          </div>
+
+          {/* Hamburger button: visible only below lg */}
+          <button
+            ref={hamburgerRef}
+            className="fixed top-3 left-3 z-30 lg:hidden min-h-[44px] min-w-[44px] p-2 rounded-lg bg-white/90 dark:bg-neutral-800/90 shadow-md backdrop-blur-sm"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Navigation oeffnen"
+          >
+            <Menu size={24} aria-hidden="true" />
+          </button>
+
           <main
             ref={mainRef}
             id="main-content"
             className="flex-1 overflow-auto"
             tabIndex={-1}
             aria-label={PAGE_LABELS[page]}
+            {...(sidebarOpen ? { inert: true } : {})}
           >
             {renderPage()}
           </main>
         </div>
 
-        {/* Live region for page change announcements */}
-        <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {/* Global status announcements */}
+        <div aria-live="polite" aria-atomic="true" className="sr-only" role="status">
           {pageAnnouncement}
         </div>
 

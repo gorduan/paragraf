@@ -16,7 +16,7 @@ export function HealthOverlay({ state, health, error, onRetry }: HealthOverlayPr
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
       role="dialog"
       aria-modal="true"
       aria-label="Verbindungsstatus"
