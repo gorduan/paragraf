@@ -166,13 +166,15 @@ Plans:
   2. An interactive force-directed citation graph shows relationships between paragraphs/laws with clickable nodes
   3. The citation graph visualization matches the design system tokens and is readable at various zoom levels
   4. Discovery search UI allows selecting positive and negative examples via checkbox or drag-and-drop to refine explorative search
-**Plans**: 3 plans
+**Plans**: 5 plans
 **UI hint**: yes
 
 Plans:
 - [x] 09-01-PLAN.md -- API client extensions, citation parser, CitationLink/CitationTooltip, LookupPage rendering, Sidebar+App graph route
 - [x] 09-02-PLAN.md -- d3-force graph-utils, GraphCanvas, GraphSidePanel, GraphLegend, GraphPage with dual-level toggle
 - [x] 09-03-PLAN.md -- DiscoveryExampleBar, UndoSnackbar, SearchModeToggle extension, ResultCard +/- buttons, SearchPage discovery integration
+- [ ] 09-04-PLAN.md -- Gap closure: Fix graph node labels, edge rendering, and side panel click (Gaps 1-3)
+- [ ] 09-05-PLAN.md -- Gap closure: Fix discovery API call, UndoSnackbar, dark mode chip contrast (Gaps 4-6)
 
 ### Phase 10: Dashboard, Export & Polish
 **Goal**: The application is feature-complete with snapshot management in the dashboard, document export, responsive design, and accessibility compliance
@@ -206,5 +208,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 6. Cross-Reference Pipeline | 3/3 | Complete   | 2026-03-27 |
 | 7. Query Expansion & Chunking | 0/3 | Not started | - |
 | 8. Search Results UX | 0/3 | Not started | - |
-| 9. Cross-Reference & Discovery UX | 3/3 | Complete   | 2026-03-28 |
+| 9. Cross-Reference & Discovery UX | 3/5 | Gap closure | - |
 | 10. Dashboard, Export & Polish | 0/3 | Not started | - |
