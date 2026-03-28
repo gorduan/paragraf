@@ -159,7 +159,7 @@ export default function App() {
   const renderPage = () => {
     switch (page) {
       case "search":
-        return <SearchPage />;
+        return <SearchPage onPageChange={(p) => setPage(p as Page)} />;
       case "lookup":
         return <LookupPage />;
       case "compare":

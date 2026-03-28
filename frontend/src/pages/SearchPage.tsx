@@ -18,7 +18,11 @@ import { Badge } from "@/components/ui/Badge";
 import { HopResultList } from "@/components/HopResultList";
 import { DepthSlider } from "@/components/DepthSlider";
 
-export function SearchPage() {
+interface SearchPageProps {
+  onPageChange?: (page: string) => void;
+}
+
+export function SearchPage({ onPageChange }: SearchPageProps) {
   // Search results
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [groupedResults, setGroupedResults] = useState<GroupedResultGroup[]>([]);
@@ -461,9 +465,15 @@ export function SearchPage() {
           <div className="flex items-center gap-3">
             {/* Compare counter (per D-16) */}
             {compareItems.length > 0 && (
-              <Badge variant="primary" className="cursor-pointer" aria-live="polite">
-                {compareItems.length} zum Vergleich <ArrowRight size={12} className="inline ml-1" aria-hidden="true" />
-              </Badge>
+              <button
+                onClick={() => onPageChange?.("compare")}
+                className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-sm"
+                aria-label={`${compareItems.length} Eintraege zum Vergleich -- zur Vergleichsseite wechseln`}
+              >
+                <Badge variant="primary" className="cursor-pointer" aria-live="polite">
+                  {compareItems.length} zum Vergleich <ArrowRight size={12} className="inline ml-1" aria-hidden="true" />
+                </Badge>
+              </button>
             )}
             <div className="w-full md:w-auto">
               <ExportDropdown getData={() => searchToExportData(results, query)} filename="paragraf-suchergebnisse" />
@@ -481,6 +491,7 @@ export function SearchPage() {
               <li key={`${r.paragraph}-${r.gesetz}-${i}`}>
                 <ResultCard
                   result={r}
+                  onGraphNavigate={(gesetz, paragraph) => onPageChange?.("graph")}
                   discoveryMode={isDiscoveryMode}
                   discoveryPolarity={getPolarity(r.gesetz, r.paragraph)}
                   onDiscoveryToggle={handleExampleToggle}
