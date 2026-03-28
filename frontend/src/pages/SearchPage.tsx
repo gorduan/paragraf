@@ -255,7 +255,8 @@ export function SearchPage() {
     const positives = discoveryExamples.filter(e => e.polarity === "positive");
     if (positives.length === 0) return;
     setDiscoveryLoading(true);
-    setPreviousResults(results);
+    setError(null);
+    const savedResults = results;
     try {
       const resp = await api.discover({
         positive_paragraphs: positives.map(e => ({ gesetz: e.gesetz, paragraph: e.paragraph })),
@@ -264,10 +265,12 @@ export function SearchPage() {
           .map(e => ({ gesetz: e.gesetz, paragraph: e.paragraph })),
         limit: 20,
       });
+      setPreviousResults(savedResults);
       setResults(resp.results);
       setTotal(resp.total);
-    } catch {
-      setError("Entdeckungssuche fehlgeschlagen. Bitte versuchen Sie es erneut.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Entdeckungssuche fehlgeschlagen.";
+      setError(message);
     } finally {
       setDiscoveryLoading(false);
     }

@@ -291,7 +291,17 @@ async function fetchJson<T>(
     ...options,
   });
   if (!res.ok) {
-    throw new Error(`API Fehler: ${res.status} ${res.statusText}`);
+    // Try to extract error detail from JSON response body
+    let detail = `API Fehler: ${res.status} ${res.statusText}`;
+    try {
+      const body = await res.json();
+      if (body.detail) {
+        detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+      }
+    } catch {
+      // Response body not JSON, use status text
+    }
+    throw new Error(detail);
   }
   return res.json();
 }
