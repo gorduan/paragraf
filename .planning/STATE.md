@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 11-01-PLAN.md
-last_updated: "2026-03-28T21:50:15.763Z"
+status: verifying
+stopped_at: Completed 11-02-PLAN.md
+last_updated: "2026-03-28T21:56:40.018Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 13
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 31
-  completed_plans: 30
+  completed_plans: 31
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 
 Phase: 11 (frontend-api-wiring) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-03-28
 
 Progress: [░░░░░░░░░░] 0%
@@ -81,6 +81,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 10 P01 | 3min | 2 tasks | 5 files |
 | Phase 10 P03 | 14min | 2 tasks | 9 files |
 | Phase 11 P01 | 2min | 2 tasks | 3 files |
+| Phase 11 P02 | 5min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -140,6 +141,7 @@ Recent decisions affecting current work:
 - [Phase 10]: Auto-snapshot reads localStorage directly before indexing rather than relying on React state
 - [Phase 10]: HealthOverlay z-60 to stay above sidebar z-50; React 19 boolean inert; neutral-500 contrast fix pattern
 - [Phase 11]: Moved ReferenceItem before SearchResultItem to avoid forward reference; references_out null when empty
+- [Phase 11]: Type assertion (as) for narrowing searchMode state in callbacks; extractReferences fires non-awaited after indexing
 
 ### Pending Todos
 
@@ -153,6 +155,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T21:50:15.754Z
-Stopped at: Completed 11-01-PLAN.md
+Last session: 2026-03-28T21:56:40.011Z
+Stopped at: Completed 11-02-PLAN.md
 Resume file: None
