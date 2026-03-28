@@ -216,14 +216,10 @@ export function GraphPage({ onPageChange }: GraphPageProps) {
   const handleNodeClick = useCallback(
     async (node: GraphNode) => {
       setSelectedNode(node);
-
-      if (node.type === "law" && level === "laws") {
-        // Potential drill-down target
-      }
+      setNodeRefsLoading(true);
+      setNodeRefs(null);
 
       if (node.paragraph) {
-        setNodeRefsLoading(true);
-        setNodeRefs(null);
         try {
           const refs = await api.references(node.gesetz, node.paragraph);
           setNodeRefs(refs);
@@ -232,9 +228,12 @@ export function GraphPage({ onPageChange }: GraphPageProps) {
         } finally {
           setNodeRefsLoading(false);
         }
+      } else {
+        // Law-level node: no individual paragraph refs, just show node info
+        setNodeRefsLoading(false);
       }
     },
-    [level],
+    [],
   );
 
   // ── Navigation Handler ──────────────────────────────────────────────────
@@ -394,11 +393,7 @@ export function GraphPage({ onPageChange }: GraphPageProps) {
               links={visibleLinks}
               selectedNodeId={selectedNode?.id ?? null}
               onNodeClick={(node) => {
-                if (node.type === "law" && level === "laws") {
-                  handleDrillDown(node.id);
-                } else {
-                  handleNodeClick(node);
-                }
+                handleNodeClick(node);
               }}
               onNodeHover={() => {}}
               isDark={dark}
@@ -430,6 +425,7 @@ export function GraphPage({ onPageChange }: GraphPageProps) {
               setNodeRefs(null);
             }}
             onNavigate={handleNavigate}
+            onDrillDown={handleDrillDown}
           />
         </div>
       )}
