@@ -305,6 +305,86 @@ export interface SnapshotRestoreResponse {
   nachricht: string;
 }
 
+// ── Multi-Hop Types ─────────────────────────────────────────────────────────
+
+export interface MultiHopRequest {
+  anfrage: string;
+  gesetzbuch?: string | null;
+  tiefe?: number;
+  max_ergebnisse_pro_hop?: number;
+  expand?: boolean;
+}
+
+export interface HopResultItem {
+  paragraph: string;
+  gesetz: string;
+  titel: string;
+  text: string;
+  score: number;
+  hop: number;
+  via_reference: string | null;
+}
+
+export interface MultiHopResponse {
+  query: string;
+  expanded_terms: string[];
+  hops: number;
+  results: HopResultItem[];
+  total: number;
+  visited_paragraphs: string[];
+  disclaimer: string;
+}
+
+// ── Batch Search Types ──────────────────────────────────────────────────────
+
+export interface BatchSearchRequest {
+  queries: SearchRequest[];
+}
+
+export interface BatchSearchResponse {
+  results: SearchResponse[];
+  total_queries: number;
+  load_warning: boolean;
+}
+
+// ── Grouped Recommend Types ─────────────────────────────────────────────────
+
+export interface GroupedRecommendRequest {
+  point_ids?: string[] | null;
+  paragraph?: string | null;
+  gesetz?: string | null;
+  exclude_same_law?: boolean;
+  gesetzbuch?: string | null;
+  abschnitt?: string | null;
+  absatz_von?: number | null;
+  absatz_bis?: number | null;
+  group_size?: number;
+  max_groups?: number;
+}
+
+export interface GroupedRecommendResponse {
+  source_ids: string[];
+  groups: GroupedResultGroup[];
+  total_groups: number;
+  disclaimer: string;
+}
+
+// ── Reference Extraction Types ──────────────────────────────────────────────
+
+export interface ReferenceExtractRequest {
+  gesetz?: string | null;
+  full_reindex?: boolean;
+}
+
+export interface ReferenceExtractResponse {
+  erfolg: boolean;
+  total_points: number;
+  points_with_refs: number;
+  total_refs: number;
+  snapshot_name: string | null;
+  nachricht: string;
+}
+
 // ── API Client ───────────────────────────────────────────────────────────────
 
 async function fetchJson<T>(
@@ -477,4 +557,28 @@ export const api = {
       throw new Error(`API Fehler: ${res.status} ${res.statusText}`);
     }
   },
+
+  multiHop: (body: MultiHopRequest) =>
+    fetchJson<MultiHopResponse>("/api/search/multi-hop", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  searchBatch: (body: BatchSearchRequest) =>
+    fetchJson<BatchSearchResponse>("/api/search/batch", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  recommendGrouped: (body: GroupedRecommendRequest) =>
+    fetchJson<GroupedRecommendResponse>("/api/recommend/grouped", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  extractReferences: (body: ReferenceExtractRequest) =>
+    fetchJson<ReferenceExtractResponse>("/api/references/extract", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
