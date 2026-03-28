@@ -174,7 +174,7 @@ Plans:
 - [x] 09-02-PLAN.md -- d3-force graph-utils, GraphCanvas, GraphSidePanel, GraphLegend, GraphPage with dual-level toggle
 - [x] 09-03-PLAN.md -- DiscoveryExampleBar, UndoSnackbar, SearchModeToggle extension, ResultCard +/- buttons, SearchPage discovery integration
 - [ ] 09-04-PLAN.md -- Gap closure: Fix graph node labels, edge rendering, and side panel click (Gaps 1-3)
-- [ ] 09-05-PLAN.md -- Gap closure: Fix discovery API call, UndoSnackbar, dark mode chip contrast (Gaps 4-6)
+- [x] 09-05-PLAN.md -- Gap closure: Fix discovery API call, UndoSnackbar, dark mode chip contrast (Gaps 4-6)
 
 ### Phase 10: Dashboard, Export & Polish
 **Goal**: The application is feature-complete with snapshot management in the dashboard, document export, responsive design, and accessibility compliance
