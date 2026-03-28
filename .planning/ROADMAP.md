@@ -225,8 +225,10 @@ Plans:
   3. Query expansion toggle UI allows users to disable expansion per search
   4. Filter announcement includes filtered result count for screen readers
 **UI hint**: yes
+**Plans**: 1 plan
 
-Plans: (to be created via `/gsd:plan-phase 12`)
+Plans:
+- [ ] 12-01-PLAN.md -- Wire onPageChange, graph/compare navigation, expansion toggle, filter announcements
 
 ### Phase 13: Tracking Artifact Cleanup
 **Goal**: All planning artifacts accurately reflect the completed state of the milestone — no stale checkboxes, progress entries, or missing frontmatter
@@ -258,5 +260,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 9. Cross-Reference & Discovery UX | 5/5 | Complete | 2026-03-28 |
 | 10. Dashboard, Export & Polish | 3/3 | Complete | 2026-03-28 |
 | 11. Frontend API Wiring | 2/2 | Complete   | 2026-03-28 |
-| 12. Search UX Polish | 0/0 | Not started | - |
+| 12. Search UX Polish | 0/1 | Not started | - |
 | 13. Tracking Artifact Cleanup | 0/0 | Not started | - |
