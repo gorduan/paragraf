@@ -57,6 +57,7 @@ export function SearchPage({ onPageChange }: SearchPageProps) {
 
   // Expanded terms
   const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
+  const [expandEnabled, setExpandEnabled] = useState(true);
 
   // Accessibility announcements
   const [announcement, setAnnouncement] = useState("");
@@ -117,12 +118,14 @@ export function SearchPage({ onPageChange }: SearchPageProps) {
           absatz_von: filterValues.absatz_von,
           absatz_bis: filterValues.absatz_bis,
           page_size: 10,
+          expand: expandEnabled,
         });
         setResults(res.results);
         setTotal(res.total);
         setNextCursor(res.next_cursor || null);
         setExpandedTerms(res.expanded_terms || []);
-        setAnnouncement(`${res.results.length} Ergebnisse gefunden`);
+        const hasFilters = filterValues.abschnitt !== null || filterValues.chunk_typ !== null || filterValues.absatz_von !== null || filterValues.absatz_bis !== null;
+        setAnnouncement(`${res.results.length} Ergebnisse gefunden${hasFilters ? " (gefiltert)" : ""}`);
       }
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Suche fehlgeschlagen";
@@ -130,7 +133,7 @@ export function SearchPage({ onPageChange }: SearchPageProps) {
     } finally {
       setLoading(false);
     }
-  }, [viewMode]);
+  }, [viewMode, expandEnabled]);
 
   // ── Multi-hop search ────────────────────────────────────────────────────
 
@@ -235,6 +238,7 @@ export function SearchPage({ onPageChange }: SearchPageProps) {
         absatz_bis: filters.absatz_bis,
         cursor: nextCursor,
         page_size: 10,
+        expand: expandEnabled,
       });
       setResults((prev) => [...prev, ...res.results]);
       setTotal(res.total);
@@ -251,7 +255,6 @@ export function SearchPage({ onPageChange }: SearchPageProps) {
 
   const handleFilterApply = (newFilters: FilterValues) => {
     setFilters(newFilters);
-    setAnnouncement("Filter angewendet");
     if (query && searchMode !== "multi_hop") {
       executeSearch(query, searchMode, newFilters, currentGesetzbuch);
     }
@@ -264,14 +267,12 @@ export function SearchPage({ onPageChange }: SearchPageProps) {
       newFilters.absatz_bis = null;
     }
     setFilters(newFilters);
-    setAnnouncement("Filter angewendet");
     if (query && searchMode !== "multi_hop") executeSearch(query, searchMode, newFilters, currentGesetzbuch);
   };
 
   const handleFilterClearAll = () => {
     const empty: FilterValues = { abschnitt: null, chunk_typ: null, absatz_von: null, absatz_bis: null };
     setFilters(empty);
-    setAnnouncement("Filter angewendet");
     if (query && searchMode !== "multi_hop") executeSearch(query, searchMode, empty, currentGesetzbuch);
   };
 
@@ -456,11 +457,22 @@ export function SearchPage({ onPageChange }: SearchPageProps) {
             <p className="text-body text-slate-500 dark:text-slate-400" aria-live="polite">
               {viewMode === "liste" ? results.length : total} Ergebnisse fuer &quot;{query}&quot;
             </p>
-            {expandedTerms.length > 0 && (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                Erweitert: {expandedTerms.join(", ")}
-              </p>
-            )}
+            <div className="flex items-center gap-3 mt-1">
+              <label className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={expandEnabled}
+                  onChange={(e) => setExpandEnabled(e.target.checked)}
+                  className="rounded border-neutral-300 dark:border-neutral-600 accent-primary-500"
+                />
+                Begriffe erweitern
+              </label>
+              {expandedTerms.length > 0 && expandEnabled && (
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  Erweitert: {expandedTerms.join(", ")}
+                </p>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {/* Compare counter (per D-16) */}
