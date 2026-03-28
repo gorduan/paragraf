@@ -7,6 +7,7 @@ import {
 } from "../lib/api";
 import { ProgressBar } from "../components/ProgressBar";
 import { IndexDashboard } from "../components/IndexDashboard";
+import { SnapshotSection } from "../components/SnapshotSection";
 import {
   Loader,
   Database,
@@ -168,6 +169,8 @@ export function IndexPage() {
   const [failedInSession, setFailedInSession] = useState<Set<string>>(
     new Set()
   );
+  const [indexingSummary, setIndexingSummary] = useState("");
+  const [autoSnapshotInProgress, setAutoSnapshotInProgress] = useState(false);
   const cancelRef = useRef<(() => void) | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
@@ -266,6 +269,7 @@ export function IndexPage() {
         setQueue([]);
         setQueuePos(0);
         setEmbeddingProgress(null);
+        setIndexingSummary("Indexierung abgeschlossen");
         addLog(
           "System",
           "done",
@@ -302,10 +306,10 @@ export function IndexPage() {
             // Parse "42/150 Chunks eingebettet..." for progress
             const match = event.nachricht.match(/(\d+)\/(\d+)/);
             if (match) {
-              setEmbeddingProgress({
-                current: parseInt(match[1], 10),
-                total: parseInt(match[2], 10),
-              });
+              const cur = parseInt(match[1], 10);
+              const tot = parseInt(match[2], 10);
+              setEmbeddingProgress({ current: cur, total: tot });
+              setIndexingSummary(`Indexierung: ${cur} von ${tot}`);
             }
             // Only log every ~25% to avoid log spam
             if (match) {
@@ -324,6 +328,7 @@ export function IndexPage() {
             gotTerminalEvent = true;
             addLog(name, "error", event.nachricht, "error");
             markLawFailed(name);
+            setIndexingSummary(`Indexierung fehlgeschlagen: ${name}`);
             setError((prev) => {
               const msg = `${name}: ${event.nachricht}`;
               return prev ? `${prev}\n${msg}` : msg;
@@ -358,9 +363,22 @@ export function IndexPage() {
     [addLog, markLawDone, markLawFailed]
   );
 
-  const startSelectedIndex = () => {
+  const startSelectedIndex = async () => {
     if (selected.size === 0) return;
     const q = Array.from(selected);
+
+    // Auto-snapshot before indexing if enabled
+    if (localStorage.getItem("paragraf-auto-snapshot") === "true") {
+      setAutoSnapshotInProgress(true);
+      try {
+        await api.createSnapshot();
+      } catch (e) {
+        console.error("Auto-Snapshot fehlgeschlagen:", e);
+      } finally {
+        setAutoSnapshotInProgress(false);
+      }
+    }
+
     setQueue(q);
     setQueuePos(0);
     setIndexing(true);
@@ -369,6 +387,7 @@ export function IndexPage() {
     setCompletedInSession(new Set());
     setFailedInSession(new Set());
     setSelected(new Set());
+    setIndexingSummary("");
     addLog(
       "System",
       "start",
@@ -516,10 +535,13 @@ export function IndexPage() {
           {selected.size > 0 && (
             <button
               onClick={startSelectedIndex}
-              className="flex items-center gap-1 px-4 py-1.5 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium"
+              disabled={autoSnapshotInProgress}
+              className="flex items-center gap-1 px-4 py-1.5 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium disabled:opacity-50"
             >
               <Download size={14} aria-hidden="true" />
-              {selected.size} ausgewaehlte indexieren
+              {autoSnapshotInProgress
+                ? "Auto-Snapshot wird erstellt..."
+                : `${selected.size} ausgewaehlte indexieren`}
             </button>
           )}
           {selected.size > 0 && (
@@ -932,6 +954,14 @@ export function IndexPage() {
           })}
         </div>
       )}
+
+      {/* Snapshot Management */}
+      {!loading && <SnapshotSection />}
+
+      {/* Indexing progress sr-only announcement */}
+      <div aria-live="polite" className="sr-only" role="status">
+        {indexingSummary}
+      </div>
 
       {/* EUTB Section */}
       <div className="mt-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
