@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 9: Cross-Reference & Discovery UX** - Clickable citation links, interactive graph, discovery mode UI
 - [x] **Phase 10: Dashboard, Export & Polish** - Snapshot management, PDF/Markdown export, accessibility, responsive polish (completed 2026-03-28)
 - [x] **Phase 11: Frontend API Wiring** - Wire all backend-only endpoints into frontend API client and add UI surfaces (gap closure) (completed 2026-03-28)
-- [ ] **Phase 12: Search UX Polish** - Fix broken interactive elements, add missing click handlers and expansion toggle (gap closure)
+- [x] **Phase 12: Search UX Polish** - Fix broken interactive elements, add missing click handlers and expansion toggle (gap closure) (completed 2026-03-28)
 - [ ] **Phase 13: Tracking Artifact Cleanup** - Fix stale checkboxes, progress table, and SUMMARY frontmatter (gap closure)
 
 ## Phase Details
@@ -228,7 +228,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 12-01-PLAN.md -- Wire onPageChange, graph/compare navigation, expansion toggle, filter announcements
+- [x] 12-01-PLAN.md -- Wire onPageChange, graph/compare navigation, expansion toggle, filter announcements
 
 ### Phase 13: Tracking Artifact Cleanup
 **Goal**: All planning artifacts accurately reflect the completed state of the milestone — no stale checkboxes, progress entries, or missing frontmatter
@@ -260,5 +260,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 9. Cross-Reference & Discovery UX | 5/5 | Complete | 2026-03-28 |
 | 10. Dashboard, Export & Polish | 3/3 | Complete | 2026-03-28 |
 | 11. Frontend API Wiring | 2/2 | Complete   | 2026-03-28 |
-| 12. Search UX Polish | 0/1 | Not started | - |
+| 12. Search UX Polish | 1/1 | Complete   | 2026-03-28 |
 | 13. Tracking Artifact Cleanup | 0/0 | Not started | - |
