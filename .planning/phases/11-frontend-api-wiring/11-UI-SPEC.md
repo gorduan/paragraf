@@ -55,7 +55,6 @@ Inherited from Phase 3 `index.css` @theme — no changes:
 | Body | 14px (--text-body) | 400 | 1.5 |
 | Subheading | 16px (--text-subheading) | 600 | 1.4 |
 | Heading | 20px (--text-heading) | 600 | 1.3 |
-| Display | 28px (--text-display) | 600 | 1.2 |
 
 Phase 11 specific usage:
 - Hop badges use **Caption** (12px/600) for "Hop 0", "Hop 1" labels
@@ -193,7 +192,7 @@ No destructive actions in Phase 11.
 [Footer: "12 Paragraphen durchsucht" | Erweitert: [GdB] [Grad der Behinderung]]
 ```
 
-- HopBadge: inline-flex, rounded-full, px-2 py-0.5, text-caption (12px), font-semibold
+- HopBadge: inline-flex, rounded-full, px-2 py-1, text-caption (12px), font-semibold
 - Via-reference: text-body (14px), italic, primary-600 link color, separated by 8px gap from HopBadge
 - Footer: text-caption (12px), neutral-500, border-t border-neutral-200, pt-3 mt-4
 - Expanded terms: inline Badge components (existing Badge primitive), neutral variant, ml-2 gap
