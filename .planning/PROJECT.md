@@ -55,8 +55,8 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit seman
 - [x] Vergleich direkt aus Suchergebnissen heraus (onCompare wiring) — Validated in Phase 8: Search Results UX
 - [x] Paginierung fuer Suche und Law Browser — Validated in Phase 8: Search Results UX
 - [ ] Zitations-Graph: Interaktive Visualisierung von Querverweisen
-- [ ] Export: PDF/Markdown-Export von Ergebnissen und Vergleichen
-- [ ] Responsive Design-Verbesserungen und Accessibility-Audit
+- [x] Export: PDF/Markdown-Export von Ergebnissen und Vergleichen — Validated in Phase 10: Dashboard, Export & Polish
+- [x] Responsive Design-Verbesserungen und Accessibility-Audit — Validated in Phase 10: Dashboard, Export & Polish
 
 ### Out of Scope
 
@@ -74,7 +74,7 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit seman
 - Frontend hat vollstaendige Search Results UX mit Recommend, Gruppierung, Filter, Compare, Pagination (Phase 8)
 - MCP-Tools spiegeln die meisten Backend-Capabilities wider (Discovery + Grouping seit Phase 5)
 - Gesetze referenzieren sich intensiv gegenseitig — Querverweis-Pipeline seit Phase 6 aktiv (Extraktion + API + MCP-Tool)
-- Frontend-Design soll mit /frontend-design, /ui-ux-pro-max und /ckm-ui-styling Skills professionell gestaltet werden
+- Phase 10 complete: Snapshot-Management im Dashboard, PDF/Markdown-Export auf allen Seiten, responsive Sidebar mit Hamburger-Menu, WCAG 2.1 AA Accessibility-Compliance
 
 ## Constraints
 
@@ -112,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-28 after Phase 9 (Cross-Reference & Discovery UX) completion*
+*Last updated: 2026-03-28 after Phase 10 (Dashboard, Export & Polish) completion*
