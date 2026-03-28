@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback, useContext } from "react";
 import { Loader, AlertCircle, RefreshCw } from "lucide-react";
 import { ThemeContext } from "@/App";
 import { api } from "@/lib/api";
-import type { ReferenceNetworkResponse, LawInfo } from "@/lib/api";
+import type { ReferenceNetworkResponse, IndexStatusItem } from "@/lib/api";
 import {
   buildLawLevelGraph,
   type GraphNode,
@@ -74,9 +74,9 @@ export function GraphPage({ onPageChange }: GraphPageProps) {
     setLoading(true);
     setError(null);
     try {
-      const lawsResponse = await api.laws();
-      const indexedLaws = lawsResponse.gesetze.filter(
-        (l: LawInfo) => lawsResponse.total_chunks > 0,
+      const statusResponse = await api.indexStatus();
+      const indexedLaws = statusResponse.gesetze.filter(
+        (l: IndexStatusItem) => l.status === "indexiert" && l.chunks > 0,
       );
 
       if (indexedLaws.length === 0) {
@@ -87,8 +87,8 @@ export function GraphPage({ onPageChange }: GraphPageProps) {
       }
 
       // Fetch structure for each law to get paragraph lists
-      const structureTasks = indexedLaws.slice(0, 30).map(
-        (law: LawInfo) => () => api.lawStructure(law.abkuerzung).catch(() => null),
+      const structureTasks = indexedLaws.slice(0, 50).map(
+        (law: IndexStatusItem) => () => api.lawStructure(law.gesetz).catch(() => null),
       );
       const structures = await batchedFetch(structureTasks, 10);
 
@@ -100,16 +100,16 @@ export function GraphPage({ onPageChange }: GraphPageProps) {
         const structure = structures[i];
         if (!structure) continue;
         const law = indexedLaws[i];
-        const paragraphs = structure.paragraphen.slice(0, 3);
+        const paragraphs = structure.paragraphen.slice(0, 5);
 
         for (const p of paragraphs) {
           refTasks.push(async () => {
             try {
-              const refs = await api.references(law.abkuerzung, p.paragraph);
-              if (!lawRefs.has(law.abkuerzung)) {
-                lawRefs.set(law.abkuerzung, { outgoing: [] });
+              const refs = await api.references(law.gesetz, p.paragraph);
+              if (!lawRefs.has(law.gesetz)) {
+                lawRefs.set(law.gesetz, { outgoing: [] });
               }
-              const existing = lawRefs.get(law.abkuerzung)!;
+              const existing = lawRefs.get(law.gesetz)!;
               for (const outRef of refs.outgoing) {
                 existing.outgoing.push({
                   gesetz: outRef.gesetz,
