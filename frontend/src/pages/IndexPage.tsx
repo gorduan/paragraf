@@ -278,6 +278,25 @@ export function IndexPage() {
         );
         // Refresh to get accurate server-side counts
         loadStatus();
+        // Auto-extract cross-references after indexing
+        addLog("System", "system", "Querverweise werden extrahiert...", "info");
+        api.extractReferences({ gesetz: null, full_reindex: false })
+          .then((res) => {
+            addLog(
+              "System",
+              "done",
+              `Querverweis-Extraktion abgeschlossen: ${res.points_with_refs} Paragraphen mit ${res.total_refs} Verweisen`,
+              "info"
+            );
+          })
+          .catch((err: Error) => {
+            addLog(
+              "System",
+              "error",
+              `Querverweis-Extraktion fehlgeschlagen: ${err.message}`,
+              "error"
+            );
+          });
         return;
       }
 
