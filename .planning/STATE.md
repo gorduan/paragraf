@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Volles Qdrant-Potenzial
-status: completed
-stopped_at: Milestone v1.0 complete
+milestone: v2.0
+milestone_name: Desktop Installer
+status: defining_requirements
+stopped_at: null
 last_updated: "2026-03-29"
 last_activity: 2026-03-29
 progress:
-  total_phases: 13
-  completed_phases: 13
-  total_plans: 33
-  completed_plans: 33
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** Juristen und Buerger finden in Sekunden die relevanten Paragraphen -- mit semantischer Suche, Querverweisen zwischen Gesetzen und gruppierten Ergebnissen.
-**Current focus:** Planning next milestone
+**Current focus:** v2.0 Desktop Installer -- defining requirements
 
 ## Current Position
 
-Phase: Complete
-Plan: N/A
-Status: Milestone v1.0 shipped
-Last activity: 2026-03-29
+Phase: Not started (defining requirements)
+Plan: --
+Status: Defining requirements
+Last activity: 2026-03-29 -- Milestone v2.0 started
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 

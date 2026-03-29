@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Docker-basierte Web-App fuer deutsches und europaeisches Recht mit RAG-basierter Rechtsrecherche. Nutzt BAAI/bge-m3 Embeddings, Qdrant Hybrid-Search (Dense + Sparse mit RRF-Fusion) und Cross-Encoder Reranking. Dual-Interface: React-Frontend fuer Endnutzer und MCP-Server fuer Claude Desktop/Code.
+Installierbare Desktop-App fuer deutsches und europaeisches Recht mit RAG-basierter Rechtsrecherche. Nutzt BAAI/bge-m3 Embeddings, Qdrant Hybrid-Search (Dense + Sparse mit RRF-Fusion) und Cross-Encoder Reranking. Triple-Interface: Desktop-App (Electron/Tauri) fuer Endnutzer, Web-Frontend fuer Browser-Zugriff, und MCP-Server fuer Claude Desktop/Code. Grafischer Installer fuer Windows (spaeter Mac/Linux) mit automatischer Einrichtung.
 
 ## Core Value
 
@@ -45,7 +45,13 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen -- mit semant
 
 ### Active
 
-(No active requirements -- planning next milestone)
+**Desktop-App & Installer (v2.0):**
+- [ ] Grafischer Setup-Wizard mit Installationsmodus-Auswahl (Docker vs. Nativ)
+- [ ] Desktop-App mit eigenem Fenster (Electron/Tauri), Startmenue-Icon
+- [ ] Automatischer ML-Modell-Download (~4GB) mit Fortschrittsbalken
+- [ ] Automatische GPU/CUDA-Erkennung und -Konfiguration
+- [ ] Backend-Lifecycle-Management (Start/Stop/Health im Hintergrund)
+- [ ] Windows-Installer (.exe) als primaere Plattform
 
 ### Out of Scope
 
@@ -71,7 +77,7 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen -- mit semant
 ## Constraints
 
 - **Tech Stack**: Python 3.12 + FastAPI + FastMCP, React 19 + Vite + TailwindCSS -- beibehalten
-- **Deployment**: Docker Compose only -- keine Kubernetes, kein Cloud-Deployment
+- **Deployment**: Desktop-Installer (Windows-first) + Docker Compose als Option -- keine Kubernetes, kein Cloud-Deployment
 - **Qdrant Version**: v1.13.2 -- Features muessen mit dieser Version kompatibel sein
 - **Modelle**: BAAI/bge-m3 + bge-reranker-v2-m3 -- keine neuen ML-Modelle einfuehren
 - **Sprache**: Deutsche UI, deutsche Docstrings, englische Variablen/Funktionsnamen
@@ -88,6 +94,18 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen -- mit semant
 | Backend-first Sequenzierung (Phases 1-7 vor 8-10) | Frontend nicht blockiert, alle APIs fertig bevor UI gebaut wird | ✓ Good -- zero blocked frontend work |
 | query_points / query_points_groups statt Legacy-Endpoints | Zukunftssicher, konsistente API | ✓ Good -- einheitliches Query-Interface |
 | Gap Closure Phases (11-13) nach Audit | Systematische Luecken-Schliessung statt ad-hoc Fixes | ✓ Good -- alle 7 Integrations-Luecken geschlossen |
+
+## Current Milestone: v2.0 Desktop Installer
+
+**Goal:** Paragraf wird eine installierbare Desktop-App mit grafischem Installer fuer Windows, die Docker oder native Installation anbietet und ML-Modelle + GPU automatisch erkennt. Zielgruppe: absolute Anfaenger ohne CLI-Kenntnisse.
+
+**Target features:**
+- Grafischer Installer mit Setup-Wizard (Installationsmodus-Auswahl)
+- Desktop-App mit eigenem Fenster (Electron/Tauri), Startmenue-Icon
+- Automatischer ML-Modell-Download mit Fortschrittsbalken
+- Automatische GPU/CUDA-Erkennung und -Konfiguration
+- Backend-Lifecycle-Management im Hintergrund
+- Windows-first, Mac/Linux spaeter
 
 ## Evolution
 
@@ -107,4 +125,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-29 after v1.0 milestone completion*
+*Last updated: 2026-03-29 after v2.0 milestone start*
