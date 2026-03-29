@@ -41,20 +41,20 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit seman
 **Backend/MCP-Erweiterungen:**
 - [x] Querverweis-Extraktion: Zitationen zwischen Gesetzen erkennen und als Payload speichern — Validated in Phase 6: Cross-Reference Pipeline
 - [x] Zitationsnetzwerk: Graph-basierte Navigation zwischen referenzierten Normen — Validated in Phase 6: Cross-Reference Pipeline
-- [ ] Query Expansion: Synonym-/Paraphrasen-Erweiterung fuer besseren Recall
-- [ ] Multi-Hop MCP-Prompts: Kombinierte Suchen fuer komplexe Rechtsfragen
+- [x] Query Expansion: Synonym-/Paraphrasen-Erweiterung fuer besseren Recall — Validated in Phase 7: Query Expansion & Chunking
+- [x] Multi-Hop MCP-Prompts: Kombinierte Suchen fuer komplexe Rechtsfragen — Validated in Phase 7: Query Expansion & Chunking
 - [x] Abschnitt-Filter vollstaendig in MCP-Tools exponieren — Validated in Phase 4: Recommend & Pagination
 - [x] Batch Search Endpoint fuer parallele Queries — Validated in Phase 4: Recommend & Pagination
-- [ ] Semantic Chunking: Intelligentere Segmentierung langer Paragraphen
+- [x] Semantic Chunking: Intelligentere Segmentierung langer Paragraphen — Validated in Phase 7: Query Expansion & Chunking
 
 **Frontend-Verbesserungen (mit /frontend-design, /ui-ux-pro-max, /ckm-ui-styling):**
-- [ ] Professionelles UI-Redesign mit Design-System und konsistenter visueller Sprache
+- [x] Professionelles UI-Redesign mit Design-System und konsistenter visueller Sprache — Validated in Phase 3: Design System Foundation
 - [x] "Aehnliche Paragraphen"-Button auf ResultCard (Recommend API) — Validated in Phase 8: Search Results UX
 - [x] Ergebnis-Gruppierung nach Gesetz/Rechtsgebiet in der Suche — Validated in Phase 8: Search Results UX
 - [x] Erweiterte Filter-UI: Abschnitt + Chunk-Typ + Absatz-Range — Validated in Phase 8: Search Results UX
 - [x] Vergleich direkt aus Suchergebnissen heraus (onCompare wiring) — Validated in Phase 8: Search Results UX
 - [x] Paginierung fuer Suche und Law Browser — Validated in Phase 8: Search Results UX
-- [ ] Zitations-Graph: Interaktive Visualisierung von Querverweisen
+- [x] Zitations-Graph: Interaktive Visualisierung von Querverweisen — Validated in Phase 9: Cross-Reference & Discovery UX
 - [x] Export: PDF/Markdown-Export von Ergebnissen und Vergleichen — Validated in Phase 10: Dashboard, Export & Polish
 - [x] Responsive Design-Verbesserungen und Accessibility-Audit — Validated in Phase 10: Dashboard, Export & Polish
 

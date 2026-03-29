@@ -12,15 +12,15 @@ This milestone unlocks the full potential of the Qdrant vector database and tran
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Snapshot Safety Net** - Backup/restore and scalar quantization before any collection modifications
-- [ ] **Phase 2: Search Indexes & Full-Text** - Full-text index, range filters, and keyword search backend
-- [ ] **Phase 3: Design System Foundation** - Design tokens, primitives, and consistent visual language
-- [ ] **Phase 4: Recommend & Pagination** - Similar paragraphs, paginated results, batch search, and MCP tools
-- [ ] **Phase 5: Grouping & Discovery API** - Grouped results, discovery search, and grouped recommendations
+- [x] **Phase 1: Snapshot Safety Net** - Backup/restore and scalar quantization before any collection modifications (completed 2026-03-27)
+- [x] **Phase 2: Search Indexes & Full-Text** - Full-text index, range filters, and keyword search backend (completed 2026-03-27)
+- [x] **Phase 3: Design System Foundation** - Design tokens, primitives, and consistent visual language (completed 2026-03-27)
+- [x] **Phase 4: Recommend & Pagination** - Similar paragraphs, paginated results, batch search, and MCP tools (completed 2026-03-27)
+- [x] **Phase 5: Grouping & Discovery API** - Grouped results, discovery search, and grouped recommendations (completed 2026-03-27)
 - [x] **Phase 6: Cross-Reference Pipeline** - Citation extraction, re-indexing, citation network API (completed 2026-03-27)
-- [ ] **Phase 7: Query Expansion & Chunking** - Legal synonym expansion, multi-hop MCP, semantic chunking
-- [ ] **Phase 8: Search Results UX** - Recommend button, grouped view, filters, compare, pagination, full-text toggle
-- [ ] **Phase 9: Cross-Reference & Discovery UX** - Clickable citation links, interactive graph, discovery mode UI
+- [x] **Phase 7: Query Expansion & Chunking** - Legal synonym expansion, multi-hop MCP, semantic chunking (completed 2026-03-27)
+- [x] **Phase 8: Search Results UX** - Recommend button, grouped view, filters, compare, pagination, full-text toggle (completed 2026-03-27)
+- [x] **Phase 9: Cross-Reference & Discovery UX** - Clickable citation links, interactive graph, discovery mode UI (completed 2026-03-28)
 - [x] **Phase 10: Dashboard, Export & Polish** - Snapshot management, PDF/Markdown export, accessibility, responsive polish (completed 2026-03-28)
 - [x] **Phase 11: Frontend API Wiring** - Wire all backend-only endpoints into frontend API client and add UI surfaces (gap closure) (completed 2026-03-28)
 - [x] **Phase 12: Search UX Polish** - Fix broken interactive elements, add missing click handlers and expansion toggle (gap closure) (completed 2026-03-28)
@@ -41,7 +41,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01-PLAN.md -- QdrantStore snapshot/quantization methods, config, Docker volume, unit tests
-- [ ] 01-02-PLAN.md -- REST endpoints, MCP tool, auto-snapshot hooks, quantization startup
+- [x] 01-02-PLAN.md -- REST endpoints, MCP tool, auto-snapshot hooks, quantization startup
 
 ### Phase 2: Search Indexes & Full-Text
 **Goal**: The Qdrant collection has optimized indexes for exact text matching and numeric filtering, and the backend exposes full-text keyword search alongside semantic search
