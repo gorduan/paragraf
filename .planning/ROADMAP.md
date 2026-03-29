@@ -30,7 +30,7 @@
 
 **Milestone Goal:** Paragraf wird eine installierbare Desktop-App mit grafischem Installer fuer Windows. Zielgruppe: absolute Anfaenger ohne CLI-Kenntnisse. Docker-Modus als einziger Backend-Modus in v2.0.
 
-- [ ] **Phase 14: Electron Shell & Docker Lifecycle** - Desktop-Fenster mit Backend-Management via Docker Compose
+- [x] **Phase 14: Electron Shell & Docker Lifecycle** - Desktop-Fenster mit Backend-Management via Docker Compose (completed 2026-03-29)
 - [ ] **Phase 15: Windows Installer & Setup Wizard** - NSIS-Installer mit First-Run-Wizard und Docker-Erkennung
 - [ ] **Phase 16: Model Download & GPU Configuration** - ML-Modell-Download mit Fortschritt und automatische GPU-Erkennung
 - [ ] **Phase 17: System Tray & Crash Resilience** - Tray-Minimierung, Port-Konflikt-Erkennung und automatischer Neustart
@@ -51,7 +51,7 @@
 
 Plans:
 - [x] 14-01-PLAN.md — Electron project scaffold, window shell, single-instance lock
-- [ ] 14-02-PLAN.md — Docker Compose lifecycle, IPC handlers, HealthOverlay desktop adaptation
+- [x] 14-02-PLAN.md — Docker Compose lifecycle, IPC handlers, HealthOverlay desktop adaptation
 
 ### Phase 15: Windows Installer & Setup Wizard
 **Goal**: Nutzer installiert Paragraf mit einem grafischen Windows-Installer und wird beim ersten Start durch einen Setup-Wizard gefuehrt, der Docker erkennt und alle Voraussetzungen prueft
@@ -109,7 +109,7 @@ Phases execute in numeric order: 14 > 15 > 16 > 17
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 14. Electron Shell & Docker Lifecycle | v2.0 | 1/2 | In Progress|  |
+| 14. Electron Shell & Docker Lifecycle | v2.0 | 2/2 | Complete   | 2026-03-29 |
 | 15. Windows Installer & Setup Wizard | v2.0 | 0/3 | Not started | - |
 | 16. Model Download & GPU Configuration | v2.0 | 0/2 | Not started | - |
 | 17. System Tray & Crash Resilience | v2.0 | 0/2 | Not started | - |

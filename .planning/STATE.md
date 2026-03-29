@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Desktop Installer
-status: executing
-stopped_at: Completed 14-01-PLAN.md
-last_updated: "2026-03-29T11:01:15.264Z"
+status: verifying
+stopped_at: Completed 14-02-PLAN.md
+last_updated: "2026-03-29T11:08:01.447Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 
 Phase: 14 (electron-shell-docker-lifecycle) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-03-29
 
 Progress: [░░░░░░░░░░] 0% (0/10 plans across v2.0)
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0% (0/10 plans across v2.0)
 ## Accumulated Context
 
 | Phase 14 P01 | 5min | 2 tasks | 14 files |
+| Phase 14 P02 | 4min | 2 tasks | 7 files |
 
 ### Decisions
 
@@ -67,6 +68,8 @@ Recent decisions affecting current work:
 - [v2.0 Research]: tree-kill + short HF_HOME paths from day one
 - [Phase 14]: electron-vite for build tooling with main/preload/renderer split builds
 - [Phase 14]: Preload injects http://localhost:8000 as API base URL for Docker backend
+- [Phase 14]: execFile with array args instead of exec to prevent shell injection
+- [Phase 14]: 10s timeout on Docker Compose stop with tree-kill fallback for clean shutdown
 
 ### Pending Todos
 
@@ -80,6 +83,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T11:01:15.256Z
-Stopped at: Completed 14-01-PLAN.md
+Last session: 2026-03-29T11:08:01.441Z
+Stopped at: Completed 14-02-PLAN.md
 Resume file: None

@@ -24,8 +24,8 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 
 ### Backend Lifecycle
 
-- [ ] **LIFE-01**: Backend (Docker Compose) startet automatisch beim App-Start und stoppt beim Schliessen
-- [ ] **LIFE-02**: App zeigt Verbindungsstatus zum Backend (Health-Polling) mit visueller Anzeige
+- [x] **LIFE-01**: Backend (Docker Compose) startet automatisch beim App-Start und stoppt beim Schliessen
+- [x] **LIFE-02**: App zeigt Verbindungsstatus zum Backend (Health-Polling) mit visueller Anzeige
 - [ ] **LIFE-03**: Bei Port-Konflikten erkennt die App das Problem und bietet Loesung an
 - [ ] **LIFE-04**: Bei Backend-Absturz versucht die App automatisch einen Neustart (max 3 Versuche)
 
@@ -75,8 +75,8 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 | INST-03 | Phase 15 | Pending |
 | INST-04 | Phase 15 | Pending |
 | INST-05 | Phase 15 | Pending |
-| LIFE-01 | Phase 14 | Pending |
-| LIFE-02 | Phase 14 | Pending |
+| LIFE-01 | Phase 14 | Complete |
+| LIFE-02 | Phase 14 | Complete |
 | LIFE-03 | Phase 17 | Pending |
 | LIFE-04 | Phase 17 | Pending |
 | MODEL-01 | Phase 16 | Pending |
