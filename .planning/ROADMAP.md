@@ -30,7 +30,7 @@
 
 **Milestone Goal:** Paragraf wird eine installierbare Desktop-App mit grafischem Installer fuer Windows. Zielgruppe: absolute Anfaenger ohne CLI-Kenntnisse. Docker-Modus als einziger Backend-Modus in v2.0.
 
-- [x] **Phase 14: Electron Shell & Docker Lifecycle** - Desktop-Fenster mit Backend-Management via Docker Compose (completed 2026-03-29)
+- [x] **Phase 14: Electron Shell & Docker Lifecycle** - Desktop-Fenster mit Backend-Management via Docker Compose (completed 2026-03-29)
 - [ ] **Phase 15: Windows Installer & Setup Wizard** - NSIS-Installer mit First-Run-Wizard und Docker-Erkennung
 - [ ] **Phase 16: Model Download & GPU Configuration** - ML-Modell-Download mit Fortschritt und automatische GPU-Erkennung
 - [ ] **Phase 17: System Tray & Crash Resilience** - Tray-Minimierung, Port-Konflikt-Erkennung und automatischer Neustart
@@ -63,13 +63,12 @@ Plans:
   3. Installer prueft ob Docker Desktop installiert ist und leitet bei Bedarf zur Docker-Installation weiter
   4. Erster App-Start zeigt einen mehrstufigen Setup-Wizard mit Fortschrittsanzeige fuer alle Einrichtungsschritte
   5. Setup-Wizard zeigt geschaetzten Speicherbedarf an und kann nach Unterbrechung (Abbruch, Neustart) dort weitermachen wo er aufgehoert hat
-**Plans**: TBD
+**Plans**: 2 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 15-01: TBD
-- [ ] 15-02: TBD
-- [ ] 15-03: TBD
+- [ ] 15-01-PLAN.md — NSIS installer config, electron-store, Docker detection, IPC handlers, preload bridge
+- [ ] 15-02-PLAN.md — React setup wizard UI (5 steps), App.tsx first-run routing, deferred Docker startup
 
 ### Phase 16: Model Download & GPU Configuration
 **Goal**: ML-Modelle werden beim ersten Start automatisch heruntergeladen und GPU/CUDA wird erkannt und konfiguriert, sodass Nutzer ohne Eingriff die optimale Performance erhalten
@@ -110,6 +109,6 @@ Phases execute in numeric order: 14 > 15 > 16 > 17
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 14. Electron Shell & Docker Lifecycle | v2.0 | 2/2 | Complete    | 2026-03-29 |
-| 15. Windows Installer & Setup Wizard | v2.0 | 0/3 | Not started | - |
+| 15. Windows Installer & Setup Wizard | v2.0 | 0/2 | Not started | - |
 | 16. Model Download & GPU Configuration | v2.0 | 0/2 | Not started | - |
 | 17. System Tray & Crash Resilience | v2.0 | 0/2 | Not started | - |
