@@ -37,6 +37,14 @@ vi.mock("tree-kill", () => ({
   default: vi.fn(),
 }));
 
+// Mock electron-store (imported by ipc.ts -> store.ts)
+vi.mock("electron-store", () => ({
+  default: class MockStore {
+    get() { return {}; }
+    set() {}
+  },
+}));
+
 describe("Single-Instance Lock (SHELL-03)", () => {
   it("should call requestSingleInstanceLock", async () => {
     mockRequestSingleInstanceLock.mockReturnValue(true);

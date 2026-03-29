@@ -1,8 +1,11 @@
 /** Tests fuer electron-store Setup-Wizard-State. */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock electron-store with in-memory Map-backed implementation
-const mockStore = new Map<string, unknown>();
+// Use hoisted variable for mock store backing
+const { mockData } = vi.hoisted(() => {
+  const mockData = new Map<string, unknown>();
+  return { mockData };
+});
 
 vi.mock("electron-store", () => {
   return {
@@ -13,8 +16,8 @@ vi.mock("electron-store", () => {
         this.defaults = opts?.defaults ?? {};
         // Initialize with defaults
         for (const [key, value] of Object.entries(this.defaults)) {
-          if (!mockStore.has(key)) {
-            mockStore.set(key, structuredClone(value));
+          if (!mockData.has(key)) {
+            mockData.set(key, structuredClone(value));
           }
         }
       }
@@ -23,9 +26,9 @@ vi.mock("electron-store", () => {
         // Support dotted keys like "setup.setupStep"
         const parts = key.split(".");
         if (parts.length === 1) {
-          return mockStore.has(key) ? mockStore.get(key) : this.defaults[key];
+          return mockData.has(key) ? mockData.get(key) : this.defaults[key];
         }
-        const root = mockStore.get(parts[0]) as Record<string, unknown> | undefined;
+        const root = mockData.get(parts[0]) as Record<string, unknown> | undefined;
         if (!root) return undefined;
         return root[parts[1]];
       }
@@ -33,12 +36,12 @@ vi.mock("electron-store", () => {
       set(key: string, value: unknown): void {
         const parts = key.split(".");
         if (parts.length === 1) {
-          mockStore.set(key, value);
+          mockData.set(key, value);
           return;
         }
-        const root = (mockStore.get(parts[0]) as Record<string, unknown>) ?? {};
+        const root = (mockData.get(parts[0]) as Record<string, unknown>) ?? {};
         root[parts[1]] = value;
-        mockStore.set(parts[0], root);
+        mockData.set(parts[0], root);
       }
     },
   };
@@ -49,9 +52,9 @@ import { store } from "../src/main/store";
 
 describe("store", () => {
   beforeEach(() => {
-    mockStore.clear();
+    mockData.clear();
     // Re-initialize defaults
-    mockStore.set("setup", {
+    mockData.set("setup", {
       setupComplete: false,
       setupStep: 0,
       selectedMode: "docker",

@@ -21,6 +21,11 @@ function getComposeFilePath(): string {
 
 export type DockerAvailability = "running" | "installed" | "missing";
 
+export interface DockerCheckResult {
+  status: "running" | "installed" | "not-running" | "missing";
+  version?: string;
+}
+
 /** Check if Docker daemon is available. */
 export function checkDockerAvailable(): Promise<DockerAvailability> {
   return new Promise((resolve) => {
@@ -32,6 +37,63 @@ export function checkDockerAvailable(): Promise<DockerAvailability> {
       execFile("docker", ["--version"], { windowsHide: true, timeout: 5000 }, (vErr) => {
         resolve(vErr ? "missing" : "installed");
       });
+    });
+  });
+}
+
+/** Erweiterte Docker-Erkennung mit 4 Stufen inkl. Windows-Registry-Fallback. */
+export function checkDockerDetailed(): Promise<DockerCheckResult> {
+  return new Promise((resolve) => {
+    // Tier 1: docker info -> running (daemon is responsive)
+    execFile("docker", ["info"], { windowsHide: true, timeout: 10000 }, (infoErr) => {
+      if (!infoErr) {
+        // Docker daemon is running, get version
+        execFile(
+          "docker",
+          ["--version"],
+          { windowsHide: true, timeout: 5000 },
+          (_vErr, vStdout) => {
+            const version = vStdout?.trim().match(/Docker version ([^,]+)/)?.[1];
+            resolve({ status: "running", version: version ?? "unknown" });
+          }
+        );
+        return;
+      }
+
+      // Tier 2: docker --version -> not-running (CLI present but daemon down)
+      execFile(
+        "docker",
+        ["--version"],
+        { windowsHide: true, timeout: 5000 },
+        (versionErr, versionStdout) => {
+          if (!versionErr && versionStdout) {
+            const version = versionStdout.trim().match(/Docker version ([^,]+)/)?.[1];
+            resolve({ status: "not-running", version });
+            return;
+          }
+
+          // Tier 3: Windows Registry query -> installed (Docker Desktop installed but CLI not in PATH)
+          execFile(
+            "reg",
+            [
+              "query",
+              "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Docker Desktop",
+              "/v",
+              "DisplayName",
+            ],
+            { windowsHide: true, timeout: 5000 },
+            (regErr) => {
+              if (!regErr) {
+                resolve({ status: "installed" });
+                return;
+              }
+
+              // Tier 4: all checks failed -> missing
+              resolve({ status: "missing" });
+            }
+          );
+        }
+      );
     });
   });
 }

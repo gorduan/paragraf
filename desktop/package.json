@@ -16,6 +16,7 @@
     "test": "vitest run --reporter=verbose"
   },
   "dependencies": {
+    "electron-store": "^11.0.2",
     "tree-kill": "^1.2.2"
   },
   "devDependencies": {

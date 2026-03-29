@@ -11,3 +11,14 @@ contextBridge.exposeInMainWorld("paragrafDesktop", {
   getDockerStatus: (): Promise<string> => ipcRenderer.invoke("docker:status"),
   restartDocker: (): Promise<void> => ipcRenderer.invoke("docker:restart"),
 });
+
+// Setup wizard API for renderer
+contextBridge.exposeInMainWorld("paragrafSetup", {
+  getSetupState: () => ipcRenderer.invoke("setup:getState"),
+  setSetupStep: (step: number) => ipcRenderer.invoke("setup:setStep", step),
+  checkDocker: () => ipcRenderer.invoke("setup:checkDocker"),
+  openDockerDownload: () => ipcRenderer.invoke("setup:openDockerDownload"),
+  completeSetup: () => ipcRenderer.invoke("setup:complete"),
+  getStorageEstimate: () => ipcRenderer.invoke("setup:storageEstimate"),
+  startDocker: () => ipcRenderer.invoke("setup:startDocker"),
+});
