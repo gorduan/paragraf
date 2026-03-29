@@ -3,7 +3,7 @@ productName: Paragraf
 copyright: Copyright (c) 2026 Paragraf
 
 directories:
-  buildResources: resources
+  buildResources: build
   output: release
 
 files:
@@ -15,6 +15,14 @@ extraResources:
     to: renderer
     filter:
       - "**/*"
+  - from: ../docker-compose.desktop.yml
+    to: docker-compose.desktop.yml
+  - from: ../backend
+    to: backend
+    filter:
+      - "**/*"
+      - "!**/__pycache__/**"
+      - "!**/.pytest_cache/**"
 
 win:
   target:
@@ -32,3 +40,4 @@ nsis:
   shortcutName: Paragraf
   menuCategory: Paragraf
   artifactName: "Paragraf-Setup-${version}.${ext}"
+  license: build/license.rtf
