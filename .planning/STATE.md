@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Desktop Installer
-status: ready_to_plan
-stopped_at: null
-last_updated: "2026-03-29"
+status: executing
+stopped_at: Completed 14-01-PLAN.md
+last_updated: "2026-03-29T11:01:15.264Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 10
-  completed_plans: 0
+  total_plans: 2
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,25 +21,27 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** Juristen und Buerger installieren Paragraf mit einem Doppelklick -- ohne CLI, ohne Docker-Kenntnisse, ohne technisches Vorwissen.
-**Current focus:** Phase 14 - Electron Shell & Docker Lifecycle
+**Current focus:** Phase 14 — electron-shell-docker-lifecycle
 
 ## Current Position
 
-Phase: 14 (first of 4 in v2.0 milestone)
-Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-03-29 -- Roadmap created for v2.0 Desktop Installer milestone
+Phase: 14 (electron-shell-docker-lifecycle) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-03-29
 
 Progress: [░░░░░░░░░░] 0% (0/10 plans across v2.0)
 
 ## Performance Metrics
 
 **Velocity (v1.0 reference):**
+
 - Total plans completed: 33
 - Average duration: ~4 min/plan
 - Total execution time: ~2.2 hours
 
 **v2.0 Velocity:**
+
 - Total plans completed: 0
 - Average duration: -
 - Total execution time: -
@@ -52,6 +54,8 @@ Progress: [░░░░░░░░░░] 0% (0/10 plans across v2.0)
 
 ## Accumulated Context
 
+| Phase 14 P01 | 5min | 2 tasks | 14 files |
+
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
@@ -61,6 +65,8 @@ Recent decisions affecting current work:
 - [v2.0 Research]: Thin installer (<100MB) + post-install downloads (NSIS 2GB limit)
 - [v2.0 Research]: Docker mode only in v2.0 (native mode deferred to v2.1)
 - [v2.0 Research]: tree-kill + short HF_HOME paths from day one
+- [Phase 14]: electron-vite for build tooling with main/preload/renderer split builds
+- [Phase 14]: Preload injects http://localhost:8000 as API base URL for Docker backend
 
 ### Pending Todos
 
@@ -74,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29
-Stopped at: Roadmap created for v2.0 Desktop Installer milestone
+Last session: 2026-03-29T11:01:15.256Z
+Stopped at: Completed 14-01-PLAN.md
 Resume file: None

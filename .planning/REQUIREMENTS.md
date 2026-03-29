@@ -9,9 +9,9 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 
 ### Desktop Shell
 
-- [ ] **SHELL-01**: Nutzer sieht die Paragraf-App in einem eigenen Desktop-Fenster (Electron) mit nativer Titelleiste
-- [ ] **SHELL-02**: App erscheint im Windows-Startmenue mit Icon und kann per Doppelklick gestartet werden
-- [ ] **SHELL-03**: Nur eine Instanz der App kann gleichzeitig laufen (Single-Instance Lock)
+- [x] **SHELL-01**: Nutzer sieht die Paragraf-App in einem eigenen Desktop-Fenster (Electron) mit nativer Titelleiste
+- [x] **SHELL-02**: App erscheint im Windows-Startmenue mit Icon und kann per Doppelklick gestartet werden
+- [x] **SHELL-03**: Nur eine Instanz der App kann gleichzeitig laufen (Single-Instance Lock)
 - [ ] **SHELL-04**: App minimiert sich in den System Tray und laeuft im Hintergrund weiter
 
 ### Installer & Setup
@@ -66,9 +66,9 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SHELL-01 | Phase 14 | Pending |
-| SHELL-02 | Phase 14 | Pending |
-| SHELL-03 | Phase 14 | Pending |
+| SHELL-01 | Phase 14 | Complete |
+| SHELL-02 | Phase 14 | Complete |
+| SHELL-03 | Phase 14 | Complete |
 | SHELL-04 | Phase 17 | Pending |
 | INST-01 | Phase 15 | Pending |
 | INST-02 | Phase 15 | Pending |
