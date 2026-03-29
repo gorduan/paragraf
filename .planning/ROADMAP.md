@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 10: Dashboard, Export & Polish** - Snapshot management, PDF/Markdown export, accessibility, responsive polish (completed 2026-03-28)
 - [x] **Phase 11: Frontend API Wiring** - Wire all backend-only endpoints into frontend API client and add UI surfaces (gap closure) (completed 2026-03-28)
 - [x] **Phase 12: Search UX Polish** - Fix broken interactive elements, add missing click handlers and expansion toggle (gap closure) (completed 2026-03-28)
-- [ ] **Phase 13: Tracking Artifact Cleanup** - Fix stale checkboxes, progress table, and SUMMARY frontmatter (gap closure)
+- [x] **Phase 13: Tracking Artifact Cleanup** - Fix stale checkboxes, progress table, and SUMMARY frontmatter (gap closure) (completed 2026-03-29)
 
 ## Phase Details
 
@@ -243,7 +243,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 13-01-PLAN.md -- Fix stale checkboxes in ROADMAP.md, PROJECT.md, and STATE.md progress fields
+- [x] 13-01-PLAN.md -- Fix stale checkboxes in ROADMAP.md, PROJECT.md, and STATE.md progress fields
 
 ## Progress
 
@@ -264,4 +264,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 10. Dashboard, Export & Polish | 3/3 | Complete | 2026-03-28 |
 | 11. Frontend API Wiring | 2/2 | Complete   | 2026-03-28 |
 | 12. Search UX Polish | 1/1 | Complete    | 2026-03-28 |
-| 13. Tracking Artifact Cleanup | 0/0 | Not started | - |
+| 13. Tracking Artifact Cleanup | 1/1 | Complete    | 2026-03-29 |
