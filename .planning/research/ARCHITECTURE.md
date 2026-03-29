@@ -1,688 +1,437 @@
-# Architecture Research
+# Architecture: Desktop Installer Integration
 
-**Domain:** German legal-tech RAG application -- extending existing Docker Compose system with advanced Qdrant features, cross-reference extraction, query expansion, and frontend design system
-**Researched:** 2026-03-27
-**Confidence:** HIGH
+**Domain:** Desktop app shell + installer wrapping existing Docker-based legal-tech RAG application
+**Researched:** 2026-03-29
+**Confidence:** HIGH (Tauri sidecar pattern verified via official docs + multiple production examples; Qdrant Windows binary confirmed in v1.13.2 releases; PyInstaller+FastAPI pattern well-documented)
 
-## System Overview (Extended Architecture)
+## Recommended Architecture
+
+### High-Level: Two Execution Modes, One Desktop Shell
 
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                         Frontend (nginx + React 19)                       │
-│  ┌───────────┐  ┌────────────┐  ┌──────────────┐  ┌──────────────────┐  │
-│  │ Design    │  │ Search +   │  │ Citation     │  │ Grouped Results  │  │
-│  │ System    │  │ Recommend  │  │ Graph Page   │  │ + Pagination     │  │
-│  │ (tokens,  │  │ + Discovery│  │ (interactive │  │ (Scroll API)     │  │
-│  │  ui lib)  │  │ UI         │  │  d3/canvas)  │  │                  │  │
-│  └─────┬─────┘  └──────┬─────┘  └──────┬───────┘  └────────┬─────────┘  │
-│        └───────────┬────┴──────────┬────┴───────────────────┘            │
-│               frontend/src/lib/api.ts (typed REST client)                │
-├──────────────────────────────────────────────────────────────────────────┤
-│                    nginx reverse proxy (/api/* -> backend:8000)           │
-├──────────────────────────────────────────────────────────────────────────┤
-│                         Backend (FastAPI + FastMCP)                       │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐    │
-│  │                      API Layer (api.py)                          │    │
-│  │  NEW: /api/recommend, /api/discover, /api/search-grouped,       │    │
-│  │       /api/scroll, /api/citations/{id}, /api/citation-graph,    │    │
-│  │       /api/snapshot/create, /api/snapshot/restore               │    │
-│  └──────────────────────────┬───────────────────────────────────────┘    │
-│                             │                                            │
-│  ┌──────────────────────────┴───────────────────────────────────────┐    │
-│  │                    Service Layer                                  │    │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌────────────────────────┐  │    │
-│  │  │ QdrantStore  │  │ QueryExpander│  │ CrossRefExtractor      │  │    │
-│  │  │ (extended)   │  │ (NEW)        │  │ (NEW)                  │  │    │
-│  │  │ +recommend() │  │ synonym map  │  │ regex parser           │  │    │
-│  │  │ +discover()  │  │ embedding    │  │ payload enrichment     │  │    │
-│  │  │ +grouped()   │  │ expansion    │  │ graph queries          │  │    │
-│  │  │ +scroll()    │  │              │  │                        │  │    │
-│  │  │ +snapshot()  │  │              │  │                        │  │    │
-│  │  └──────┬───────┘  └──────────────┘  └────────────────────────┘  │    │
-│  └─────────┼────────────────────────────────────────────────────────┘    │
-│            │                                                             │
-├────────────┼─────────────────────────────────────────────────────────────┤
-│            v                                                             │
-│         Qdrant v1.13.2                                                   │
-│  ┌──────────────────────────────────────────────────────────────────┐    │
-│  │  Collection: "paragraf"                                          │    │
-│  │  Vectors: dense (1024-dim cosine) + sparse (lexical weights)     │    │
-│  │  Payload: gesetz, paragraph, absatz, titel, abschnitt,          │    │
-│  │           chunk_typ, text, norm_id, hierarchie_pfad, stand,     │    │
-│  │           quelle                                                 │    │
-│  │  NEW payload fields:                                             │    │
-│  │    - references_out: [{gesetz, paragraph, context}]              │    │
-│  │    - references_in_count: int                                    │    │
-│  │  NEW indexes:                                                    │    │
-│  │    - Full-text on "text" field                                   │    │
-│  │    - Integer on "absatz" (range filter)                          │    │
-│  │  Quantization: Scalar INT8 (4x memory reduction)                │    │
-│  └──────────────────────────────────────────────────────────────────┘    │
-└──────────────────────────────────────────────────────────────────────────┘
++------------------------------------------------------------------+
+|  TAURI DESKTOP SHELL (Rust + WebView)                            |
+|  - Window management, system tray, Start Menu integration        |
+|  - Process lifecycle manager (start/stop/health/restart)         |
+|  - Mode switcher: Docker vs Native                               |
+|  - Setup wizard (first-run)                                      |
+|  - Model download manager                                        |
+|                                                                  |
+|  +-----------------------------------------------------------+  |
+|  |  EXISTING REACT SPA (loaded in WebView)                    |  |
+|  |  - Same React 19 + Vite build                              |  |
+|  |  - window.__PARAGRAF_API_BASE_URL__ = "http://localhost:X" |  |
+|  |  - useHealthCheck polls backend as before                  |  |
+|  +-----------------------------------------------------------+  |
++------------------------------------------------------------------+
+        |                                    |
+        v (Docker Mode)                      v (Native Mode)
++------------------+              +---------------------------+
+| docker compose   |              | qdrant.exe (sidecar)      |
+|   qdrant         |              |   port 6333               |
+|   backend        |              +---------------------------+
+|   mcp            |              | paragraf-backend.exe      |
+|   (no frontend!) |              |   (PyInstaller sidecar)   |
++------------------+              |   port 8000               |
+                                  +---------------------------+
 ```
 
-## Component Responsibilities
+### Key Insight: Frontend Moves INTO the Desktop Shell
 
-| Component | Responsibility | Integration Point |
-|-----------|----------------|-------------------|
-| **QdrantStore (extended)** | Wraps all Qdrant APIs: hybrid search, recommend, discover, grouped search, scroll, snapshot, quantization config | Existing `qdrant_store.py` -- add methods, do not restructure |
-| **CrossRefExtractor (new)** | Regex-based extraction of legal citations from law text during indexing; stores as payload | New `services/cross_ref.py`, called from parser pipeline |
-| **QueryExpander (new)** | Expands user queries with legal synonyms and embedding-based paraphrases before search | New `services/query_expander.py`, called from search endpoints |
-| **Frontend Design System** | Shared tokens (colors, spacing, typography), primitives (Button, Input, Card, Badge), composed components | New `frontend/src/ui/` directory with Tailwind CSS v4 theme tokens |
-| **Citation Graph UI** | Interactive visualization of cross-references between law sections | New page component using lightweight canvas/SVG rendering |
+In both modes, the React SPA is **not** served by nginx. Instead:
+- Tauri's WebView loads the built `dist/` assets directly from the filesystem
+- The existing `window.__PARAGRAF_API_BASE_URL__` mechanism points to `http://localhost:8000`
+- nginx is eliminated entirely -- Tauri IS the frontend host
 
-## Cross-Reference Storage: Qdrant Payload (Not a Graph DB)
+This means:
+- **Docker mode** runs only 3 services (qdrant, backend, mcp) -- no frontend container
+- **Native mode** runs qdrant.exe + paragraf-backend.exe as sidecar processes
+- The React SPA code is identical in both modes
 
-**Decision: Store citations as Qdrant payload fields, not in a separate graph database.**
+## Component Inventory: New vs Modified vs Unchanged
 
-**Rationale:**
-- Adding Neo4j or similar adds a 4th Docker service, increasing deployment complexity for what is fundamentally a simple adjacency list
-- The citation graph for German law is bounded (95 laws, ~50K paragraphs, estimated ~200K cross-references) -- this fits comfortably in Qdrant payloads
-- Qdrant payload filtering can efficiently query "find all paragraphs that reference SGB IX Section 152"
-- Two-hop queries (A references B, B references C) require at most 2 Qdrant lookups, which is acceptable
+### NEW Components (purely additive)
 
-**Payload Schema Extension:**
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| Tauri shell | `desktop/src-tauri/` | Rust app: window, tray, process lifecycle |
+| Setup wizard page | `frontend/src/pages/SetupPage.tsx` | First-run wizard (mode selection, model download) |
+| Process manager (Rust) | `desktop/src-tauri/src/process_manager.rs` | Start/stop/health-check backend processes |
+| Docker manager (Rust) | `desktop/src-tauri/src/docker_manager.rs` | docker compose up/down for Docker mode |
+| Model downloader | `desktop/src-tauri/src/model_manager.rs` | Download bge-m3 + reranker with progress |
+| GPU detector | `desktop/src-tauri/src/gpu_detect.rs` | CUDA/GPU detection for config |
+| PyInstaller spec | `backend/paragraf.spec` | Bundle backend into standalone .exe |
+| Desktop docker-compose | `desktop/docker-compose.headless.yml` | 3-service compose (no frontend service) |
+| Tauri config | `desktop/src-tauri/tauri.conf.json` | App metadata, sidecar config, NSIS settings |
+| Desktop entrypoint | `desktop/src-tauri/src/main.rs` | Tauri app bootstrap |
 
-```python
-# Added to each point's payload during indexing
-{
-    # Existing fields unchanged...
+### MODIFIED Components (minimal changes)
 
-    # NEW: Outgoing references extracted from this paragraph's text
-    "references_out": [
-        {"gesetz": "SGB XII", "paragraph": "Section 41", "raw": "Section 41 SGB XII"},
-        {"gesetz": "SGB IX", "paragraph": "Section 99", "raw": "Section 99 Abs. 1 SGB IX"}
-    ],
+| Component | Change | Why |
+|-----------|--------|-----|
+| `frontend/src/lib/api.ts` | No change needed | `window.__PARAGRAF_API_BASE_URL__` already handles dynamic base URL |
+| `frontend/src/hooks/useHealthCheck.ts` | No change needed | Already polls `/api/health` with reconnect logic |
+| `frontend/src/App.tsx` | Add conditional SetupPage route | Show setup wizard on first run |
+| `frontend/vite.config.ts` | Possibly add Tauri dev server integration | Dev experience for Tauri + Vite |
+| `backend/src/paragraf/config.py` | Add `native_mode` flag, local model path support | Native mode uses local paths instead of Docker volumes |
+| `backend/src/paragraf/__main__.py` | No change needed | Already supports `--mode api --port 8000` |
 
-    # NEW: Count of incoming references (updated post-indexing via batch update)
-    "references_in_count": 3
+### UNCHANGED Components
+
+- All backend services (embedding, qdrant_store, reranker, parser, etc.)
+- All API routes and models
+- All frontend pages (SearchPage, LookupPage, etc.)
+- All MCP tools and prompts
+- Qdrant configuration and collection schema
+- All existing Docker files (Dockerfile, docker-compose.yml)
+
+## Data Flow: Docker Mode
+
+```
+User clicks "Paragraf" icon
+    |
+    v
+Tauri main.rs starts
+    |
+    +--> Read config: mode = "docker"
+    |
+    +--> Check Docker Desktop running (docker info)
+    |    |
+    |    +--> NOT running: show "Please start Docker Desktop" overlay
+    |    +--> Running: continue
+    |
+    +--> Run: docker compose -f docker-compose.headless.yml up -d
+    |    (qdrant + backend + mcp, NO frontend)
+    |
+    +--> Set window.__PARAGRAF_API_BASE_URL__ = "http://localhost:8000"
+    |
+    +--> Load React SPA in WebView (from bundled dist/)
+    |
+    +--> useHealthCheck polls http://localhost:8000/api/health
+    |    |
+    |    +--> "connecting" while Docker containers start (~10-30s)
+    |    +--> "loading" while ML models initialize (~30-120s first time)
+    |    +--> "ready" when fully operational
+    |
+    v
+User interacts with app normally
+
+On app close:
+    +--> docker compose -f docker-compose.headless.yml stop
+    +--> (optional: keep containers for faster restart)
+```
+
+### Docker Mode: Volume Mapping
+
+Same Docker volumes as current architecture:
+- `qdrant_data` -- persistent vector storage
+- `model_cache` -- HuggingFace models (bge-m3 + reranker)
+- `law_data` -- downloaded law XML/HTML + processed JSON
+
+No changes to volume mapping. The only difference is the frontend container is absent.
+
+## Data Flow: Native Mode
+
+```
+User clicks "Paragraf" icon
+    |
+    v
+Tauri main.rs starts
+    |
+    +--> Read config: mode = "native"
+    |
+    +--> Start qdrant.exe sidecar
+    |    +--> Binary bundled in app or downloaded at install
+    |    +--> Config: storage at %APPDATA%/Paragraf/qdrant_data/
+    |    +--> Port 6333
+    |    +--> Health check: GET http://localhost:6333/healthz
+    |
+    +--> Wait for Qdrant healthy
+    |
+    +--> Start paragraf-backend.exe sidecar
+    |    +--> PyInstaller-bundled FastAPI + ML dependencies
+    |    +--> ENV: QDRANT_URL=http://localhost:6333
+    |    +--> ENV: HF_HOME=%APPDATA%/Paragraf/models/
+    |    +--> ENV: DATA_DIR=%APPDATA%/Paragraf/data/
+    |    +--> Port 8000
+    |
+    +--> Set window.__PARAGRAF_API_BASE_URL__ = "http://localhost:8000"
+    |
+    +--> Load React SPA in WebView
+    |
+    +--> First run? Show model download wizard
+    |    +--> Download bge-m3 (~2GB) with progress
+    |    +--> Download bge-reranker-v2-m3 (~2GB) with progress
+    |
+    +--> useHealthCheck polls as normal
+    |
+    v
+User interacts with app normally
+
+On app close:
+    +--> Send SIGTERM to paragraf-backend.exe
+    +--> Send SIGTERM to qdrant.exe
+    +--> Wait for graceful shutdown (5s timeout, then force kill)
+```
+
+### Native Mode: File Paths
+
+| Data | Location | Size |
+|------|----------|------|
+| Qdrant storage | `%APPDATA%/Paragraf/qdrant_data/` | ~500MB-2GB depending on indexed laws |
+| ML models | `%APPDATA%/Paragraf/models/` | ~4GB (bge-m3 + reranker) |
+| Law data (raw + processed) | `%APPDATA%/Paragraf/data/` | ~200MB |
+| App config | `%APPDATA%/Paragraf/config.json` | <1KB |
+| Qdrant binary | Bundled in installer OR `%LOCALAPPDATA%/Paragraf/bin/` | ~40MB |
+| Backend exe | Bundled in installer | ~200-400MB (PyInstaller with torch CPU) |
+
+## Architecture Decisions
+
+### Why Tauri 2, Not Electron
+
+| Factor | Tauri 2 | Electron | Decision |
+|--------|---------|----------|----------|
+| Installer size | ~10MB shell + sidecars | ~100MB+ (Chromium) + sidecars | Tauri wins |
+| RAM idle | ~30-40MB | ~200-300MB | Tauri wins -- ML models already use 4GB+ |
+| Sidecar support | First-class `externalBin` | Manual child_process | Tauri wins |
+| Windows installer | Built-in NSIS bundler | electron-builder (NSIS/Squirrel) | Tie |
+| WebView | System WebView2 (Edge) | Bundled Chromium | Tauri -- smaller, but WebView2 dependency |
+| Rust backend | Native -- can manage processes efficiently | Node.js main process | Tauri wins for process management |
+| React integration | WebView loads built assets | Chromium loads built assets | Tie |
+| Learning curve | Minimal Rust needed for shell | Pure JS/TS | Electron slightly easier |
+
+**Decision: Tauri 2** because the app is already 4GB+ with ML models. Adding 100MB of Chromium (Electron) on top is wasteful. Tauri's native process management in Rust is ideal for managing qdrant.exe and backend.exe sidecars. Windows 10/11 ships with WebView2 (Edge-based), so no extra download needed.
+
+### Why PyInstaller for Native Backend, Not Embedded Python
+
+Options considered:
+1. **PyInstaller** -- bundle Python + FastAPI + torch into single .exe
+2. **Embedded Python** -- ship python3.12.zip + pip install at runtime
+3. **Nuitka** -- compile Python to C, then native binary
+
+**Decision: PyInstaller** because:
+- Proven pattern with FastAPI + uvicorn (multiple production examples)
+- Single .exe simplifies sidecar management
+- Torch CPU-only keeps size at ~200-400MB (not 3GB+ with CUDA)
+- Spec files handle hidden imports (FlagEmbedding, sentence-transformers)
+- GPU mode: user installs CUDA toolkit separately, backend detects at runtime
+
+### Why Not Bundle ML Models in Installer
+
+The installer should NOT include the ~4GB of ML models because:
+- Installer download would be 4.5GB+ -- unacceptable for distribution
+- Models update independently of app code
+- First-run download with progress bar is standard UX (see: Ollama, LM Studio)
+- Models are cached in `%APPDATA%/Paragraf/models/` across reinstalls
+
+### Headless Docker Compose (No Frontend Container)
+
+Current `docker-compose.yml` has 4 services. For desktop mode, create `docker-compose.headless.yml`:
+- Removes `frontend` service entirely
+- Keeps qdrant, backend, mcp
+- Backend exposes port 8000 to host (already does)
+- MCP exposes port 8001 to host (already does)
+- Tauri WebView connects to `http://localhost:8000` directly
+
+## Component Boundaries
+
+| Component | Responsibility | Communicates With |
+|-----------|---------------|-------------------|
+| **Tauri Shell** | Window, tray, first-run wizard, app config | Process Manager, Docker Manager, WebView |
+| **Process Manager** | Start/stop/health native sidecars | qdrant.exe, backend.exe |
+| **Docker Manager** | docker compose up/down/ps | Docker CLI, docker-compose.headless.yml |
+| **Model Manager** | Download ML models with progress | HuggingFace Hub (HTTPS), Tauri events |
+| **GPU Detector** | Detect CUDA, set EMBEDDING_DEVICE | System NVIDIA driver, backend env vars |
+| **Setup Wizard** | First-run mode selection, model download | Tauri commands (invoke), Model Manager |
+| **React SPA** | All user-facing UI (unchanged) | Backend REST API via fetch() |
+| **Backend** | FastAPI REST + ML pipeline (unchanged) | Qdrant, filesystem |
+| **Qdrant** | Vector storage (unchanged) | Backend via gRPC/HTTP |
+
+## Tauri IPC Design
+
+Tauri uses a command pattern for frontend-to-backend communication:
+
+```rust
+// src-tauri/src/main.rs -- Tauri commands
+#[tauri::command]
+fn get_app_config() -> AppConfig { ... }
+
+#[tauri::command]
+async fn start_backend(mode: &str) -> Result<(), String> { ... }
+
+#[tauri::command]
+async fn stop_backend() -> Result<(), String> { ... }
+
+#[tauri::command]
+async fn get_backend_status() -> BackendStatus { ... }
+
+#[tauri::command]
+async fn download_models(app: AppHandle) -> Result<(), String> {
+    // Emit progress events to frontend
+    app.emit("model-download-progress", payload)?;
+    ...
+}
+
+#[tauri::command]
+fn detect_gpu() -> GpuInfo { ... }
+
+#[tauri::command]
+fn check_docker_available() -> bool { ... }
+```
+
+```typescript
+// Frontend calls via @tauri-apps/api
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+
+const config = await invoke<AppConfig>("get_app_config");
+await invoke("start_backend", { mode: "native" });
+const status = await invoke<BackendStatus>("get_backend_status");
+
+// Listen for model download progress
+const unlisten = await listen("model-download-progress", (event) => {
+  setProgress(event.payload as ProgressPayload);
+});
+```
+
+### Conditional Tauri vs Browser
+
+The React SPA must work in BOTH Tauri WebView and regular browser (for Docker-only users who skip the desktop app). Use feature detection:
+
+```typescript
+// lib/platform.ts
+export const isTauri = () => "__TAURI_INTERNALS__" in window;
+
+// Only import Tauri APIs when running in Tauri
+export async function invokeIfTauri<T>(cmd: string, args?: object): Promise<T | null> {
+  if (!isTauri()) return null;
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<T>(cmd, args);
 }
 ```
 
-**Querying the Citation Graph:**
-
-```python
-# Forward: "What does Section 152 SGB IX reference?"
-# -> Direct payload read from the point
-
-# Reverse: "What references Section 152 SGB IX?"
-# -> Qdrant scroll with filter on references_out containing matching gesetz+paragraph
-
-# Two-hop: "What is transitively connected to Section 152 SGB IX?"
-# -> Combine forward + reverse results, then repeat for each result
-```
-
-**Index Requirements:**
-- New payload index on `references_out[].gesetz` (keyword) for efficient reverse lookups
-- Qdrant supports nested payload filtering since v1.1, so filtering on `references_out[].gesetz` and `references_out[].paragraph` works
-
-## Cross-Reference Extraction Pipeline
-
-**Approach: Regex-based extraction at indexing time, inspired by the [german-legal-reference-parser](https://github.com/lavis-nlp/german-legal-reference-parser) library.**
-
-The extractor does NOT depend on that library (it is unmaintained since 2023 and tightly coupled to Open Legal Data format). Instead, build a focused regex set for the specific citation patterns found in German statutes:
-
-```python
-# services/cross_ref.py
-
-CITATION_PATTERNS = [
-    # "Section 152 SGB IX", "Section 152 Abs. 1 SGB IX"
-    r'§§?\s*(\d+\w*)\s*(Abs\.\s*\d+)?\s*((?:Satz|S\.)\s*\d+)?\s+([A-Z][A-Za-z\s/äöüÄÖÜ]+)',
-
-    # "Art. 3 GG", "Artikel 3 Abs. 1 GG"
-    r'Art(?:ikel)?\.?\s*(\d+\w*)\s*(Abs\.\s*\d+)?\s+([A-Z][A-Za-z\s/äöüÄÖÜ]+)',
-
-    # "i.V.m. Section 288 Abs. 1 BGB" (in conjunction with)
-    r'i\.?\s*V\.?\s*m\.?\s*§§?\s*(\d+\w*)\s*(Abs\.\s*\d+)?\s+([A-Z][A-Za-z\s/äöüÄÖÜ]+)',
-]
-```
-
-**Integration into Indexing Flow:**
+## Directory Structure (New Files)
 
 ```
-Parse XML -> Extract LawChunks -> Extract cross-references per chunk
-    -> Embed chunks -> Upsert with references_out payload
-    -> Post-indexing: compute references_in_count via scroll + batch update
+paragraf v2/
+├── desktop/                          # NEW: Tauri desktop shell
+│   ├── src-tauri/
+│   │   ├── Cargo.toml               # Rust dependencies
+│   │   ├── tauri.conf.json          # App config, NSIS settings, sidecars
+│   │   ├── build.rs                 # Build script
+│   │   ├── icons/                   # App icons (ICO, PNG)
+│   │   ├── bin/                     # Sidecar binaries (built, not committed)
+│   │   │   ├── qdrant-x86_64-pc-windows-msvc.exe
+│   │   │   └── paragraf-backend-x86_64-pc-windows-msvc.exe
+│   │   └── src/
+│   │       ├── main.rs              # Tauri entry point + commands
+│   │       ├── process_manager.rs   # Sidecar lifecycle (start/stop/health)
+│   │       ├── docker_manager.rs    # Docker compose lifecycle
+│   │       ├── model_manager.rs     # ML model download with progress
+│   │       ├── gpu_detect.rs        # CUDA/GPU detection
+│   │       └── config.rs            # App configuration (mode, paths)
+│   ├── docker-compose.headless.yml  # 3-service compose (no frontend)
+│   └── scripts/
+│       ├── build-backend-exe.sh     # PyInstaller build script
+│       └── download-qdrant.sh       # Fetch qdrant binary for bundling
+├── frontend/                         # EXISTING: minimal changes
+│   ├── src/
+│   │   ├── lib/platform.ts          # NEW: Tauri detection utility
+│   │   ├── pages/SetupPage.tsx      # NEW: First-run wizard
+│   │   └── hooks/useDesktop.ts      # NEW: Tauri IPC hooks
+│   └── ...
+├── backend/                          # EXISTING: minimal changes
+│   ├── paragraf.spec                 # NEW: PyInstaller spec file
+│   └── ...
+└── ...
 ```
 
-The extraction runs synchronously during the parse step (before embedding), adding negligible time to the indexing pipeline. The `references_in_count` is computed as a post-processing batch after all laws are indexed, using Qdrant's scroll API to count reverse references.
+## Installer Flow
 
-## Recommend/Discovery API Integration
+### Tauri NSIS Installer (Built-in)
 
-### Recommend API: "Similar Paragraphs"
+Tauri 2 generates Windows NSIS installers natively. The installer:
 
-**Maps to:** `QdrantStore.recommend()` -- new method
-**Qdrant API:** `query_points()` with `RecommendQuery`
+1. Checks for WebView2 (installs if missing -- rare on Win10/11)
+2. Installs Tauri app + bundled frontend assets
+3. Registers Start Menu shortcut + desktop icon
+4. Includes sidecar binaries (qdrant.exe, paragraf-backend.exe) for Native mode
+5. Does NOT include ML models (downloaded on first run)
 
-```python
-async def recommend(
-    self,
-    point_id: str,           # UUID5 of the source paragraph
-    top_k: int = 10,
-    search_filter: SearchFilter | None = None,
-    negative_ids: list[str] | None = None,
-) -> list[SearchResult]:
-    """Find paragraphs similar to a given paragraph."""
-    query = models.RecommendQuery(
-        positive=[point_id],
-        negative=negative_ids or [],
-        strategy=models.RecommendStrategy.AVERAGE_VECTOR,
-    )
-    results = await self.client.query_points(
-        collection_name=self.collection_name,
-        query=query,
-        using=DENSE_VECTOR_NAME,
-        query_filter=self._build_filter(search_filter),
-        limit=top_k,
-        with_payload=True,
-    )
-    return self._points_to_results(results)
-```
-
-**Frontend Integration:** "Similar Paragraphs" button on each `ResultCard`. Clicking triggers a recommend request and displays results inline or in a slide-over panel.
-
-**REST Endpoint:**
-```
-POST /api/recommend
-Body: { "chunk_id": "SGB_IX_§_152", "max_ergebnisse": 10, "gesetzbuch": null }
-```
-
-### Discovery API: "Explorative Search"
-
-**Maps to:** `QdrantStore.discover()` -- new method
-**Qdrant API:** `query_points()` with `DiscoverQuery` or `ContextQuery`
-
-```python
-async def discover(
-    self,
-    target_id: str | None,
-    context_pairs: list[tuple[str, str]],  # (positive_id, negative_id)
-    top_k: int = 10,
-    search_filter: SearchFilter | None = None,
-) -> list[SearchResult]:
-    """Discovery search with positive/negative context pairs."""
-    pairs = [
-        models.ContextPair(positive=pos, negative=neg)
-        for pos, neg in context_pairs
-    ]
-    if target_id:
-        query = models.DiscoverQuery(target=target_id, context=pairs)
-    else:
-        query = models.ContextQuery(context=pairs)
-
-    results = await self.client.query_points(
-        collection_name=self.collection_name,
-        query=query,
-        using=DENSE_VECTOR_NAME,
-        query_filter=self._build_filter(search_filter),
-        limit=top_k,
-        with_payload=True,
-    )
-    return self._points_to_results(results)
-```
-
-**Frontend Integration:** An advanced search mode where users can mark results as "more like this" (positive) or "less like this" (negative) to iteratively refine results. Build on top of existing search page as a toggle.
-
-**REST Endpoint:**
-```
-POST /api/discover
-Body: { "target_id": "uuid", "positive_ids": [...], "negative_ids": [...], "max_ergebnisse": 10 }
-```
-
-### Grouping API: "Results by Law/Legal Area"
-
-**Maps to:** `QdrantStore.search_grouped()` -- new method
-**Qdrant API:** `query_points_groups()` with `group_by` parameter
-
-```python
-async def search_grouped(
-    self,
-    query: str,
-    group_by: str = "gesetz",  # or "rechtsgebiet" if added as payload
-    group_size: int = 3,
-    num_groups: int = 10,
-    search_filter: SearchFilter | None = None,
-) -> list[dict]:
-    """Hybrid search with results grouped by a payload field."""
-    dense_vec, sparse_weights = self.embedding.encode_query(query)
-    sparse_indices, sparse_values = EmbeddingService.sparse_to_qdrant(sparse_weights)
-
-    prefetch = [
-        models.Prefetch(query=dense_vec, using=DENSE_VECTOR_NAME, limit=50),
-    ]
-    if sparse_indices:
-        prefetch.append(models.Prefetch(
-            query=models.SparseVector(indices=sparse_indices, values=sparse_values),
-            using=SPARSE_VECTOR_NAME, limit=50,
-        ))
-
-    results = await self.client.query_points_groups(
-        collection_name=self.collection_name,
-        prefetch=prefetch,
-        query=models.FusionQuery(fusion=models.Fusion.RRF),
-        group_by=group_by,
-        group_size=group_size,
-        limit=num_groups,
-        with_payload=True,
-    )
-    return results  # GroupsResult with .groups list
-```
-
-**Key Consideration:** The `group_by` field must be a keyword-indexed payload field. `gesetz` is already indexed. To group by `rechtsgebiet` (legal area), add it as a payload field during indexing (derived from `LAW_REGISTRY`) and create a keyword index.
-
-**REST Endpoint:**
-```
-POST /api/search-grouped
-Body: { "anfrage": "...", "group_by": "gesetz", "group_size": 3, "max_groups": 10 }
-```
-
-### Scroll API: Pagination
-
-**Maps to:** `QdrantStore.scroll()` -- new method
-**Qdrant API:** `scroll_points()` with `offset` parameter (point ID or integer)
-
-```python
-async def scroll(
-    self,
-    search_filter: SearchFilter | None = None,
-    limit: int = 20,
-    offset: str | None = None,
-) -> tuple[list[SearchResult], str | None]:
-    """Paginate through all matching points."""
-    results, next_offset = await self.client.scroll(
-        collection_name=self.collection_name,
-        scroll_filter=self._build_filter(search_filter),
-        limit=limit,
-        offset=offset,
-        with_payload=True,
-    )
-    return self._scroll_to_results(results), next_offset
-```
-
-**Use Cases:**
-- Law Browser: paginate through all paragraphs of a law
-- Index status: enumerate all indexed points
-- Citation graph: scroll all cross-references
-
-## Query Expansion Pipeline
-
-**Position in search flow:** Before embedding, after user input.
+### First-Run Setup Wizard
 
 ```
-User query
-    │
-    ├─ 1. Legal synonym expansion (deterministic, fast)
-    │     "Kuendigungsschutz" -> also "KSchG", "Kuendigungsschutzgesetz"
-    │     "Behinderung" -> also "Schwerbehinderung", "GdB"
-    │
-    ├─ 2. Abbreviation resolution
-    │     "GdB" -> "Grad der Behinderung"
-    │     "SGB" -> "Sozialgesetzbuch"
-    │
-    └─ 3. Multi-query fusion (optional, more complex)
-          Embed original + expanded queries separately
-          Combine via prefetch + RRF fusion in Qdrant
-
-Result: expanded_query string OR multiple prefetch queries
-```
-
-**Architecture Decision: Start with synonym expansion only.** Multi-query fusion adds latency (multiple embedding calls). Synonym expansion is a simple dictionary lookup that improves recall at zero latency cost.
-
-**Implementation:**
-
-```python
-# services/query_expander.py
-
-class QueryExpander:
-    """Expands search queries with legal domain synonyms."""
-
-    def __init__(self):
-        self.synonyms: dict[str, list[str]] = {}
-        self._load_legal_synonyms()
-
-    def expand(self, query: str) -> str:
-        """Append relevant synonyms to the query string."""
-        additions = []
-        query_lower = query.lower()
-        for term, expansions in self.synonyms.items():
-            if term in query_lower:
-                additions.extend(expansions)
-        if additions:
-            return f"{query} ({' '.join(additions)})"
-        return query
-```
-
-**Integration Point:** Called in `api.py` search route before passing query to `QdrantStore.hybrid_search()`. Configurable via env var `QUERY_EXPANSION_ENABLED=true`.
-
-## Frontend Design System Architecture
-
-### Layered Approach on TailwindCSS v4
-
-The existing frontend uses TailwindCSS v4 + lucide-react icons with no component library. Build a design system in layers:
-
-**Layer 1: Design Tokens** (CSS custom properties via Tailwind v4 theme)
-
-```css
-/* frontend/src/styles/tokens.css */
-@theme {
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-surface: #1e1e2e;
-  --color-surface-raised: #2a2a3e;
-  --color-text: #e2e8f0;
-  --color-text-muted: #94a3b8;
-  --color-border: #334155;
-  --color-accent: #f59e0b;
-
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-
-  --spacing-page: 1.5rem;
-  --spacing-section: 1rem;
-  --spacing-element: 0.5rem;
-}
-```
-
-**Layer 2: Primitive Components** (small, composable, no business logic)
-
-```
-frontend/src/ui/
-  ├── Button.tsx          # Variants: primary, secondary, ghost, danger
-  ├── Input.tsx           # Text input with label, error state
-  ├── Card.tsx            # Surface container with optional header/footer
-  ├── Badge.tsx           # Tags: gesetz names, rechtsgebiet, chunk_typ
-  ├── Skeleton.tsx        # Loading placeholder
-  ├── Dialog.tsx          # Modal wrapper
-  ├── Tabs.tsx            # Tab navigation
-  ├── Pagination.tsx      # Page navigation (for Scroll API)
-  └── index.ts            # Barrel export
-```
-
-**Layer 3: Composed Components** (domain-specific, use primitives)
-
-```
-frontend/src/components/
-  ├── ResultCard.tsx       # REFACTORED: uses Card, Badge from ui/
-  ├── SearchBar.tsx        # REFACTORED: uses Input, Button from ui/
-  ├── GroupedResults.tsx   # NEW: renders grouped search results
-  ├── CitationGraph.tsx    # NEW: interactive graph visualization
-  ├── RecommendPanel.tsx   # NEW: similar paragraphs slide-over
-  ├── DiscoveryMode.tsx    # NEW: pos/neg feedback search UI
-  ├── FilterPanel.tsx      # NEW: advanced filters (abschnitt, absatz range, chunk_typ)
-  └── ...existing components
-```
-
-**Migration Strategy:** Do NOT rewrite existing components in one shot. Instead:
-1. Create `ui/` primitives first
-2. New components use primitives from day one
-3. Gradually refactor existing components to use primitives (one per PR)
-
-### No External Component Library
-
-**Decision: No shadcn/ui, Radix, Headless UI, or other libraries.**
-
-Rationale:
-- The app has ~8 component types total -- a full library is overkill
-- TailwindCSS v4 with custom tokens covers all needs
-- Adding dependencies increases Docker build time and bundle size
-- The existing pattern (manual Tailwind classes) works; just needs consistency
-
-### Citation Graph Visualization
-
-**Decision: Lightweight SVG/Canvas rendering, NOT a heavy graph library like D3 or vis.js.**
-
-Rationale:
-- The citation graph for a single paragraph typically shows 5-20 connected nodes
-- Full graph rendering for all 50K paragraphs is not the use case -- users explore from a specific node
-- A simple force-directed layout with ~50 nodes max can be done with a small custom component or a micro-library
-
-**Fallback if custom is too complex:** Use `react-force-graph-2d` (~30KB gzipped), which renders on canvas and handles force layout. Evaluate during implementation.
-
-## Data Flow: Extended Search Pipeline
-
-### Standard Search (Enhanced)
-
-```
-User types query
+Welcome Screen
     |
     v
-QueryExpander.expand(query)              # synonym expansion
+Mode Selection:
+    [Docker Mode] -- "Recommended if Docker Desktop is installed"
+    [Native Mode] -- "Standalone, no Docker needed"
+    |               |
+    v               v
+Docker Check:    GPU Detection:
+  Installed?       CUDA available?
+  Running?         Which GPU?
+    |               |
+    v               v
+Model Download (both modes):
+  bge-m3 (~2GB)         [=====>    ] 65%
+  bge-reranker (~2GB)   [waiting...]
     |
     v
-QdrantStore.hybrid_search(expanded_query) # existing flow
+Initial Law Index (optional):
+  "Index core German laws now? (~5 min)"
+  [Yes] [Later]
     |
     v
-RerankerService.arerank(results)          # existing cross-encoder
-    |
-    v
-Enrich results with references_out        # NEW: attach citation data
-    |
-    v
-Return SearchResponse                     # existing serialization
+Ready!
 ```
 
-### Grouped Search (New)
+## Scalability: Mac/Linux Later
 
-```
-User types query + selects "group by law"
-    |
-    v
-QueryExpander.expand(query)
-    |
-    v
-QdrantStore.search_grouped(query, group_by="gesetz")
-    |
-    v
-NOTE: Reranking is NOT applied per-group (would require N reranker calls)
-Instead: rely on Qdrant's RRF fusion score for within-group ranking
-    |
-    v
-Return GroupedSearchResponse
-```
+The architecture is designed for Windows-first but extensible:
 
-### Recommend Flow (New)
+| Concern | Windows (now) | macOS (later) | Linux (later) |
+|---------|---------------|---------------|---------------|
+| Shell | Tauri NSIS installer | Tauri .dmg bundle | Tauri .AppImage/.deb |
+| WebView | WebView2 (Edge) | WKWebView (Safari) | WebKitGTK |
+| Qdrant binary | x86_64-pc-windows-msvc.zip | x86_64-apple-darwin.tar.gz | x86_64-unknown-linux-musl.tar.gz |
+| Backend exe | PyInstaller --onefile (Windows) | PyInstaller --onefile (macOS) | PyInstaller --onefile (Linux) |
+| GPU | CUDA (NVIDIA) | Metal (Apple Silicon) | CUDA (NVIDIA) |
 
-```
-User clicks "Similar Paragraphs" on a ResultCard
-    |
-    v
-Frontend sends chunk_id to /api/recommend
-    |
-    v
-QdrantStore.recommend(point_id)   # uses RecommendQuery on dense vectors
-    |
-    v
-Optional: RerankerService for top-K refinement
-    |
-    v
-Return SearchResponse (same format as regular search)
-```
+Tauri's cross-platform nature means the Rust process manager code works on all platforms with minimal platform-specific logic (mainly path conventions and signal handling).
 
-## Recommended Project Structure (New/Modified Files)
+## Anti-Patterns to Avoid
 
-```
-backend/src/paragraf/
-  ├── services/
-  │   ├── qdrant_store.py      # EXTENDED: +recommend(), +discover(), +search_grouped(),
-  │   │                        #           +scroll(), +snapshot_create(), +snapshot_restore(),
-  │   │                        #           +enable_quantization(), +create_fulltext_index()
-  │   ├── cross_ref.py         # NEW: CrossRefExtractor class
-  │   ├── query_expander.py    # NEW: QueryExpander class
-  │   ├── embedding.py         # unchanged
-  │   ├── reranker.py          # unchanged
-  │   └── parser.py            # MODIFIED: calls CrossRefExtractor during parse
-  ├── api.py                   # EXTENDED: new endpoints
-  ├── api_models.py            # EXTENDED: new request/response models
-  ├── tools/
-  │   ├── search.py            # EXTENDED: recommend + discover MCP tools
-  │   ├── lookup.py            # EXTENDED: citation lookup MCP tool
-  │   └── ingest.py            # unchanged
-  └── data/
-      └── legal_synonyms.json  # NEW: synonym dictionary for query expansion
+### Anti-Pattern 1: Embedding Frontend in Electron/Tauri Build Pipeline
+**What:** Making the React build part of the Tauri build step
+**Why bad:** Couples two independent build pipelines, slower iteration
+**Instead:** Build frontend separately (`npm run build`), copy `dist/` into Tauri's assets. Tauri loads pre-built assets.
 
-frontend/src/
-  ├── ui/                      # NEW: design system primitives
-  │   ├── Button.tsx
-  │   ├── Input.tsx
-  │   ├── Card.tsx
-  │   ├── Badge.tsx
-  │   ├── Skeleton.tsx
-  │   ├── Pagination.tsx
-  │   └── index.ts
-  ├── styles/
-  │   ├── index.css            # MODIFIED: import tokens.css
-  │   └── tokens.css           # NEW: design tokens via @theme
-  ├── components/
-  │   ├── GroupedResults.tsx    # NEW
-  │   ├── CitationGraph.tsx    # NEW
-  │   ├── RecommendPanel.tsx   # NEW
-  │   ├── DiscoveryMode.tsx    # NEW
-  │   ├── FilterPanel.tsx      # NEW
-  │   └── ...existing          # GRADUALLY REFACTORED
-  ├── pages/
-  │   ├── SearchPage.tsx       # EXTENDED: grouped mode, discovery mode, pagination
-  │   ├── CitationPage.tsx     # NEW: citation graph explorer
-  │   └── ...existing
-  └── lib/
-      └── api.ts               # EXTENDED: new endpoint methods
-```
+### Anti-Pattern 2: Custom IPC for Every API Call
+**What:** Routing all REST API calls through Tauri IPC instead of direct HTTP
+**Why bad:** Duplicates all API types in Rust, adds latency, breaks browser compatibility
+**Instead:** Frontend talks to backend via HTTP (same as today). Only use Tauri IPC for desktop-specific actions (start/stop backend, download models, detect GPU).
 
-## Architectural Patterns
+### Anti-Pattern 3: Bundling ML Models in the Installer
+**What:** Including 4GB of model files in the installer download
+**Why bad:** 4.5GB+ installer, models update independently, wastes bandwidth on reinstall
+**Instead:** Download models on first run with progress UI. Cache in %APPDATA%.
 
-### Pattern 1: Extend QdrantStore, Don't Wrap It
-
-**What:** Add new methods to existing `QdrantStore` class rather than creating wrapper classes or new service classes for each Qdrant API.
-
-**When to use:** For all Qdrant API integrations (recommend, discover, grouped, scroll, snapshot).
-
-**Trade-offs:** Keeps service layer flat and discoverable. QdrantStore grows in size but remains the single source of truth for all vector DB operations. The alternative (separate RecommendService, DiscoveryService) creates unnecessary indirection for what are essentially thin wrappers around Qdrant client calls.
-
-### Pattern 2: Payload Enrichment at Index Time
-
-**What:** Extract cross-references and add derived data to Qdrant payloads during the indexing pipeline, not at query time.
-
-**When to use:** For any data that can be computed once and queried many times (cross-references, rechtsgebiet from LAW_REGISTRY, computed metadata).
-
-**Trade-offs:** Increases indexing time slightly but eliminates query-time computation. Requires re-indexing when extraction logic changes. This is acceptable because indexing is an explicit user action (not continuous) and the current pipeline already takes minutes for embedding.
-
-### Pattern 3: Progressive Enhancement for Frontend
-
-**What:** Build new UI components using design system primitives; refactor existing components gradually, not all at once.
-
-**When to use:** Always. Rewriting all components simultaneously risks breaking the working UI.
-
-**Trade-offs:** Temporary visual inconsistency between refactored and un-refactored components. Mitigate by defining tokens first (so colors/spacing are consistent even before component refactoring).
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Separate Graph Database for Citations
-
-**What people do:** Add Neo4j or similar to store the citation graph as a proper graph database.
-
-**Why it's wrong:** Adds operational complexity (4th Docker service, new backup strategy, new query language) for a graph that fits in Qdrant payloads. The citation network is bounded and sparse -- ~200K edges over ~50K nodes is trivially queryable via payload filters.
-
-**Do this instead:** Store `references_out` as a nested payload array. Use Qdrant's nested field filtering for reverse lookups. If two-hop queries become a performance bottleneck (unlikely at this scale), consider a materialized adjacency list in a JSON file as cache.
-
-### Anti-Pattern 2: Reranking Grouped Results
-
-**What people do:** Apply cross-encoder reranking to each group's results in grouped search.
-
-**Why it's wrong:** With 10 groups x 3 results each, that is 30 reranker calls (each ~50ms on CPU) = 1.5s added latency. The reranker is designed for refining a flat top-K list, not for per-group refinement.
-
-**Do this instead:** Rely on Qdrant's RRF fusion score for within-group ordering. Apply reranking only to the overall top results when the user drills into a specific group.
-
-### Anti-Pattern 3: Multi-Query Embedding for Query Expansion
-
-**What people do:** Embed the original query + N expanded queries separately and fuse results.
-
-**Why it's wrong:** Each embedding call takes ~100ms on CPU. 3 expanded queries = 400ms total before even hitting Qdrant. This defeats the purpose of faster search.
-
-**Do this instead:** Append synonym terms to the original query string before embedding. The sparse vector component naturally picks up lexical matches for the added terms. For truly different semantic angles, consider this as a future optimization only after measuring synonym expansion's impact.
-
-## Integration Points
-
-### External Services
-
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Qdrant v1.13.2 | AsyncQdrantClient via qdrant-client Python lib | All new APIs (recommend, discover, group, scroll, snapshot, quantization) are available in v1.13.2 |
-| gesetze-im-internet.de | HTTP download of XML ZIPs (existing) | Cross-reference extraction happens post-download during parse |
-
-### Internal Boundaries
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| CrossRefExtractor <-> Parser | Direct function call during parse | Extractor receives chunk text, returns list of references |
-| QueryExpander <-> API routes | Direct function call before search | Expander receives query string, returns expanded string |
-| Frontend <-> Backend (new endpoints) | REST JSON via nginx proxy | Same pattern as existing endpoints; add types to api.ts |
-| Design System <-> Pages | Import from `ui/` barrel | Pages import primitives, compose into page-specific layouts |
-
-## Build Order (Dependency Graph)
-
-```
-Phase 1: Foundation (no dependencies between items)
-  ├── Snapshot API (safety net for re-indexing)
-  ├── Scalar Quantization config
-  ├── Full-text index on "text" field
-  ├── Integer index on "absatz" field
-  └── Frontend design tokens + primitives (ui/)
-
-Phase 2: Core Qdrant Features (depends on Phase 1 indexes)
-  ├── Recommend API + endpoint + ResultCard button
-  ├── Scroll API + endpoint + pagination component
-  ├── Grouping API + endpoint + GroupedResults component
-  └── Payload enrichment: add "rechtsgebiet" field from LAW_REGISTRY
-
-Phase 3: Cross-References (depends on Phase 1 snapshot for safety)
-  ├── CrossRefExtractor service
-  ├── Parser integration (extract during indexing)
-  ├── Re-index with cross-references (use snapshot for rollback)
-  ├── Citation API endpoints
-  └── Citation Graph UI component + page
-
-Phase 4: Search Enhancement (depends on Phase 2 recommend + Phase 3 citations)
-  ├── Query expansion (synonym dictionary)
-  ├── Discovery API + endpoint + DiscoveryMode UI
-  ├── Advanced filter panel (abschnitt, absatz range, chunk_typ)
-  └── Export functionality (PDF/Markdown)
-
-Phase 5: Polish (depends on all above)
-  ├── Refactor existing components to use design system
-  ├── Responsive design improvements
-  ├── Accessibility audit
-  └── MCP tool extensions (recommend, discover, batch search)
-```
-
-**Build Order Rationale:**
-- Snapshot API first because cross-reference extraction requires re-indexing, and you want rollback capability
-- Quantization and indexes first because they are non-breaking changes that improve performance for all subsequent work
-- Design tokens before components because tokens define the visual language everything else builds on
-- Recommend before Discovery because Recommend is simpler (one positive ID) and validates the pattern for Discovery (multiple positive/negative pairs)
-- Cross-references before query expansion because cross-references are a data pipeline change (indexing) while query expansion is a search-time change; getting the data model right first is more important
-- MCP tools last because the REST API validates the interface first; MCP tools are thin wrappers
-
-## Scaling Considerations
-
-| Concern | Current (~50K points) | At 200K points | At 1M points |
-|---------|------------------------|-----------------|---------------|
-| Memory | ~200MB (1024-dim float32) | ~800MB | Scalar quantization reduces to ~250MB at 1M |
-| Search latency | <100ms | <200ms | Quantization + HNSW tuning keeps <500ms |
-| Indexing time | ~30min (CPU) | ~2h (CPU) | Batch size tuning, GPU recommended |
-| Citation graph | Trivial | Payload arrays grow but still fast | Consider materialized reverse index JSON |
+### Anti-Pattern 4: Single Process (Backend inside Tauri)
+**What:** Running FastAPI inside the Tauri Rust process via PyO3
+**Why bad:** Crashes take down the whole app, complex build, can't restart backend independently
+**Instead:** Sidecar pattern -- backend runs as separate process, managed by Tauri.
 
 ## Sources
 
-- [Qdrant Query Points Groups API Reference](https://api.qdrant.tech/api-reference/search/query-points-groups)
-- [Qdrant Recommend Points API Reference](https://api.qdrant.tech/api-reference/search/recommend-points)
-- [Qdrant Discovery/Recommendation Article](https://qdrant.tech/articles/new-recommendation-api/)
-- [Qdrant Scalar Quantization Guide](https://qdrant.tech/articles/scalar-quantization/)
-- [Qdrant Python Client Documentation](https://python-client.qdrant.tech/)
-- [DeepWiki: Qdrant Client Search and Query](https://deepwiki.com/qdrant/qdrant-client/4.3-search-and-query)
-- [German Legal Reference Parser (GitHub)](https://github.com/lavis-nlp/german-legal-reference-parser) -- pattern reference only, not used as dependency
-- [Qdrant v1.15 Quantization Updates](https://qdrant.tech/blog/qdrant-1.15.x/) -- confirms features exist in earlier versions
-
----
-*Architecture research for: Paragraf v2 -- Qdrant feature expansion, cross-references, query expansion, frontend design system*
-*Researched: 2026-03-27*
+- [Tauri 2 Sidecar Documentation](https://v2.tauri.app/develop/sidecar/)
+- [Tauri 2 Windows Installer (NSIS)](https://v2.tauri.app/distribute/windows-installer/)
+- [Tauri+FastAPI Sidecar Template](https://github.com/AlanSynn/vue-tauri-fastapi-sidecar-template)
+- [Tauri+Python Sidecar Example](https://github.com/dieharders/example-tauri-v2-python-server-sidecar)
+- [Building Production Desktop LLM Apps with Tauri+FastAPI+PyInstaller](https://aiechoes.substack.com/p/building-production-ready-desktop)
+- [Qdrant v1.13.2 Releases (Windows binary confirmed)](https://github.com/qdrant/qdrant/releases/tag/v1.13.2)
+- [Sidecar Lifecycle Management Plugin proposal](https://github.com/tauri-apps/plugins-workspace/issues/3062)
+- [PyInstaller FastAPI example](https://github.com/iancleary/pyinstaller-fastapi)
+- [Tauri vs Electron comparison (DoltHub)](https://www.dolthub.com/blog/2025-11-13-electron-vs-tauri/)
+- [Tauri vs Electron (Hopp)](https://www.gethopp.app/blog/tauri-vs-electron)

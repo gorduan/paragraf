@@ -1,195 +1,247 @@
-# Feature Research
+# Feature Landscape: Desktop Installer & Native App
 
-**Domain:** German legal-tech RAG search application (advanced features milestone)
-**Researched:** 2026-03-27
-**Confidence:** MEDIUM-HIGH
+**Domain:** Desktop installer and native app packaging for ML-heavy legal research application
+**Researched:** 2026-03-29
+**Overall confidence:** MEDIUM-HIGH
+**Target user:** DAU (duemmster anzunehmender User) -- zero CLI knowledge, first contact with Docker/ML/GPU concepts
 
-## Feature Landscape
+## Table Stakes
 
-### Table Stakes (Users Expect These)
+Features users expect from any installable desktop application. Missing any of these means the product feels broken or unfinished.
 
-Features that any serious legal search tool must have. The app already covers basic search and lookup; these are table stakes for the *next level* of a professional legal research tool.
+| Feature | Why Expected | Complexity | Dependencies | Notes |
+|---------|--------------|------------|--------------|-------|
+| **Graphical installer (.exe)** | Every Windows app has a double-click installer. Users will not run CLI commands. Period. | MEDIUM | Tauri bundler or NSIS/Inno Setup | Tauri 2 bundles NSIS by default for Windows. Installer size ~10MB (Tauri) vs ~80-150MB (Electron). |
+| **Start Menu + Desktop shortcut** | Users expect to find the app where they find every other app. | LOW | Installer framework | Both Tauri and Electron installers create these automatically. |
+| **First-run setup wizard** | App needs Docker OR native stack + 4GB ML models. Cannot silently fail on missing prerequisites. Ollama and LM Studio both guide users through first setup. | HIGH | Prerequisite detection logic | 3-5 screens max: Welcome > Mode selection > Prerequisites > Model download > Done. Must feel like installing any normal app. |
+| **Installation mode selection (Docker vs Native)** | Docker requires WSL2 + Docker Desktop (~2GB). Native requires Qdrant binary + Python env. User must choose, but wizard must recommend. | HIGH | Docker detection, Qdrant binary bundling | Auto-detect Docker: check registry `HKLM\SOFTWARE\Docker Inc.\Docker Desktop` and `docker info` command. Recommend Docker if found, Native otherwise. |
+| **ML model download with progress bar** | 4GB download (bge-m3 ~2GB + bge-reranker-v2-m3 ~2GB). Users need visual feedback or they think it crashed. LM Studio and Ollama both show download progress per model. | MEDIUM | HuggingFace Hub download, network access | Must support: progress percentage, speed display, ETA, pause/resume on network failure. HuggingFace Hub supports resumable downloads natively. |
+| **Backend lifecycle management** | User clicks app icon, backend starts. User closes app, backend stops. No orphaned processes, no manual terminal management. | HIGH | Process spawning, health checks | Tauri sidecar pattern: spawn Python/Docker process, monitor health via `/api/health`, restart on crash. Must handle: clean shutdown, port conflicts, stale PID files. |
+| **Health status indicator** | User needs to know: "Is it ready?" Existing HealthOverlay pattern already handles this for the web app, must carry over to desktop. | LOW | Existing `/api/health` endpoint | Reuse existing `useHealthCheck` hook. Show loading states during model initialization (~30-60s on CPU). |
+| **Uninstaller** | Clean removal of app, models, data. Windows "Apps & Features" integration. | LOW | Installer framework | Tauri/NSIS handle this. Must ask: "Delete downloaded models and law data?" (they are large). |
+| **Error messages in German** | Target audience is German-speaking non-technical users. English error messages are a dead end. | LOW | Existing i18n pattern | App already uses German throughout. Extend to installer and setup wizard screens. |
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **Paginated search results** | Every search tool paginates. Showing only top-K without "load more" feels broken for legal research where completeness matters. | LOW | Qdrant Scroll API. Already in PROJECT.md backlog. Straightforward implementation with offset/limit. |
-| **Grouped results by law/legal area** | Beck-online and Juris group results by source. Users expect to see "3 results in SGB IX, 2 in SGB XII" rather than a flat list. | MEDIUM | Qdrant Search Groups API groups by payload field. Group by `gesetz` or `rechtsgebiet`. Requires frontend accordion/tab UI. |
-| **Advanced filtering (law, section, legal area)** | Juris and Beck-online offer faceted filtering. Legal researchers always want to narrow by specific law, section (Abschnitt), or legal domain. | MEDIUM | Backend: Qdrant payload filters already support this. Frontend: Filter sidebar/panel with checkboxes. Partially wired (`abschnitt` filter exists but not exposed). |
-| **Cross-reference links (Normenkette)** | Every professional German legal database shows which other paragraphs a norm references. "Normenkette" is a standard feature in Beck-online and Juris. Without it, users must manually identify referenced laws. | HIGH | Requires: (1) regex-based citation extraction from law text, (2) storing references as payload in Qdrant, (3) clickable links in UI. The `german-legal-reference-parser` library handles German citation patterns. |
-| **Export results (PDF/Markdown/clipboard)** | Legal professionals copy results into briefs, memos, and case files. No export = dead end for professional use. | MEDIUM | PDF via browser print or a library like jsPDF. Markdown is trivial (data already structured). Clipboard copy per result card is the minimum. |
-| **Full-text keyword search** | Lawyers need exact word matches alongside semantic search. "Find all paragraphs containing 'Eingliederungshilfe' literally." Semantic search alone misses exact terminology needs. | LOW | Qdrant full-text index on `text` field. Combine with existing hybrid search or offer as separate toggle. |
-| **Bookmark/save results** | Already exists (BookmarkContext in localStorage). Table stakes confirmed -- keep and polish. | LOW | Already implemented. May need export of bookmarks. |
+## Differentiators
 
-### Differentiators (Competitive Advantage)
+Features that elevate the installer experience beyond "it works" to "this is polished." Not expected, but users notice and appreciate them.
 
-Features that go beyond what free tools (gesetze-im-internet.de, dejure.org) offer and approach or exceed paid databases -- especially leveraging the RAG/vector stack.
+| Feature | Value Proposition | Complexity | Dependencies | Notes |
+|---------|-------------------|------------|--------------|-------|
+| **Automatic GPU/CUDA detection** | User should never need to know what CUDA is. App detects NVIDIA GPU, checks for CUDA toolkit (`nvidia-smi` or `$CUDA_PATH` env var), and auto-configures `EMBEDDING_DEVICE=cuda`. Inference 5-10x faster on GPU. | MEDIUM | NVIDIA driver detection | Check: (1) `nvidia-smi` command available, (2) CUDA version compatible with PyTorch. If Docker mode: auto-apply `docker-compose.gpu.yml` overlay. If native: install PyTorch+CUDA wheel. Show "GPU erkannt: NVIDIA RTX 3060" in wizard. |
+| **System tray with backend status** | App runs in background like Discord/Slack. Tray icon shows: green (ready), yellow (loading models), red (error). Right-click: Open, Restart Backend, Quit. | MEDIUM | Tauri system tray plugin | Tauri 2 has built-in `tray-icon` plugin. Prevents users from accidentally closing the backend by closing the window. |
+| **Auto-update mechanism** | App checks for updates on startup, downloads in background, prompts to restart. No manual re-download from website. | MEDIUM | Update server (GitHub Releases) | Tauri 2 has built-in `tauri-plugin-updater`. Supports GitHub Releases as update source. Code signing required for Windows (self-signed OK for internal use). |
+| **One-click Docker prerequisite install** | If Docker not found, offer to download and install Docker Desktop automatically. Guide through WSL2 enablement if needed. Reduces "installation failed" to near zero for Docker mode. | HIGH | Docker Desktop installer, WSL2 detection | Docker Desktop installer can enable WSL2 automatically. Check WSL2: `wsl --status`. Biggest friction point: Windows restart may be required after WSL2 enablement. Must handle this gracefully. |
+| **Model management UI** | Show which models are downloaded, their size, GPU/CPU status. Allow re-download if corrupt. Show cache location. Inspired by LM Studio's model management. | MEDIUM | HuggingFace cache introspection | Check `~/.cache/huggingface/hub/` for model directories. Show: model name, size on disk, download date. "Modelle neu herunterladen" button. |
+| **Smart storage location selection** | Let user pick where to store models and law data (default: app data folder). Important because 4GB+ models should not go on a small C: drive. LM Studio lets users choose model directory. | LOW | Installer config | Folder picker in setup wizard. Store path in app config. Pass as volume mount (Docker) or env var (native). |
+| **Offline-ready after first setup** | After initial model download and law indexing, app works fully offline. No internet required for search. Important for law firms with restricted networks. | LOW | Already the case architecturally | Just needs to be communicated clearly in UI. "Alle Daten lokal -- keine Internetverbindung noetig." |
+| **Single-instance enforcement** | Prevent user from launching 2 instances (port conflicts, double resource usage). | LOW | Tauri single-instance plugin | `tauri-plugin-single-instance`. Show existing window if user clicks icon again. |
+| **Startup on Windows login (optional)** | For power users who want the backend always ready. Off by default. | LOW | Tauri autostart plugin | `tauri-plugin-autostart`. Registry-based autostart on Windows. |
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| **"Similar paragraphs" recommendation** | No free German legal tool offers "show me paragraphs similar to this one." Beck-online links related commentary but not semantically similar norms across laws. This is the killer feature of a vector DB legal tool. | MEDIUM | Qdrant Recommend API with point IDs. Pass a paragraph's vector as positive example, get similar paragraphs. UI: "Aehnliche Paragraphen" button on each result card. Strategy: `best_score` for better results. |
-| **Citation network visualization** | Juris shows "Normenkette" as a flat list. An interactive graph showing how laws reference each other is genuinely novel for German legal research. The TENJI study showed law students doubled retrieval performance with graph interfaces. | HIGH | Depends on: cross-reference extraction (table stakes). Visualization with a lightweight graph library (e.g., D3-force, vis-network, or react-force-graph). Start simple: directed graph of paragraph -> referenced paragraphs. |
-| **Discovery search (positive/negative examples)** | "Find paragraphs like SGB IX section 99 but NOT like section 100." No existing German legal tool offers this kind of exploratory search. Powerful for comparative legal research. | MEDIUM | Qdrant Discovery API. UI: drag-and-drop or checkbox-based "like this / not like this" interface. More advanced UX challenge than backend complexity. |
-| **Grouped recommendations** | "Show me similar paragraphs, but grouped by which law they come from." Combines Recommend + Groups API. Gives a structured overview of related norms across the entire legal corpus. | MEDIUM | Qdrant Recommend Point Groups API (combined endpoint). Groups recommendations by `gesetz` payload field. |
-| **Semantic chunking for long paragraphs** | Current chunking splits at 800 chars. Smarter segmentation (by legal clause structure: Absatz, Satz, Nummer) produces better search relevance and more precise results. | MEDIUM | Improve parser to respect legal structure boundaries. No new ML model needed -- rule-based on German legal text patterns (Abs., S., Nr., Buchst.). |
-| **Query expansion with legal synonyms** | Legal German uses specific terminology ("Eingliederungshilfe" vs "Teilhabeleistung"). Expanding queries with domain synonyms improves recall without users needing to know all terms. | MEDIUM | Build a legal synonym dictionary (manual + extracted from law text). Expand queries before embedding. Could also use bge-m3 multi-query approach. |
-| **Multi-hop MCP prompts** | Combined MCP workflows: "Find relevant paragraphs, then find their cross-references, then summarize the legal situation." This makes Claude an actual legal research assistant, not just a search proxy. | MEDIUM | Chain existing MCP tools in prompt templates. No new infra needed -- just well-designed prompt templates that call multiple tools. |
-| **Snapshot backup before re-indexing** | Professional users need confidence that re-indexing won't destroy their working database. Qdrant Snapshots API provides this. | LOW | Qdrant Snapshot API. Create snapshot before any index operation. Expose as button in Index Dashboard. |
+## Anti-Features
 
-### Anti-Features (Deliberately NOT Building)
+Features to explicitly NOT build. Each would add complexity without proportional value, or would actively harm the user experience.
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| **Built-in LLM chat interface** | "Add ChatGPT-like chat for legal questions" | Massively increases scope, liability (RDG), hallucination risk, and compute cost. Claude via MCP already does this better. | Keep MCP integration as the AI layer. The web app is a search/browse tool, not a chatbot. |
-| **User accounts and authentication** | "Let users save preferences, share results" | Single-user local/internal tool. Auth adds complexity with zero value for the target deployment. | localStorage for preferences/bookmarks. Share via export (PDF/Markdown). |
-| **Real-time law update notifications** | "Alert when a law changes" | gesetze-im-internet.de doesn't provide change feeds. Would require polling + diffing entire law corpus. Enormous effort, fragile. | Manual re-index with snapshot backup. Show "last indexed" date prominently. |
-| **Full knowledge graph database (Neo4j)** | "Store all cross-references in a proper graph DB" | Adds another Docker service, another query language, another failure point. Overkill for citation links between ~95 laws. | Store cross-references as Qdrant payload arrays. Query with payload filters. Good enough for the scale. |
-| **ColBERT multi-vector search** | "bge-m3 supports ColBERT, use it" | ColBERT requires token-level vector storage, multiplying storage 100x+. Qdrant support for multi-vector is experimental. Dense + Sparse hybrid already performs well. | Defer to future milestone. Current hybrid search with reranking is proven. |
-| **Mobile native app** | "Build iOS/Android app" | Tiny user base doesn't justify native development. Web app works on mobile browsers. | Responsive design improvements. PWA manifest for "Add to Home Screen." |
-| **Automated legal analysis/opinion** | "Generate legal opinions from search results" | RDG liability. This crosses from information retrieval into legal advice. | MCP prompts explicitly disclaim: "keine Rechtsberatung." Search returns raw law text, not interpretation. |
+| Anti-Feature | Why Tempting | Why Avoid | What to Do Instead |
+|--------------|-------------|-----------|-------------------|
+| **Custom Python environment manager** | "Bundle Python with the installer for native mode" | Python + pip + torch + all dependencies = nightmare of version conflicts, antivirus false positives, PATH corruption. PyInstaller bundles are 2-5GB and fragile with torch. PyOxidizer is experimental and struggles with complex dependency trees like torch+transformers. | Docker mode as primary recommendation. Native mode uses pre-built Qdrant binary + user's existing Python (detected, not installed). If no Python: strongly push Docker. |
+| **Silent/unattended install** | "IT admins want to deploy silently" | Single-user local tool. No enterprise deployment scenario exists. Silent install skips the mode selection and model download which are essential. | Not in scope. If needed later, Tauri/NSIS support `/S` flag natively. |
+| **Mac/Linux installer in v2.0** | "Cross-platform from day one" | Doubles or triples installer testing surface. Docker on Mac has its own issues (Colima vs Docker Desktop). Linux has dozens of package formats. Windows is the stated primary target. | Windows-only for v2.0. Mac/Linux users can still use `docker compose up` directly. Add platform support in v3.0 once the installer UX is proven. |
+| **Bundled Qdrant inside app** | "Avoid separate Qdrant process" | Qdrant is a Rust binary. Embedding it means building Qdrant from source or shipping a 50MB+ binary. Docker already handles this cleanly. Native mode can download the standalone `qdrant.exe` from GitHub Releases (~25MB, single file). | Docker: Qdrant as container. Native: download `qdrant.exe` from `github.com/qdrant/qdrant/releases` and manage as sidecar process. |
+| **Web-based installer** | "Install via browser download + web setup wizard" | Adds a web server dependency before the app is even installed. Confusing UX -- is the app running or not? | Traditional desktop installer (.exe). Web app is what runs AFTER installation. |
+| **Automatic law indexing during install** | "Index all 95 laws during setup so app is ready immediately" | Indexing takes 15-60 minutes depending on hardware. User will think installer is frozen. Mixing install with heavy compute is bad UX. | Install first, index later. After first launch, show dashboard with "Gesetze indexieren" button. Separate concerns. |
+| **Docker Compose GUI** | "Build a visual Docker Compose manager" | Docker Desktop already has a GUI. Duplicating it is wasted effort. Our app should abstract away Docker, not expose it. | App starts/stops containers via `docker compose` CLI commands behind the scenes. User never sees Docker directly. |
+| **Kubernetes/cloud deployment option** | "Some users might want to deploy to a server" | Out of scope per project constraints. Cloud adds auth, networking, scaling concerns that are irrelevant for a local desktop tool. | Docker Compose only. If someone wants server deployment, `docker-compose.yml` already works on any Docker host. |
 
 ## Feature Dependencies
 
 ```
-Cross-Reference Extraction (Payload)
+Installer Framework (Tauri 2)
     |
-    |----> Citation Network Visualization (requires refs in payload)
-    |----> Clickable Cross-Reference Links in UI (requires refs in payload)
-    |----> Multi-Hop MCP Prompts (requires following references)
+    |----> Windows .exe installer (NSIS bundled)
+    |----> Start Menu + Desktop shortcut (automatic)
+    |----> Uninstaller (automatic)
+    |----> System tray icon (tray-icon plugin)
+    |----> Single-instance enforcement (single-instance plugin)
+    |----> Auto-update (updater plugin)
+    |----> Autostart on login (autostart plugin)
 
-Qdrant Recommend API (Backend)
-    |----> "Similar Paragraphs" Button (Frontend)
-    |----> Grouped Recommendations (Recommend + Groups API)
-    |----> Discovery Search (extends Recommend with neg examples)
+First-Run Setup Wizard (custom React UI inside Tauri window)
+    |
+    |----> Prerequisite Detection
+    |       |----> Docker detection (registry + CLI)
+    |       |----> WSL2 detection (wsl --status)
+    |       |----> Python detection (python --version)
+    |       |----> GPU/CUDA detection (nvidia-smi + CUDA_PATH)
+    |
+    |----> Installation Mode Selection
+    |       |----> Docker mode setup
+    |       |       |----> Docker prerequisite install (if missing)
+    |       |       |----> docker compose pull + up
+    |       |       |----> GPU overlay auto-apply (if NVIDIA detected)
+    |       |
+    |       |----> Native mode setup
+    |               |----> Qdrant binary download (github.com/qdrant/qdrant/releases)
+    |               |----> Python environment validation
+    |               |----> pip install from pyproject.toml
+    |               |----> GPU PyTorch wheel selection
+    |
+    |----> ML Model Download (shared by both modes)
+            |----> bge-m3 download (~2GB) with progress
+            |----> bge-reranker-v2-m3 download (~2GB) with progress
+            |----> Resume on failure
+            |----> Integrity verification
 
-Qdrant Search Groups API (Backend)
-    |----> Grouped Search Results UI (Frontend)
-
-Qdrant Scroll API (Backend)
-    |----> Paginated Results (Frontend)
-    |----> Law Browser Pagination (Frontend)
-
-Full-Text Index (Qdrant Config)
-    |----> Exact Keyword Search Toggle (Frontend)
-
-Qdrant Snapshot API (Backend)
-    |----> Backup Button in Index Dashboard (Frontend)
-
-Advanced Filtering (Backend already supports)
-    |----> Filter Sidebar UI (Frontend)
-    |----> Facet Counts in Response (Backend enhancement)
-
-Export Functionality
-    (no backend dependency -- frontend-only for Markdown/clipboard)
-    |----> PDF Export (requires formatting logic)
+Backend Lifecycle Management
+    |----> Process spawning (Docker: docker compose up / Native: python -m paragraf)
+    |----> Health polling (existing /api/health endpoint)
+    |----> Crash recovery (restart on failure, max 3 retries)
+    |----> Clean shutdown (SIGTERM / docker compose down)
+    |----> System tray status updates
 ```
 
-### Dependency Notes
+### Critical Path
 
-- **Cross-Reference Extraction is the critical path feature.** It unlocks citation visualization, clickable links, and multi-hop prompts. Must be built first among the differentiators.
-- **Recommend API is independent of cross-references.** Can be built in parallel. Only needs existing paragraph vectors.
-- **Grouped search and pagination are independent of each other.** Can be built in any order.
-- **Export is fully independent.** Can be added at any time as a frontend-only feature.
-- **Snapshot backup should precede any re-indexing work** (like adding cross-reference payloads). Safety first.
+1. **Tauri 2 shell** must work first -- everything else is inside it
+2. **Prerequisite detection** must work before mode selection can be meaningful
+3. **Backend lifecycle** must work before any app functionality is usable
+4. **Model download** can happen during or after install, but must complete before first search
 
-## MVP Definition
+## MVP Recommendation
 
-### Launch With (Phase 1: Foundation)
+### Absolute Minimum for "It Works" (Phase 1)
 
-- [ ] **Qdrant Snapshot API** -- safety net before any re-indexing
-- [ ] **Paginated search results** -- Scroll API, essential UX
-- [ ] **Advanced filter UI** -- expose existing backend filter capabilities
-- [ ] **Full-text keyword search** -- add text index, toggle in UI
-- [ ] **Export (Markdown/Clipboard)** -- immediate professional value, low cost
+1. **Tauri 2 app shell** wrapping existing React frontend
+2. **Docker-mode-only setup wizard** (detect Docker, pull images, start containers)
+3. **Backend lifecycle** (start/stop Docker Compose from Tauri)
+4. **Health overlay** (reuse existing HealthOverlay component)
+5. **System tray** with basic status (ready/loading/error)
 
-### Add After Foundation (Phase 2: Recommendations)
+Skip native mode in Phase 1. Docker is the proven deployment path. Native adds enormous complexity for an edge case (users without Docker who also want to avoid installing it).
 
-- [ ] **Recommend API backend** -- "similar paragraphs" endpoint
-- [ ] **"Similar Paragraphs" button** -- frontend integration on result cards
-- [ ] **Grouped search results** -- Search Groups API + accordion UI
-- [ ] **Discovery search** -- positive/negative example interface
-- [ ] **Scalar quantization** -- optimize memory as collection grows
+### Add in Phase 2
 
-### Add After Recommendations (Phase 3: Cross-References)
+6. **ML model download with progress** (pre-pull models instead of first-run download)
+7. **GPU/CUDA auto-detection** and docker-compose.gpu.yml overlay
+8. **Auto-update mechanism** via GitHub Releases
+9. **Model management UI** (show download status, re-download option)
 
-- [ ] **Cross-reference extraction** -- regex parsing + re-index with citation payload
-- [ ] **Clickable cross-reference links** -- in paragraph view
-- [ ] **Citation network visualization** -- interactive graph
-- [ ] **Multi-hop MCP prompts** -- chain search + follow references
-- [ ] **Query expansion** -- legal synonym dictionary
+### Add in Phase 3 (if validated)
 
-### Future Consideration (Phase 4+)
+10. **Native mode** (Qdrant binary + Python sidecar) -- only if Docker mode proves too much friction
+11. **One-click Docker prerequisite install**
+12. **Storage location selection**
 
-- [ ] **Grouped recommendations** -- combine Recommend + Groups
-- [ ] **Semantic chunking** -- improve paragraph segmentation
-- [ ] **PDF export** -- formatted professional output
-- [ ] **Responsive design audit** -- mobile optimization
-- [ ] **Accessibility audit** -- WCAG compliance
+### Defer Indefinitely
 
-## Feature Prioritization Matrix
+- Mac/Linux installers
+- Silent/unattended install
+- Custom Python bundling
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Paginated results | HIGH | LOW | P1 |
-| Advanced filter UI | HIGH | LOW | P1 |
-| Full-text keyword search | HIGH | LOW | P1 |
-| Export (Markdown/Clipboard) | HIGH | LOW | P1 |
-| Snapshot backup | MEDIUM | LOW | P1 |
-| Similar paragraphs (Recommend) | HIGH | MEDIUM | P1 |
-| Grouped search results | HIGH | MEDIUM | P1 |
-| Cross-reference extraction | HIGH | HIGH | P2 |
-| Discovery search | MEDIUM | MEDIUM | P2 |
-| Citation network visualization | HIGH | HIGH | P2 |
-| Clickable cross-ref links | HIGH | MEDIUM | P2 |
-| Multi-hop MCP prompts | MEDIUM | MEDIUM | P2 |
-| Query expansion | MEDIUM | MEDIUM | P2 |
-| Scalar quantization | LOW | LOW | P2 |
-| Grouped recommendations | MEDIUM | LOW | P3 |
-| Semantic chunking | MEDIUM | MEDIUM | P3 |
-| PDF export | MEDIUM | MEDIUM | P3 |
-| Responsive/accessibility | MEDIUM | MEDIUM | P3 |
+## User Flow: Download to First Search Result
 
-**Priority key:**
-- P1: Must have -- unlocks core value or is low-hanging fruit
-- P2: Should have -- differentiators that require cross-reference infrastructure
-- P3: Nice to have -- polish and optimization
+```
+User downloads Paragraf-Setup.exe from website/GitHub
+    |
+    v
+Double-click installer
+    |
+    v
+[Screen 1: Welcome]
+"Willkommen bei Paragraf -- Rechtsrecherche fuer alle"
+Brief description, "Weiter" button
+    |
+    v
+[Screen 2: Systemcheck]  <-- automatic, no user action needed
+Checklist with green/red indicators:
+  [x] Windows 10/11 .............. OK
+  [x] 8 GB RAM ................... OK
+  [x] Docker Desktop ............. OK (oder: Nicht gefunden)
+  [ ] NVIDIA GPU ................. Optional (GTX 1660 erkannt)
+  [ ] ~6 GB Speicherplatz ........ OK
 
-## Competitor Feature Analysis
+If Docker missing: "Docker Desktop wird benoetigt. Jetzt installieren?"
+  -> Download + install Docker Desktop
+  -> May require restart
+  -> Resume wizard after restart
+    |
+    v
+[Screen 3: GPU-Konfiguration]  <-- only shown if GPU detected
+"NVIDIA GTX 1660 erkannt. GPU-Beschleunigung aktivieren?"
+  (o) Ja, GPU nutzen (5-10x schneller)
+  ( ) Nein, nur CPU
+"Weiter" button
+    |
+    v
+[Screen 4: Installation]
+Progress bar: "Docker-Images werden heruntergeladen..."
+  - Qdrant v1.13.2 ........... 120 MB [=====>    ] 52%
+  - Backend + ML-Modelle ...... 4.2 GB [==>       ] 23%
+  - Frontend .................. 25 MB  [==========] 100%
 
-| Feature | Beck-online | Juris | dejure.org (free) | gesetze-im-internet.de (free) | Our Approach |
-|---------|-------------|-------|-------------------|-------------------------------|--------------|
-| Full-text search | Yes (advanced) | Yes (advanced) | Basic | Basic | Hybrid: semantic + full-text keyword toggle |
-| Cross-references | Normenkette (flat list) | Normenkette (flat list) | Hyperlinked refs | Hyperlinked refs | Interactive citation graph (novel) |
-| Similar paragraphs | Via commentary links | Via related docs | No | No | Qdrant Recommend API (novel for free tools) |
-| Grouped results | By source/category | By source type | No | No | Qdrant Search Groups by law/legal area |
-| Advanced filters | Extensive facets | Extensive facets | Law filter only | Law filter only | Law + section + legal area + chunk type |
-| Export | PDF, Word, clipboard | PDF, clipboard | No | No | Markdown + clipboard (Phase 1), PDF (Phase 3+) |
-| Citation visualization | No | Juris Analytics (paid) | No | No | D3/react-force-graph (free, open) |
-| Semantic search | Beck-Noxtua (AI, new) | No | No | No | bge-m3 hybrid search (already built) |
-| Exploratory discovery | No | No | No | No | Qdrant Discovery API with pos/neg examples |
-| MCP/AI integration | No | No | No | No | FastMCP tools for Claude (already built) |
+This is the long step (5-30 min depending on internet).
+Must show: speed, ETA, individual component progress.
+    |
+    v
+[Screen 5: Fertig]
+"Paragraf wurde installiert!
+ Beim ersten Start werden die Gesetze indexiert (~15 Min)."
+[x] Paragraf jetzt starten
+[x] Startmenue-Verknuepfung erstellen
+"Fertigstellen" button
+    |
+    v
+App opens -> HealthOverlay shows "ML-Modelle werden geladen..." (30-60s)
+    -> Backend ready
+    -> Dashboard: "Keine Gesetze indexiert. Jetzt starten?"
+    -> User clicks "Alle Gesetze indexieren"
+    -> SSE progress stream (existing feature)
+    -> 15-45 min later: First search possible
+```
 
-### Key Competitive Insights
+**Total time from download to first search: ~30-90 minutes** (mostly waiting for downloads and indexing). This is comparable to LM Studio or Ollama first-run experience with large models.
 
-1. **Free tools (dejure.org, gesetze-im-internet.de)** have basic cross-references as hyperlinks but no semantic search, no recommendations, no grouping. Our app already surpasses them on search quality.
+## Reference Implementations
 
-2. **Paid databases (Beck-online, Juris)** have extensive content (commentary, case law) we cannot match. But they lack semantic search, exploratory discovery, and AI integration. Our differentiators are in search intelligence, not content volume.
+| App | Installer UX | Model Download | Backend Management | Lessons |
+|-----|-------------|----------------|-------------------|---------|
+| **Ollama** | One-click .exe, auto-installs to Program Files, starts service immediately | `ollama run` downloads model on first use, shows progress | Runs as Windows service, always on, system tray icon | Keep it simple. One-click install, models download when needed. |
+| **LM Studio** | Standard .exe installer, ~80MB (Electron). No prerequisites. | Built-in model browser with search, size info, download progress, GPU compatibility tags | Embedded inference engine, no external dependencies | Model browsing UX is best-in-class. Show model info before download. |
+| **Docker Desktop** | .exe installer, auto-enables WSL2, may require restart | Pulls images on `docker pull`, shows layer progress | Manages Docker daemon, system tray with status | WSL2 enablement + restart is the biggest friction. Handle it or avoid it. |
+| **Jan.ai** | .exe installer, ~80MB (Electron). Models download separately. | Model hub with categories, size, RAM requirements shown upfront | Local inference server, manages models in app data folder | Good example of "offline-first" messaging and model management UI. |
 
-3. **Beck-Noxtua** is Beck's new AI offering (launched ~2024-2025) that adds semantic search to Beck-online. This validates that semantic legal search is the direction the market is moving. Our advantage: open-source, local deployment, MCP integration.
+## Complexity Budget
 
-4. **Citation network visualization is genuinely novel.** No German legal database -- free or paid -- offers an interactive graph of law cross-references. The TENJI study (ACM CIKM 2025) showed that graph-based legal interfaces nearly doubled retrieval performance for law students.
+| Feature Category | Estimated Effort | Risk Level | Notes |
+|-----------------|-----------------|------------|-------|
+| Tauri 2 app shell | 1-2 weeks | LOW | Well-documented, many examples with React |
+| Setup wizard UI | 2-3 weeks | MEDIUM | Custom multi-step form, prerequisite detection logic |
+| Docker lifecycle | 1-2 weeks | MEDIUM | Process management, error handling, port conflicts |
+| GPU detection | 2-3 days | LOW | nvidia-smi + env var check, conditional compose overlay |
+| Model download progress | 1 week | MEDIUM | Need to intercept Docker layer progress or pre-download models |
+| System tray | 2-3 days | LOW | Tauri plugin, straightforward |
+| Auto-update | 1 week | MEDIUM | Code signing, update server setup, testing |
+| Native mode (full) | 3-4 weeks | HIGH | Qdrant binary management, Python env, process orchestration |
+| Windows installer polish | 1 week | LOW | Icons, splash screen, UAC handling |
+
+**Total estimated: 8-14 weeks** for Docker-mode-only MVP (Phases 1-2), add 3-4 weeks for native mode.
 
 ## Sources
 
-- [Beck-online Wikipedia](https://de.wikipedia.org/wiki/Beck-Online) -- feature overview, 40M+ documents, commentary linking
-- [Globalex: Legal Research in Germany](https://www.nyulawglobal.org/globalex/germany1.html) -- overview of German legal databases
-- [German Legal Reference Parser (GitHub)](https://github.com/lavis-nlp/german-legal-reference-parser) -- regex-based citation extraction for German law
-- [Open Legal Data Reference Extraction](https://github.com/openlegaldata/legal-reference-extraction) -- alternative citation parser
-- [Qdrant Recommendation API](https://qdrant.tech/articles/new-recommendation-api/) -- best_score strategy, positive/negative examples
-- [Qdrant Search Groups API](https://api.qdrant.tech/api-reference/search/point-groups) -- group by payload field
-- [TENJI: Human-Centered Legal Knowledge Graph (ACM CIKM 2025)](https://dl.acm.org/doi/10.1145/3746252.3761003) -- graph interfaces doubled retrieval performance
-- [Juristische Datenbanken Vergleich](https://www.juristischedatenbanken.de/marktuebersicht/) -- market overview of German legal databases
-- [Beck-Noxtua Datenbasis](https://www.beck-noxtua.de/datenbasis/) -- Beck's AI-powered legal search
+- [Tauri 2 Sidecar Documentation](https://v2.tauri.app/develop/sidecar/) -- embedding external binaries, Python process management
+- [Tauri 2 System Tray](https://v2.tauri.app/learn/system-tray/) -- tray icon configuration and events
+- [Tauri 2 Updater Plugin](https://v2.tauri.app/plugin/updater/) -- auto-update mechanism with GitHub Releases
+- [Tauri vs Electron Complete Guide 2026](https://blog.nishikanta.in/tauri-vs-electron-the-complete-developers-guide-2026) -- framework comparison, installer sizes
+- [Tauri v2 FastAPI Sidecar Template](https://github.com/AlanSynn/vue-tauri-fastapi-sidecar-template) -- reference implementation of Tauri + Python backend
+- [Tauri v2 Python Server Sidecar Example](https://github.com/dieharders/example-tauri-v2-python-server-sidecar) -- Next.js + Python API server in Tauri
+- [Qdrant GitHub Releases](https://github.com/qdrant/qdrant/releases) -- standalone Windows binary (qdrant.exe)
+- [Qdrant Windows Quick Start](https://medium.com/@niteen.gokhale/qdrant-quick-start-on-windows-26a081bfda65) -- running qdrant.exe standalone
+- [HuggingFace Hub Download Guide](https://huggingface.co/docs/huggingface_hub/guides/download) -- resumable model downloads
+- [PyInstaller FastAPI Tutorial](https://ccgit.crown.edu/cyber-reels/fastapi-pyinstaller-tutorial-build-executables-1764802265) -- bundling FastAPI as executable
+- [CUDA Installation Guide Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html) -- CUDA detection and registry paths
+- [Docker Desktop Windows Install](https://docs.docker.com/desktop/setup/install/windows-install/) -- prerequisites, WSL2 setup
+- [Ollama Windows Guide](https://skywork.ai/blog/llm/ollama-windows-guide-install-run-local-ai-on-pc/) -- reference installer UX
+- [LM Studio Setup Guide](https://devtoolhub.com/install-lm-studio-ollama/) -- reference model download UX
 
 ---
-*Feature research for: Paragraf v2 -- Volles Qdrant-Potenzial*
-*Researched: 2026-03-27*
+*Feature research for: Paragraf v2 -- Desktop Installer & Native App*
+*Researched: 2026-03-29*
