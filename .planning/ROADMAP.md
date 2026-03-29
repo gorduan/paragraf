@@ -240,7 +240,10 @@ Plans:
   2. All SUMMARY frontmatter `requirements_completed` fields are populated (07-03, 09-04, 09-05, 10-02, 10-03)
   3. ROADMAP.md progress table reflects actual completion state of all phases
 
-Plans: (to be created via `/gsd:plan-phase 13`)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 13-01-PLAN.md -- Fix stale checkboxes in ROADMAP.md, PROJECT.md, and STATE.md progress fields
 
 ## Progress
 
