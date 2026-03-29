@@ -14,6 +14,9 @@ export function HealthOverlay({ state, health, error, onRetry }: HealthOverlayPr
   // Don't show overlay when ready
   if (state === "ready") return null;
 
+  // Detect desktop mode (Electron preload injects paragrafDesktop)
+  const isDesktop = typeof window !== "undefined" && (window as any).paragrafDesktop?.isDesktop === true;
+
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]"
@@ -66,12 +69,28 @@ export function HealthOverlay({ state, health, error, onRetry }: HealthOverlayPr
             {error && (
               <p className="text-xs text-slate-400">{error}</p>
             )}
-            <div className="text-xs text-slate-400 space-y-1">
-              <p>Stellen Sie sicher, dass alle Container laufen:</p>
-              <code className="block bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded text-left">
-                docker compose up
-              </code>
-            </div>
+            {isDesktop ? (
+              <div className="text-xs text-slate-400 space-y-2">
+                <p>Das Backend wird automatisch verwaltet.</p>
+                <button
+                  onClick={() => {
+                    (window as any).paragrafDesktop.restartDocker();
+                    onRetry();
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700 mx-auto"
+                >
+                  <RefreshCw size={16} aria-hidden="true" />
+                  Backend neu starten
+                </button>
+              </div>
+            ) : (
+              <div className="text-xs text-slate-400 space-y-1">
+                <p>Stellen Sie sicher, dass alle Container laufen:</p>
+                <code className="block bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded text-left">
+                  docker compose up
+                </code>
+              </div>
+            )}
             <button
               onClick={onRetry}
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 mx-auto"

@@ -12,6 +12,8 @@ vi.mock("electron", () => ({
     quit: mockQuit,
     on: mockOn,
     whenReady: mockWhenReady,
+    isPackaged: false,
+    exit: vi.fn(),
   },
   BrowserWindow: vi.fn(function (this: Record<string, unknown>) {
     this.loadFile = vi.fn();
@@ -20,6 +22,19 @@ vi.mock("electron", () => ({
     this.once = vi.fn();
     this.on = vi.fn();
   }),
+  ipcMain: {
+    handle: vi.fn(),
+  },
+}));
+
+// Mock child_process for docker.ts import
+vi.mock("child_process", () => ({
+  execFile: vi.fn(),
+}));
+
+// Mock tree-kill for docker.ts import
+vi.mock("tree-kill", () => ({
+  default: vi.fn(),
 }));
 
 describe("Single-Instance Lock (SHELL-03)", () => {
