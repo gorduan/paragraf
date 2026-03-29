@@ -66,28 +66,29 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SHELL-01 | TBD | Pending |
-| SHELL-02 | TBD | Pending |
-| SHELL-03 | TBD | Pending |
-| SHELL-04 | TBD | Pending |
-| INST-01 | TBD | Pending |
-| INST-02 | TBD | Pending |
-| INST-03 | TBD | Pending |
-| INST-04 | TBD | Pending |
-| INST-05 | TBD | Pending |
-| LIFE-01 | TBD | Pending |
-| LIFE-02 | TBD | Pending |
-| LIFE-03 | TBD | Pending |
-| LIFE-04 | TBD | Pending |
-| MODEL-01 | TBD | Pending |
-| MODEL-02 | TBD | Pending |
-| MODEL-03 | TBD | Pending |
-| MODEL-04 | TBD | Pending |
+| SHELL-01 | Phase 14 | Pending |
+| SHELL-02 | Phase 14 | Pending |
+| SHELL-03 | Phase 14 | Pending |
+| SHELL-04 | Phase 17 | Pending |
+| INST-01 | Phase 15 | Pending |
+| INST-02 | Phase 15 | Pending |
+| INST-03 | Phase 15 | Pending |
+| INST-04 | Phase 15 | Pending |
+| INST-05 | Phase 15 | Pending |
+| LIFE-01 | Phase 14 | Pending |
+| LIFE-02 | Phase 14 | Pending |
+| LIFE-03 | Phase 17 | Pending |
+| LIFE-04 | Phase 17 | Pending |
+| MODEL-01 | Phase 16 | Pending |
+| MODEL-02 | Phase 16 | Pending |
+| MODEL-03 | Phase 16 | Pending |
+| MODEL-04 | Phase 16 | Pending |
 
 **Coverage:**
-- v2.0 requirements: 16 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 16
+- v2.0 requirements: 17 total
+- Mapped to phases: 17
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-29*
+*Traceability updated: 2026-03-29*
