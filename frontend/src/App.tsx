@@ -11,6 +11,7 @@ import { IndexPage } from "./pages/IndexPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { GraphPage } from "./pages/GraphPage";
 import { useHealthCheck } from "./hooks/useHealthCheck";
+import { SetupWizard } from "./components/SetupWizard";
 
 // ── Contexts ─────────────────────────────────────────────────────────────────
 
@@ -59,6 +60,9 @@ export const CompareContext = createContext<CompareContextValue>({
 export default function App() {
   const [page, setPage] = useState<Page>("search");
   const [dark, setDark] = useState(true);
+  const [setupComplete, setSetupComplete] = useState<boolean | null>(null);
+  const [setupStep, setSetupStep] = useState(0);
+  const isDesktop = typeof window.paragrafDesktop?.isDesktop === "boolean" && window.paragrafDesktop.isDesktop;
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem("paragraf_bookmarks") || "[]");
@@ -88,6 +92,30 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("paragraf_bookmarks", JSON.stringify(bookmarks));
   }, [bookmarks]);
+
+  // First-run setup wizard check (desktop mode only)
+  useEffect(() => {
+    if (!isDesktop) {
+      // Web mode (Docker browser): no setup wizard needed
+      setSetupComplete(true);
+      return;
+    }
+    // Desktop mode: check setup state via IPC
+    const checkSetup = async () => {
+      try {
+        const state = await window.paragrafSetup?.getSetupState();
+        if (state) {
+          setSetupComplete(state.setupComplete);
+          setSetupStep(state.setupStep);
+        } else {
+          setSetupComplete(true); // Fallback if IPC unavailable
+        }
+      } catch {
+        setSetupComplete(true); // Fallback on error
+      }
+    };
+    checkSetup();
+  }, [isDesktop]);
 
   // Page labels for announcements
   const PAGE_LABELS: Record<Page, string> = {
@@ -155,6 +183,21 @@ export default function App() {
     clearAll: () => setCompareItems([]),
     isSelected: (ref) => compareItems.includes(ref),
   };
+
+  // Loading setup state
+  if (setupComplete === null) return null;
+
+  // Show setup wizard on first run in desktop mode
+  if (!setupComplete && isDesktop) {
+    return (
+      <ThemeContext.Provider value={{ dark, toggle: () => setDark((d) => !d) }}>
+        <SetupWizard
+          initialStep={setupStep}
+          onComplete={() => setSetupComplete(true)}
+        />
+      </ThemeContext.Provider>
+    );
+  }
 
   const renderPage = () => {
     switch (page) {

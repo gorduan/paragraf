@@ -171,7 +171,7 @@ describe("SetupWizard navigation", () => {
 // ── First-Run Detection ──────────────────────────────────────────────────────
 
 describe("App first-run detection", () => {
-  it.skip("renders SetupWizard when setupComplete is false in desktop mode", async () => {
+  it("renders SetupWizard when setupComplete is false in desktop mode", async () => {
     (mockSetup.getSetupState as ReturnType<typeof vi.fn>).mockResolvedValue({
       setupComplete: false,
       setupStep: 0,
@@ -189,7 +189,7 @@ describe("App first-run detection", () => {
     });
   });
 
-  it.skip("renders main app when setupComplete is true", async () => {
+  it("renders main app when setupComplete is true", async () => {
     (mockSetup.getSetupState as ReturnType<typeof vi.fn>).mockResolvedValue({
       setupComplete: true,
       setupStep: 4,

@@ -3,6 +3,7 @@ import { app, BrowserWindow } from "electron";
 import { createMainWindow } from "./window";
 import { startDockerCompose, stopDockerCompose, killComposeProcess } from "./docker";
 import { registerIpcHandlers } from "./ipc";
+import { store } from "./store";
 import { logger } from "./logger";
 
 // ── Single-Instance Lock (SHELL-03) ────────────────────────────────────────
@@ -35,13 +36,18 @@ if (!gotTheLock) {
       mainWindow = null;
     });
 
-    // Start Docker Compose after window is visible (LIFE-01)
-    try {
-      await startDockerCompose();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      logger.error("Docker Compose konnte nicht gestartet werden:", message);
-      // Don't crash – renderer shows HealthOverlay with retry option
+    // Only start Docker Compose if setup wizard is complete (INST-04)
+    const setupState = store.get("setup.setupComplete");
+    if (setupState) {
+      try {
+        await startDockerCompose();
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        logger.error("Docker Compose konnte nicht gestartet werden:", message);
+        // Don't crash – renderer shows HealthOverlay with retry option
+      }
+    } else {
+      logger.info("Setup-Wizard noch nicht abgeschlossen - Docker Compose wird spaeter gestartet");
     }
   });
 
