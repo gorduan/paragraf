@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Desktop Installer
-status: verifying
-stopped_at: Completed 14-02-PLAN.md
-last_updated: "2026-03-29T11:11:43.827Z"
+status: executing
+stopped_at: Completed 15-01-PLAN.md
+last_updated: "2026-03-29T12:38:57.653Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** Juristen und Buerger installieren Paragraf mit einem Doppelklick -- ohne CLI, ohne Docker-Kenntnisse, ohne technisches Vorwissen.
-**Current focus:** Phase 14 — electron-shell-docker-lifecycle
+**Current focus:** Phase 15 — windows-installer-setup-wizard
 
 ## Current Position
 
-Phase: 15
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 15 (windows-installer-setup-wizard) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
 Last activity: 2026-03-29
 
 Progress: [░░░░░░░░░░] 0% (0/10 plans across v2.0)
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0% (0/10 plans across v2.0)
 
 | Phase 14 P01 | 5min | 2 tasks | 14 files |
 | Phase 14 P02 | 4min | 2 tasks | 7 files |
+| Phase 15 P01 | 5min | 2 tasks | 12 files |
 
 ### Decisions
 
@@ -70,6 +71,7 @@ Recent decisions affecting current work:
 - [Phase 14]: Preload injects http://localhost:8000 as API base URL for Docker backend
 - [Phase 14]: execFile with array args instead of exec to prevent shell injection
 - [Phase 14]: 10s timeout on Docker Compose stop with tree-kill fallback for clean shutdown
+- [Phase 15]: 4-tier Docker detection: docker info > docker --version > Windows Registry > missing
 
 ### Pending Todos
 
@@ -83,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T11:08:01.441Z
-Stopped at: Completed 14-02-PLAN.md
+Last session: 2026-03-29T12:38:57.645Z
+Stopped at: Completed 15-01-PLAN.md
 Resume file: None

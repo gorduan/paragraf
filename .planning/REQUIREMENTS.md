@@ -16,11 +16,11 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 
 ### Installer & Setup
 
-- [ ] **INST-01**: Grafischer Windows-Installer (.exe) mit Willkommens-Screen, Lizenz, Installationspfad-Auswahl
+- [x] **INST-01**: Grafischer Windows-Installer (.exe) mit Willkommens-Screen, Lizenz, Installationspfad-Auswahl
 - [ ] **INST-02**: Setup-Wizard bietet Installationsmodus-Auswahl: "Docker (Empfohlen)" vs "Nativ (Spaeter)"
-- [ ] **INST-03**: Docker-Modus: Installer prueft ob Docker Desktop installiert ist und leitet zur Installation weiter falls noetig
+- [x] **INST-03**: Docker-Modus: Installer prueft ob Docker Desktop installiert ist und leitet zur Installation weiter falls noetig
 - [ ] **INST-04**: Erster App-Start zeigt Setup-Wizard mit Fortschrittsanzeige fuer alle Einrichtungsschritte
-- [ ] **INST-05**: Setup-Wizard zeigt geschaetzten Speicherbedarf vor Download an und kann nach Unterbrechung fortgesetzt werden
+- [x] **INST-05**: Setup-Wizard zeigt geschaetzten Speicherbedarf vor Download an und kann nach Unterbrechung fortgesetzt werden
 
 ### Backend Lifecycle
 
@@ -70,11 +70,11 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 | SHELL-02 | Phase 14 | Complete |
 | SHELL-03 | Phase 14 | Complete |
 | SHELL-04 | Phase 17 | Pending |
-| INST-01 | Phase 15 | Pending |
+| INST-01 | Phase 15 | Complete |
 | INST-02 | Phase 15 | Pending |
-| INST-03 | Phase 15 | Pending |
+| INST-03 | Phase 15 | Complete |
 | INST-04 | Phase 15 | Pending |
-| INST-05 | Phase 15 | Pending |
+| INST-05 | Phase 15 | Complete |
 | LIFE-01 | Phase 14 | Complete |
 | LIFE-02 | Phase 14 | Complete |
 | LIFE-03 | Phase 17 | Pending |

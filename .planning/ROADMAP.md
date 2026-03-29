@@ -67,7 +67,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 15-01-PLAN.md — NSIS installer config, electron-store, Docker detection, IPC handlers, preload bridge
+- [x] 15-01-PLAN.md — NSIS installer config, electron-store, Docker detection, IPC handlers, preload bridge
 - [ ] 15-02-PLAN.md — React setup wizard UI (5 steps), App.tsx first-run routing, deferred Docker startup
 
 ### Phase 16: Model Download & GPU Configuration
@@ -109,6 +109,6 @@ Phases execute in numeric order: 14 > 15 > 16 > 17
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 14. Electron Shell & Docker Lifecycle | v2.0 | 2/2 | Complete    | 2026-03-29 |
-| 15. Windows Installer & Setup Wizard | v2.0 | 0/2 | Not started | - |
+| 15. Windows Installer & Setup Wizard | v2.0 | 1/2 | In Progress|  |
 | 16. Model Download & GPU Configuration | v2.0 | 0/2 | Not started | - |
 | 17. System Tray & Crash Resilience | v2.0 | 0/2 | Not started | - |
