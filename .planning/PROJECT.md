@@ -76,6 +76,7 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit seman
 - Gesetze referenzieren sich intensiv gegenseitig — Querverweis-Pipeline seit Phase 6 aktiv (Extraktion + API + MCP-Tool)
 - Phase 10 complete: Snapshot-Management im Dashboard, PDF/Markdown-Export auf allen Seiten, responsive Sidebar mit Hamburger-Menu, WCAG 2.1 AA Accessibility-Compliance
 - Phase 12 complete: SearchPage UX polish — graph navigation, compare badge click, expansion toggle, accessible filter announcements
+- Phase 13 complete: All planning artifacts (ROADMAP.md, PROJECT.md, STATE.md) cleaned up — stale checkboxes fixed, progress fields accurate
 
 ## Constraints
 
@@ -113,4 +114,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-29 after Phase 12 (Search UX Polish) completion*
+*Last updated: 2026-03-29 after Phase 13 (Tracking Artifact Cleanup) completion*
