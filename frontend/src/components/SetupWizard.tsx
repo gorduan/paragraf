@@ -32,7 +32,7 @@ interface SetupWizardProps {
 export function SetupWizard({ initialStep, onComplete }: SetupWizardProps) {
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [dockerResult, setDockerResult] = useState<DockerCheckResult | null>(null);
-  const [storageEstimate, setStorageEstimate] = useState<StorageEstimate | null>(null);
+  const [storageEstimate, setStorageEstimate] = useState<ParagrafStorageEstimate | null>(null);
 
   const goNext = useCallback(() => {
     const nextStep = currentStep + 1;

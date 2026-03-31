@@ -26,6 +26,10 @@ const mockSetup: ParagrafSetup = {
   }),
   startDocker: vi.fn().mockResolvedValue({ success: true }),
   selectModelCachePath: vi.fn().mockResolvedValue(null),
+  switchGpu: vi.fn().mockResolvedValue({ success: true, gpuEnabled: true }),
+  getGpuPreference: vi.fn().mockResolvedValue({ gpuEnabled: false }),
+  clearModelCache: vi.fn().mockResolvedValue({ success: true }),
+  getCacheSize: vi.fn().mockResolvedValue({ totalMb: 0, path: "" }),
 };
 
 beforeEach(() => {

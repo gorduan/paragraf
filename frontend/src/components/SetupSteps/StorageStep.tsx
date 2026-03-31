@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { FolderOpen, HardDrive } from "lucide-react";
 
 interface StorageStepProps {
-  storageEstimate: StorageEstimate | null;
+  storageEstimate: ParagrafStorageEstimate | null;
   onLoad: () => void;
   onNext: () => void;
   onBack: () => void;
