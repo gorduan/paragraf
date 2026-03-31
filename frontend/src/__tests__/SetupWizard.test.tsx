@@ -25,6 +25,7 @@ const mockSetup: ParagrafSetup = {
     modelCachePath: "C:\\ProgramData\\Paragraf\\models",
   }),
   startDocker: vi.fn().mockResolvedValue({ success: true }),
+  selectModelCachePath: vi.fn().mockResolvedValue(null),
 };
 
 beforeEach(() => {

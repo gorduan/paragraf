@@ -1,5 +1,5 @@
 /** IPC-Handler – Verbindet Renderer-Anfragen mit Docker-Lifecycle und Setup-Wizard. */
-import { ipcMain, shell } from "electron";
+import { BrowserWindow, dialog, ipcMain, shell } from "electron";
 import { checkDockerAvailable, checkDockerDetailed, startDockerCompose, stopDockerCompose } from "./docker";
 import { store } from "./store";
 import { logger } from "./logger";
@@ -16,7 +16,8 @@ export function registerIpcHandlers(): void {
     logger.info("Docker Neustart angefordert");
     try {
       await stopDockerCompose();
-      await startDockerCompose();
+      const cachePath = store.get("setup.modelCachePath") || undefined;
+      await startDockerCompose(cachePath);
       return { success: true };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -54,16 +55,32 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle("setup:storageEstimate", () => {
-    const modelCachePath = process.env.HF_HOME
+    const storedPath = store.get("setup.modelCachePath");
+    const modelCachePath = storedPath
+      || process.env.HF_HOME
       || process.env.PARAGRAF_MODEL_CACHE
       || "C:\\ProgramData\\Paragraf\\models";
     return { dockerImages: 4000, mlModels: 4000, lawData: 500, total: 8500, unit: "MB", modelCachePath };
   });
 
+  ipcMain.handle("setup:selectModelCachePath", async () => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (!win) return null;
+    const result = await dialog.showOpenDialog(win, {
+      title: "Modell-Cache-Ordner wählen",
+      properties: ["openDirectory", "createDirectory"],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    const selected = result.filePaths[0];
+    store.set("setup.modelCachePath", selected);
+    return selected;
+  });
+
   ipcMain.handle("setup:startDocker", async () => {
     logger.info("Setup abgeschlossen - Docker Compose starten");
     try {
-      await startDockerCompose();
+      const cachePath = store.get("setup.modelCachePath") || undefined;
+      await startDockerCompose(cachePath);
       return { success: true };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

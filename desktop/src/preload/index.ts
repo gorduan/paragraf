@@ -21,4 +21,5 @@ contextBridge.exposeInMainWorld("paragrafSetup", {
   completeSetup: () => ipcRenderer.invoke("setup:complete"),
   getStorageEstimate: () => ipcRenderer.invoke("setup:storageEstimate"),
   startDocker: () => ipcRenderer.invoke("setup:startDocker"),
+  selectModelCachePath: () => ipcRenderer.invoke("setup:selectModelCachePath"),
 });

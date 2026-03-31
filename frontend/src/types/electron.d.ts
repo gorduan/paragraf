@@ -30,6 +30,7 @@ interface ParagrafSetup {
   completeSetup: () => Promise<boolean>;
   getStorageEstimate: () => Promise<StorageEstimate>;
   startDocker: () => Promise<{ success: boolean; error?: string }>;
+  selectModelCachePath: () => Promise<string | null>;
 }
 
 interface ParagrafDesktop {

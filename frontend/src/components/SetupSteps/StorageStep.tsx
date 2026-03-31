@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { HardDrive } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { FolderOpen, HardDrive } from "lucide-react";
 
 interface StorageStepProps {
   storageEstimate: StorageEstimate | null;
@@ -14,11 +14,18 @@ function formatMB(mb: number): string {
 }
 
 export function StorageStep({ storageEstimate, onLoad, onNext, onBack }: StorageStepProps) {
+  const [cachePath, setCachePath] = useState<string | null>(null);
+
   useEffect(() => {
     if (storageEstimate === null) {
       onLoad();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSelectPath = async () => {
+    const selected = await window.paragrafSetup?.selectModelCachePath();
+    if (selected) setCachePath(selected);
+  };
 
   return (
     <div className="flex flex-col items-center px-8 py-10">
@@ -76,9 +83,19 @@ export function StorageStep({ storageEstimate, onLoad, onNext, onBack }: Storage
         </p>
 
         {storageEstimate?.modelCachePath && (
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-2">
-            Modell-Cache: <code className="font-mono bg-neutral-100 dark:bg-neutral-800 px-1 rounded">{storageEstimate.modelCachePath}</code>
-          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <p className="text-xs text-neutral-400 dark:text-neutral-500">
+              Modell-Cache: <code className="font-mono bg-neutral-100 dark:bg-neutral-800 px-1 rounded">{cachePath ?? storageEstimate.modelCachePath}</code>
+            </p>
+            <button
+              onClick={handleSelectPath}
+              className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+              title="Ordner ändern"
+            >
+              <FolderOpen size={12} aria-hidden="true" />
+              Ändern
+            </button>
+          </div>
         )}
       </div>
 

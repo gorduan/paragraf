@@ -37,10 +37,11 @@ if (!gotTheLock) {
     });
 
     // Only start Docker Compose if setup wizard is complete (INST-04)
-    const setupState = store.get("setup.setupComplete");
-    if (setupState) {
+    const setupComplete = store.get("setup.setupComplete");
+    if (setupComplete) {
       try {
-        await startDockerCompose();
+        const cachePath = store.get("setup.modelCachePath") || undefined;
+        await startDockerCompose(cachePath);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         logger.error("Docker Compose konnte nicht gestartet werden:", message);

@@ -99,15 +99,21 @@ export function checkDockerDetailed(): Promise<DockerCheckResult> {
 }
 
 /** Start Docker Compose in detached mode. */
-export function startDockerCompose(): Promise<void> {
+export function startDockerCompose(modelCachePath?: string): Promise<void> {
   const composePath = getComposeFilePath();
   logger.info("Docker Compose starten:", composePath);
+
+  const env = { ...process.env };
+  if (modelCachePath) {
+    env.PARAGRAF_MODEL_CACHE = modelCachePath;
+    logger.info("Modell-Cache-Pfad:", modelCachePath);
+  }
 
   return new Promise((resolve, reject) => {
     composeProcess = execFile(
       "docker",
       ["compose", "-p", "paragraf", "-f", composePath, "up", "-d"],
-      { windowsHide: true, timeout: 120000 },
+      { windowsHide: true, timeout: 120000, env },
       (error, stdout, stderr) => {
         if (error) {
           logger.error("Docker Compose start fehlgeschlagen:", error.message);

@@ -7,6 +7,7 @@ export interface SetupState {
   selectedMode: "docker"; // Only "docker" in v2.0
   dockerDetected: boolean;
   estimatedStorage: number; // MB
+  modelCachePath: string;
 }
 
 export interface AppSchema {
@@ -20,6 +21,7 @@ const defaults: AppSchema = {
     selectedMode: "docker",
     dockerDetected: false,
     estimatedStorage: 0,
+    modelCachePath: "",
   },
 };
 

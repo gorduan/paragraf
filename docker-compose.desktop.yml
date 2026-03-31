@@ -22,7 +22,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - model_cache:/models
+      - ${PARAGRAF_MODEL_CACHE:-model_cache}:/models
       - law_data:/data
     environment:
       - QDRANT_URL=http://qdrant:6333
@@ -69,7 +69,7 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      - model_cache:/models
+      - ${PARAGRAF_MODEL_CACHE:-model_cache}:/models
       - law_data:/data
     environment:
       - QDRANT_URL=http://qdrant:6333
