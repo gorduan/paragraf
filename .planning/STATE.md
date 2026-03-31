@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Desktop Installer
 status: executing
-stopped_at: Completed 16-01-PLAN.md
-last_updated: "2026-03-31T19:38:16.961Z"
+stopped_at: Completed 16-02-PLAN.md
+last_updated: "2026-03-31T19:44:21.516Z"
 last_activity: 2026-03-31
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 ## Current Position
 
 Phase: 16 (model-download-gpu-configuration) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-03-31
 
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0% (0/10 plans across v2.0)
 | Phase 14 P02 | 4min | 2 tasks | 7 files |
 | Phase 15 P01 | 5min | 2 tasks | 12 files |
 | Phase 16-model-download-gpu-configuration P01 | 15 | 2 tasks | 4 files |
+| Phase 16-model-download-gpu-configuration P02 | 15 | 2 tasks | 5 files |
 
 ### Decisions
 
@@ -76,6 +77,9 @@ Recent decisions affecting current work:
 - [Phase 16-01]: Use hf_hub_download per-file for byte-level SSE progress (not snapshot_download) — RESEARCH.md Pitfall 1
 - [Phase 16-01]: Manual asyncio.Lock acquire/release in async generators (Python forbids async with in generators)
 - [Phase 16-01]: nvidia-smi subprocess as primary GPU detection, torch.cuda as fallback
+- [Phase 16-02]: getGpuComposeFilePath mirrors getComposeFilePath pattern for dev/packaged path resolution
+- [Phase 16-02]: store.get casts to concrete types to work around electron-store {} | undefined return type
+- [Phase 16-02]: setup:complete now sets setupStep=7 (7-step wizard with new download+gpu steps 4+5)
 
 ### Pending Todos
 
@@ -89,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T19:38:16.956Z
-Stopped at: Completed 16-01-PLAN.md
+Last session: 2026-03-31T19:44:21.511Z
+Stopped at: Completed 16-02-PLAN.md
 Resume file: None

@@ -33,7 +33,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 
 - [x] **MODEL-01**: ML-Modelle (~4GB) werden beim ersten Start automatisch heruntergeladen mit Fortschrittsbalken
 - [x] **MODEL-02**: GPU/CUDA wird automatisch erkannt und konfiguriert (nvidia-smi + torch.cuda)
-- [ ] **MODEL-03**: Nutzer kann zwischen CPU und GPU zur Laufzeit wechseln (Settings)
+- [x] **MODEL-03**: Nutzer kann zwischen CPU und GPU zur Laufzeit wechseln (Settings)
 - [x] **MODEL-04**: Model-Cache kann in den Einstellungen verwaltet werden (Pfad, Groesse, Loeschen)
 
 ## v2.1 Requirements (Deferred)
@@ -81,7 +81,7 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 | LIFE-04 | Phase 17 | Pending |
 | MODEL-01 | Phase 16 | Complete |
 | MODEL-02 | Phase 16 | Complete |
-| MODEL-03 | Phase 16 | Pending |
+| MODEL-03 | Phase 16 | Complete |
 | MODEL-04 | Phase 16 | Complete |
 
 **Coverage:**

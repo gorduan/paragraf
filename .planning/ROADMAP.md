@@ -84,7 +84,7 @@ Plans:
 
 Plans:
 - [x] 16-01-PLAN.md — Backend ModelManager service + API endpoints (download SSE, model status, cache, GPU detection)
-- [ ] 16-02-PLAN.md — Electron IPC extensions (GPU switch, cache management, Docker GPU overlay support)
+- [x] 16-02-PLAN.md — Electron IPC extensions (GPU switch, cache management, Docker GPU overlay support)
 - [ ] 16-03-PLAN.md — Frontend wizard steps (ModelDownload, GpuDetection) + SettingsPage extensions (GPU toggle, cache management)
 
 ### Phase 17: System Tray & Crash Resilience
@@ -111,5 +111,5 @@ Phases execute in numeric order: 14 > 15 > 16 > 17
 |-------|-----------|----------------|--------|-----------|
 | 14. Electron Shell & Docker Lifecycle | v2.0 | 2/2 | Complete    | 2026-03-29 |
 | 15. Windows Installer & Setup Wizard | v2.0 | 2/2 | Complete    | 2026-03-31 |
-| 16. Model Download & GPU Configuration | v2.0 | 1/3 | In Progress|  |
+| 16. Model Download & GPU Configuration | v2.0 | 2/3 | In Progress|  |
 | 17. System Tray & Crash Resilience | v2.0 | 0/2 | Not started | - |
