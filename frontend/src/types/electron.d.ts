@@ -6,6 +6,8 @@ interface SetupState {
   selectedMode: "docker";
   dockerDetected: boolean;
   estimatedStorage: number;
+  modelCachePath: string;
+  gpuEnabled: boolean;
 }
 
 interface DockerCheckResult {
@@ -31,12 +33,17 @@ interface ParagrafSetup {
   getStorageEstimate: () => Promise<StorageEstimate>;
   startDocker: () => Promise<{ success: boolean; error?: string }>;
   selectModelCachePath: () => Promise<string | null>;
+  // GPU & Cache management
+  switchGpu: (enabled: boolean) => Promise<{ success: boolean; error?: string; gpuEnabled: boolean }>;
+  getGpuPreference: () => Promise<{ gpuEnabled: boolean }>;
+  clearModelCache: () => Promise<{ success: boolean; error?: string }>;
+  getCacheSize: () => Promise<{ totalMb: number; path: string }>;
 }
 
 interface ParagrafDesktop {
   isDesktop: boolean;
   getDockerStatus: () => Promise<string>;
-  restartDocker: () => Promise<void>;
+  restartDocker: () => Promise<{ success: boolean; error?: string }>;
 }
 
 declare global {

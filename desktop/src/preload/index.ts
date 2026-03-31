@@ -22,4 +22,9 @@ contextBridge.exposeInMainWorld("paragrafSetup", {
   getStorageEstimate: () => ipcRenderer.invoke("setup:storageEstimate"),
   startDocker: () => ipcRenderer.invoke("setup:startDocker"),
   selectModelCachePath: () => ipcRenderer.invoke("setup:selectModelCachePath"),
+  // GPU & Cache management
+  switchGpu: (enabled: boolean) => ipcRenderer.invoke("setup:switchGpu", enabled),
+  getGpuPreference: () => ipcRenderer.invoke("setup:getGpuPreference"),
+  clearModelCache: () => ipcRenderer.invoke("setup:clearModelCache"),
+  getCacheSize: () => ipcRenderer.invoke("setup:getCacheSize"),
 });
