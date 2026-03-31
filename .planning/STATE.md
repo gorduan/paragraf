@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Desktop Installer
 status: executing
-stopped_at: "15-02 checkpoint:human-verify at Task 3"
-last_updated: "2026-03-31T09:05:44.547Z"
+stopped_at: Phase 16 context gathered
+last_updated: "2026-03-31T11:34:12.908Z"
 last_activity: 2026-03-31
 progress:
   total_phases: 4
@@ -85,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T12:46:20.564Z
-Stopped at: 15-02 checkpoint:human-verify at Task 3
-Resume file: None
+Last session: 2026-03-31T11:34:12.901Z
+Stopped at: Phase 16 context gathered
+Resume file: .planning/phases/16-model-download-gpu-configuration/16-CONTEXT.md
