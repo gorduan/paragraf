@@ -19,6 +19,15 @@ function getComposeFilePath(): string {
   return path.join(process.resourcesPath, "docker-compose.desktop.yml");
 }
 
+/** Resolve path to docker-compose.gpu.yml relative to app root. */
+function getGpuComposeFilePath(): string {
+  const isDev = !app.isPackaged;
+  if (isDev) {
+    return path.resolve(__dirname, "..", "..", "..", "docker-compose.gpu.yml");
+  }
+  return path.join(process.resourcesPath, "docker-compose.gpu.yml");
+}
+
 export type DockerAvailability = "running" | "installed" | "missing";
 
 export interface DockerCheckResult {
@@ -99,9 +108,9 @@ export function checkDockerDetailed(): Promise<DockerCheckResult> {
 }
 
 /** Start Docker Compose in detached mode. */
-export function startDockerCompose(modelCachePath?: string): Promise<void> {
+export function startDockerCompose(modelCachePath?: string, gpuEnabled?: boolean): Promise<void> {
   const composePath = getComposeFilePath();
-  logger.info("Docker Compose starten:", composePath);
+  logger.info("Docker Compose starten:", composePath, "GPU:", gpuEnabled ?? false);
 
   const env = { ...process.env };
   if (modelCachePath) {
@@ -109,12 +118,19 @@ export function startDockerCompose(modelCachePath?: string): Promise<void> {
     logger.info("Modell-Cache-Pfad:", modelCachePath);
   }
 
+  const args = ["compose", "-p", "paragraf", "-f", composePath];
+  if (gpuEnabled) {
+    args.push("-f", getGpuComposeFilePath());
+    logger.info("GPU-Overlay aktiviert:", getGpuComposeFilePath());
+  }
+  args.push("up", "-d");
+
   return new Promise((resolve, reject) => {
     composeProcess = execFile(
       "docker",
-      ["compose", "-p", "paragraf", "-f", composePath, "up", "-d"],
+      args,
       { windowsHide: true, timeout: 120000, env },
-      (error, stdout, stderr) => {
+      (error, _stdout, _stderr) => {
         if (error) {
           logger.error("Docker Compose start fehlgeschlagen:", error.message);
           reject(error);

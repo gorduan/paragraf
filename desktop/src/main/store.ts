@@ -3,11 +3,12 @@ import Store from "electron-store";
 
 export interface SetupState {
   setupComplete: boolean;
-  setupStep: number; // 0=welcome, 1=mode, 2=docker-check, 3=storage, 4=summary
+  setupStep: number; // 0=welcome, 1=mode, 2=docker-check, 3=storage, 4=download, 5=gpu, 6=summary
   selectedMode: "docker"; // Only "docker" in v2.0
   dockerDetected: boolean;
   estimatedStorage: number; // MB
   modelCachePath: string;
+  gpuEnabled: boolean; // Whether GPU mode is active
 }
 
 export interface AppSchema {
@@ -22,6 +23,7 @@ const defaults: AppSchema = {
     dockerDetected: false,
     estimatedStorage: 0,
     modelCachePath: "",
+    gpuEnabled: false,
   },
 };
 
