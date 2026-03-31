@@ -4,6 +4,8 @@ import { WelcomeStep } from "./SetupSteps/WelcomeStep";
 import { ModeStep } from "./SetupSteps/ModeStep";
 import { DockerCheckStep } from "./SetupSteps/DockerCheckStep";
 import { StorageStep } from "./SetupSteps/StorageStep";
+import { ModelDownloadStep } from "./SetupSteps/ModelDownloadStep";
+import { GpuDetectionStep } from "./SetupSteps/GpuDetectionStep";
 import { SummaryStep } from "./SetupSteps/SummaryStep";
 
 // ── Step Definitions ─────────────────────────────────────────────────────────
@@ -13,6 +15,8 @@ const STEPS = [
   { id: "mode", label: "Modus" },
   { id: "docker", label: "Docker" },
   { id: "storage", label: "Speicher" },
+  { id: "download", label: "Modelle" },
+  { id: "gpu", label: "GPU" },
   { id: "summary", label: "Fertig" },
 ] as const;
 
@@ -140,6 +144,12 @@ export function SetupWizard({ initialStep, onComplete }: SetupWizardProps) {
             />
           )}
           {currentStep === 4 && (
+            <ModelDownloadStep onNext={goNext} onBack={goBack} />
+          )}
+          {currentStep === 5 && (
+            <GpuDetectionStep onNext={goNext} onBack={goBack} />
+          )}
+          {currentStep === 6 && (
             <SummaryStep
               dockerResult={dockerResult}
               onComplete={handleComplete}

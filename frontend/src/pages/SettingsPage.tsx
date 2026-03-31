@@ -3,7 +3,8 @@ import {
   api,
   type HealthResponse,
   type SettingsResponse,
-  type GpuInfoResponse,
+  type GpuDetectionResponse,
+  type CacheInfoResponse,
 } from "../lib/api";
 import { ThemeContext } from "../App";
 import {
@@ -14,21 +15,36 @@ import {
   Copy,
   Check,
   Server,
+  Cpu,
+  HardDrive,
+  Trash2,
 } from "lucide-react";
 
 export function SettingsPage() {
   const { dark, toggle } = useContext(ThemeContext);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [settings, setSettings] = useState<SettingsResponse | null>(null);
-  const [gpuInfo, setGpuInfo] = useState<GpuInfoResponse | null>(null);
+  const [gpuInfo, setGpuInfo] = useState<GpuDetectionResponse | null>(null);
   const [copied, setCopied] = useState(false);
+  const [cacheInfo, setCacheInfo] = useState<CacheInfoResponse | null>(null);
+  const [gpuSwitching, setGpuSwitching] = useState(false);
+  const [gpuEnabled, setGpuEnabled] = useState(false);
+  const [gpuSwitchError, setGpuSwitchError] = useState<string | null>(null);
+  const [showCacheConfirm, setShowCacheConfirm] = useState(false);
+  const [cacheClearing, setCacheClearing] = useState(false);
+  const [cacheError, setCacheError] = useState<string | null>(null);
+  const isDesktop = !!window.paragrafDesktop?.isDesktop;
 
   // Load data from API
   useEffect(() => {
     api.health().then(setHealth).catch(() => {});
     api.settings().then(setSettings).catch(() => {});
-    api.gpuInfo().then(setGpuInfo).catch(() => {});
-  }, []);
+    api.gpuDetection().then(setGpuInfo).catch(() => {});
+    api.cacheInfo().then(setCacheInfo).catch(() => {});
+    if (isDesktop) {
+      window.paragrafSetup?.getGpuPreference().then((r) => setGpuEnabled(r.gpuEnabled));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCopyMcpCommand = useCallback(() => {
     navigator.clipboard.writeText(
@@ -36,6 +52,57 @@ export function SettingsPage() {
     );
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }, []);
+
+  const handleGpuToggle = useCallback(async () => {
+    const newEnabled = !gpuEnabled;
+    setGpuSwitching(true);
+    setGpuSwitchError(null);
+    try {
+      const result = await window.paragrafSetup?.switchGpu(newEnabled);
+      if (result?.success) {
+        setGpuEnabled(result.gpuEnabled);
+      } else {
+        setGpuEnabled(false);
+        setGpuSwitchError("GPU-Modus konnte nicht aktiviert werden. CPU-Modus wird verwendet.");
+      }
+    } catch {
+      setGpuEnabled(false);
+      setGpuSwitchError("GPU-Modus konnte nicht aktiviert werden. CPU-Modus wird verwendet.");
+    } finally {
+      setGpuSwitching(false);
+    }
+  }, [gpuEnabled]);
+
+  const handleClearCache = useCallback(async () => {
+    setShowCacheConfirm(false);
+    setCacheClearing(true);
+    setCacheError(null);
+    try {
+      // D-07: The Electron IPC handler (setup:clearModelCache) also resets
+      // setupStep=4 and setupComplete=false, so the download step will
+      // re-appear on next app start. No additional reset call needed here.
+      if (isDesktop) {
+        const result = await window.paragrafSetup?.clearModelCache();
+        if (!result?.success) throw new Error(result?.error || "Unbekannter Fehler");
+      } else {
+        await api.clearCache();
+      }
+      const info = await api.cacheInfo();
+      setCacheInfo(info);
+    } catch (e: unknown) {
+      setCacheError(e instanceof Error ? e.message : "Cache konnte nicht geloescht werden");
+    } finally {
+      setCacheClearing(false);
+    }
+  }, [isDesktop]);
+
+  const handleChangeCachePath = useCallback(async () => {
+    const newPath = await window.paragrafSetup?.selectModelCachePath();
+    if (newPath) {
+      const info = await api.cacheInfo();
+      setCacheInfo(info);
+    }
   }, []);
 
   const StatusDot = ({ ok }: { ok: boolean }) => (
@@ -144,21 +211,176 @@ export function SettingsPage() {
           <p className="text-sm text-slate-400">Backend nicht erreichbar</p>
         )}
 
-        {gpuInfo && (
-          <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
-            <h3 className="text-sm font-medium mb-2">GPU</h3>
-            <div className="text-xs text-slate-500 space-y-1">
-              <p>CUDA verfuegbar: {gpuInfo.cuda_available ? "Ja" : "Nein"}</p>
-              {gpuInfo.cuda_available && (
-                <>
-                  <p>GPU: {gpuInfo.gpu_name}</p>
-                  <p>VRAM: {gpuInfo.vram_total_mb} MB</p>
-                </>
+      </Section>
+
+      {/* GPU-Konfiguration */}
+      <Section>
+        <h2 className="font-semibold mb-4 flex items-center gap-2">
+          <Cpu size={18} aria-hidden="true" />
+          GPU-Konfiguration
+        </h2>
+
+        {gpuInfo && (gpuInfo.nvidia_smi_available || gpuInfo.cuda_available) ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-sm">
+                  {gpuEnabled
+                    ? `GPU-Modus aktiv (${gpuInfo.gpu_name})`
+                    : "CPU-Modus aktiv"}
+                </span>
+              </div>
+              {isDesktop ? (
+                <button
+                  onClick={handleGpuToggle}
+                  role="switch"
+                  aria-checked={gpuEnabled}
+                  aria-label="GPU-Modus"
+                  disabled={gpuSwitching}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${
+                    gpuEnabled ? "bg-primary-600" : "bg-slate-300"
+                  } ${gpuSwitching ? "opacity-50 cursor-wait" : ""}`}
+                >
+                  <div
+                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                      gpuEnabled ? "translate-x-6" : "translate-x-0.5"
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
+              ) : (
+                <span className="text-xs text-slate-500">
+                  GPU-Wechsel erfordert Docker-Neustart
+                </span>
               )}
             </div>
+
+            {gpuSwitching && (
+              <p className="text-sm text-slate-500 animate-pulse" role="status">
+                Backend wird neu gestartet...
+              </p>
+            )}
+
+            {gpuSwitchError && (
+              <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-2" role="alert">
+                {gpuSwitchError}
+              </p>
+            )}
+
+            <div className="text-xs text-slate-500 space-y-1 pt-2 border-t border-slate-200 dark:border-slate-700">
+              <p>GPU: {gpuInfo.gpu_name || "Nicht erkannt"}</p>
+              <p>VRAM: {gpuInfo.vram_total_mb > 0 ? `${Math.round(gpuInfo.vram_total_mb / 1024)} GB` : "\u2013"}</p>
+              <p>CUDA: {gpuInfo.cuda_available ? "Ja" : "Nein"}</p>
+              <p>nvidia-smi: {gpuInfo.nvidia_smi_available ? "Verfuegbar" : "Nicht gefunden"}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-500">Keine NVIDIA-GPU erkannt</span>
           </div>
         )}
       </Section>
+
+      {/* Model-Cache */}
+      <Section>
+        <h2 className="font-semibold mb-4 flex items-center gap-2">
+          <HardDrive size={18} aria-hidden="true" />
+          Model-Cache
+        </h2>
+
+        {cacheInfo ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm text-slate-600 dark:text-slate-300">Pfad</span>
+                <p className="font-mono text-xs text-slate-500 mt-0.5">{cacheInfo.cache_path}</p>
+              </div>
+              {isDesktop && (
+                <button
+                  onClick={handleChangeCachePath}
+                  className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                >
+                  Aendern
+                </button>
+              )}
+            </div>
+
+            <InfoRow label="Groesse" value={`${(cacheInfo.total_size_mb / 1024).toFixed(1)} GB`} />
+            <InfoRow label="Freier Speicher" value={`${(cacheInfo.free_space_mb / 1024).toFixed(1)} GB`} />
+
+            {cacheInfo.models.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                {cacheInfo.models.map((m) => (
+                  <div key={m.name} className="flex items-center justify-between py-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${m.size_mb > 0 ? "bg-green-500" : "bg-neutral-300"}`} />
+                      <span className="text-sm text-slate-600 dark:text-slate-300">{m.name}</span>
+                    </div>
+                    <span className="text-sm font-mono text-slate-500">
+                      {m.size_mb > 0 ? `${(m.size_mb / 1024).toFixed(1)} GB` : "Nicht heruntergeladen"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {cacheInfo.models.length === 0 && (
+              <p className="text-sm text-slate-400">Keine Modelle im Cache.</p>
+            )}
+
+            {cacheInfo.total_size_mb > 0 && (
+              <div className="pt-3 flex justify-end">
+                <button
+                  onClick={() => setShowCacheConfirm(true)}
+                  disabled={cacheClearing}
+                  className="text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg px-4 py-2 flex items-center gap-2"
+                >
+                  <Trash2 size={14} aria-hidden="true" />
+                  {cacheClearing ? "Wird geloescht..." : "Cache loeschen"}
+                </button>
+              </div>
+            )}
+
+            {cacheError && (
+              <p className="text-sm text-red-500" role="alert">{cacheError}</p>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-400">Backend nicht erreichbar</p>
+        )}
+      </Section>
+
+      {/* Cache Delete Confirmation Dialog */}
+      {showCacheConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowCacheConfirm(false)}>
+          <div
+            role="alertdialog"
+            aria-labelledby="cache-confirm-title"
+            aria-describedby="cache-confirm-desc"
+            className="bg-white dark:bg-neutral-900 rounded-2xl shadow-lg border border-neutral-200 dark:border-neutral-800 p-6 max-w-sm mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="cache-confirm-title" className="text-base font-semibold mb-2">Cache loeschen</h3>
+            <p id="cache-confirm-desc" className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+              Alle heruntergeladenen Modelle werden entfernt. Beim naechsten Start werden sie automatisch neu heruntergeladen. Fortfahren?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowCacheConfirm(false)}
+                className="text-sm px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleClearCache}
+                className="text-sm px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
+              >
+                Cache loeschen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MCP-Server */}
       <Section>
