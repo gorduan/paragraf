@@ -280,6 +280,45 @@ export interface GpuInfoResponse {
   vram_total_mb: number;
 }
 
+// ── Model Download Types ────────────────────────────────────────────────────
+
+export interface ModelDownloadEvent {
+  type: "disk_check" | "disk_warning" | "start" | "progress" | "complete" | "retry" | "error" | "all_complete";
+  model?: string;
+  label?: string;
+  downloaded_bytes?: number;
+  total_bytes?: number;
+  speed_mbps?: number;
+  eta_seconds?: number;
+  free_gb?: number;
+  required_gb?: number;
+  message?: string;
+  retryable?: boolean;
+  attempt?: number;
+  max_attempts?: number;
+}
+
+export interface ModelStatusResponse {
+  models_ready: boolean;
+  models: { name: string; label: string; downloaded: boolean; size_mb: number }[];
+  downloading: boolean;
+}
+
+export interface CacheInfoResponse {
+  cache_path: string;
+  total_size_mb: number;
+  free_space_mb: number;
+  models: { name: string; size_mb: number }[];
+}
+
+export interface GpuDetectionResponse {
+  nvidia_smi_available: boolean;
+  cuda_available: boolean;
+  gpu_name: string;
+  vram_total_mb: number;
+  current_device: string;
+}
+
 // ── Snapshot Types ───────────────────────────────────────────────────────────
 
 export interface SnapshotInfo {
@@ -581,4 +620,63 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  // ── Model Download & Cache ──────────────────────────────────────────────────
+
+  modelStatus: () => fetchJson<ModelStatusResponse>("/api/models/status"),
+
+  cacheInfo: () => fetchJson<CacheInfoResponse>("/api/models/cache"),
+
+  clearCache: () =>
+    fetchJson<{ erfolg: boolean; nachricht: string }>("/api/models/cache", {
+      method: "DELETE",
+    }),
+
+  gpuDetection: () => fetchJson<GpuDetectionResponse>("/api/settings/gpu"),
+
+  downloadModels: (
+    onProgress: (event: ModelDownloadEvent) => void,
+    onComplete?: () => void,
+  ): { cancel: () => void } => {
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/api/models/download`, {
+          method: "POST",
+          signal: controller.signal,
+        });
+
+        const reader = res.body?.getReader();
+        if (!reader) { onComplete?.(); return; }
+
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n\n");
+          buffer = lines.pop() || "";
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const event: ModelDownloadEvent = JSON.parse(line.slice(6));
+                onProgress(event);
+              } catch { /* ignore parse errors */ }
+            }
+          }
+        }
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name !== "AbortError") {
+          console.error("Download-Stream Fehler:", e);
+        }
+      } finally {
+        onComplete?.();
+      }
+    })();
+
+    return { cancel: () => controller.abort() };
+  },
 };
