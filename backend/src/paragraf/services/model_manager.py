@@ -208,9 +208,12 @@ class ModelManager:
             size_mb = 0
 
             if model_dir.exists():
-                # Suche nach safetensors Dateien als Indikator fuer kompletten Download
-                safetensors_files = list(model_dir.rglob("*.safetensors"))
-                if safetensors_files:
+                # Suche nach Modelldateien als Indikator fuer kompletten Download
+                model_files = (
+                    list(model_dir.rglob("*.safetensors"))
+                    or list(model_dir.rglob("*.bin"))
+                )
+                if model_files:
                     downloaded = True
                     # Gesamtgroesse berechnen
                     total_bytes = sum(
