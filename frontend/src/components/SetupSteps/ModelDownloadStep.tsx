@@ -12,49 +12,27 @@ interface ModelDownloadStepProps {
 interface ModelState {
   name: string;
   label: string;
-  downloadedBytes: number;
-  totalBytes: number;
-  speedMbps: number;
-  etaSeconds: number;
   status: "waiting" | "downloading" | "complete" | "error";
-  errorMessage?: string;
+  message?: string;
 }
 
-type StepStatus = "idle" | "checking" | "waiting-backend" | "warning" | "downloading" | "complete" | "error";
-
-// ── Constants ───────────────────────────────────────────────────────────────
-
-const INITIAL_MODELS: ModelState[] = [
-  { name: "BAAI/bge-m3", label: "Embedding-Modell (BAAI/bge-m3)", downloadedBytes: 0, totalBytes: 2_300_000_000, speedMbps: 0, etaSeconds: 0, status: "waiting" },
-  { name: "BAAI/bge-reranker-v2-m3", label: "Reranker-Modell (BAAI/bge-reranker-v2-m3)", downloadedBytes: 0, totalBytes: 1_100_000_000, speedMbps: 0, etaSeconds: 0, status: "waiting" },
-];
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatBytes(bytes: number): string {
-  return (bytes / (1024 ** 3)).toFixed(1);
-}
-
-function formatEta(seconds: number): string {
-  if (seconds <= 0) return "--";
-  if (seconds < 60) return `${Math.round(seconds)} Sek.`;
-  return `${Math.round(seconds / 60)} Min.`;
-}
+type StepStatus = "waiting-backend" | "idle" | "warning" | "downloading" | "complete" | "error";
 
 // ── Component ───────────────────────────────────────────────────────────────
 
 export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
-  const [status, setStatus] = useState<StepStatus>("idle");
-  const [models, setModels] = useState<ModelState[]>(INITIAL_MODELS);
+  const [status, setStatus] = useState<StepStatus>("waiting-backend");
+  const [models, setModels] = useState<ModelState[]>([
+    { name: "BAAI/bge-m3", label: "Embedding-Modell (BAAI/bge-m3)", status: "waiting" },
+    { name: "BAAI/bge-reranker-v2-m3", label: "Reranker-Modell (BAAI/bge-reranker-v2-m3)", status: "waiting" },
+  ]);
   const [freeGb, setFreeGb] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
   const downloadRef = useRef<{ cancel: () => void } | null>(null);
-  const throttleRef = useRef<number>(0);
 
-  // Wait for backend to be ready, then check model status
+  // Wait for backend, then check model status
   useEffect(() => {
     let cancelled = false;
-    setStatus("waiting-backend");
 
     const pollBackend = async () => {
       while (!cancelled) {
@@ -62,21 +40,18 @@ export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
           const res = await api.modelStatus();
           if (cancelled) return;
           if (res.models_ready) {
-            setStatus("complete");
             setModels((prev) =>
               prev.map((m) => {
-                const serverModel = res.models.find((sm) => sm.name === m.name);
-                return serverModel?.downloaded
-                  ? { ...m, status: "complete" as const, downloadedBytes: m.totalBytes }
-                  : m;
+                const sm = res.models.find((s) => s.name === m.name);
+                return sm?.downloaded ? { ...m, status: "complete" as const } : m;
               }),
             );
+            setStatus("complete");
           } else {
             setStatus("idle");
           }
           return;
         } catch {
-          // Backend not ready yet, retry in 3s
           await new Promise((r) => setTimeout(r, 3000));
         }
       }
@@ -103,45 +78,29 @@ export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
       case "start":
         setModels((prev) =>
           prev.map((m) =>
-            m.name === event.model ? { ...m, status: "downloading" } : m,
+            m.name === event.model ? { ...m, status: "downloading", message: undefined } : m,
           ),
         );
         break;
-      case "progress": {
-        // Throttle UI updates to ~500ms
-        const now = Date.now();
-        if (now - throttleRef.current < 500) return;
-        throttleRef.current = now;
+      case "progress":
         setModels((prev) =>
           prev.map((m) =>
-            m.name === event.model
-              ? {
-                  ...m,
-                  downloadedBytes: event.downloaded_bytes ?? m.downloadedBytes,
-                  totalBytes: event.total_bytes ?? m.totalBytes,
-                  speedMbps: event.speed_mbps ?? m.speedMbps,
-                  etaSeconds: event.eta_seconds ?? m.etaSeconds,
-                }
-              : m,
+            m.name === event.model ? { ...m, message: event.message } : m,
           ),
         );
         break;
-      }
       case "complete":
         setModels((prev) =>
           prev.map((m) =>
-            m.name === event.model
-              ? { ...m, status: "complete", downloadedBytes: m.totalBytes }
-              : m,
+            m.name === event.model ? { ...m, status: "complete", message: undefined } : m,
           ),
         );
         break;
       case "retry":
-        // Show retry status on the model
         setModels((prev) =>
           prev.map((m) =>
             m.name === event.model
-              ? { ...m, errorMessage: `Versuch ${event.attempt} von ${event.max_attempts}` }
+              ? { ...m, message: `Versuch ${event.attempt} von ${event.max_attempts}...` }
               : m,
           ),
         );
@@ -150,7 +109,7 @@ export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
         setModels((prev) =>
           prev.map((m) =>
             m.name === event.model
-              ? { ...m, status: "error", errorMessage: event.message ?? "Unbekannter Fehler" }
+              ? { ...m, status: "error", message: event.message ?? "Fehler" }
               : m,
           ),
         );
@@ -166,13 +125,10 @@ export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
   const handleStartDownload = useCallback(() => {
     setStatus("downloading");
     setErrorMessage("");
-    setModels(INITIAL_MODELS);
+    setModels((prev) => prev.map((m) => ({ ...m, status: "waiting" as const, message: undefined })));
     const handle = api.downloadModels(handleProgress);
     downloadRef.current = handle;
   }, [handleProgress]);
-
-  const percent = (m: ModelState) =>
-    m.totalBytes > 0 ? Math.round((m.downloadedBytes / m.totalBytes) * 100) : 0;
 
   return (
     <div className="px-8 py-10">
@@ -217,63 +173,41 @@ export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
             key={m.name}
             className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
                 {m.label}
               </span>
-              <span className="text-xs text-neutral-500">
-                {formatBytes(m.totalBytes)} GB
-              </span>
+              {m.status === "downloading" && (
+                <Loader size={16} className="animate-spin text-primary-500" aria-hidden="true" />
+              )}
+              {m.status === "complete" && (
+                <Check size={16} className="text-green-500" aria-hidden="true" />
+              )}
+              {m.status === "error" && (
+                <AlertTriangle size={16} className="text-red-500" aria-hidden="true" />
+              )}
             </div>
 
-            {/* Progress bar */}
-            {m.status === "downloading" && (
-              <>
-                <div
-                  className="h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden"
-                  role="progressbar"
-                  aria-valuenow={percent(m)}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label={`${m.label}: ${percent(m)}%`}
-                >
-                  <div
-                    className="h-full rounded-full bg-primary-500 transition-all duration-300"
-                    style={{ width: `${percent(m)}%` }}
-                  />
-                </div>
-                <p className="text-xs text-neutral-500 mt-1.5" aria-live="polite">
-                  {formatBytes(m.downloadedBytes)} / {formatBytes(m.totalBytes)} GB
-                  {" \u2014 "}
-                  {m.speedMbps > 0 ? `${m.speedMbps.toFixed(1)} MB/s` : "..."}
-                  {" \u2014 "}
-                  ca. {formatEta(m.etaSeconds)}
-                  {m.errorMessage && ` (${m.errorMessage})`}
-                </p>
-              </>
-            )}
-
-            {/* Waiting */}
+            {/* Status text */}
             {m.status === "waiting" && status === "downloading" && (
-              <p className="text-xs text-neutral-400">Wartet...</p>
+              <p className="text-xs text-neutral-400 mt-2">Wartet...</p>
             )}
-
-            {/* Complete */}
-            {m.status === "complete" && (
-              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                <Check size={16} aria-hidden="true" />
-                <span className="text-sm">Heruntergeladen</span>
+            {m.status === "downloading" && (
+              <div className="mt-2">
+                <div className="h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+                  <div className="h-full rounded-full bg-primary-500 animate-pulse w-full" />
+                </div>
+                <p className="text-xs text-neutral-500 mt-1" aria-live="polite">
+                  {m.message || "Wird heruntergeladen..."}
+                </p>
               </div>
             )}
-
-            {/* Error */}
+            {m.status === "complete" && (
+              <p className="text-xs text-green-600 dark:text-green-400 mt-2">Heruntergeladen</p>
+            )}
             {m.status === "error" && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                  <AlertTriangle size={16} aria-hidden="true" />
-                  <span className="text-sm">{m.errorMessage}</span>
-                </div>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-xs text-red-600 dark:text-red-400">{m.message}</p>
                 <button
                   onClick={handleStartDownload}
                   className="text-xs text-primary-600 dark:text-primary-400 flex items-center gap-1 hover:underline"
@@ -292,14 +226,6 @@ export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
         <div className="flex items-center gap-2 text-neutral-500 mb-4" role="status">
           <Loader size={16} className="animate-spin" aria-hidden="true" />
           <span className="text-sm">Backend wird gestartet... Bitte warten.</span>
-        </div>
-      )}
-
-      {/* Checking spinner */}
-      {status === "checking" && (
-        <div className="flex items-center gap-2 text-neutral-500 mb-4" role="status">
-          <Loader size={16} className="animate-spin" aria-hidden="true" />
-          <span className="text-sm">Modell-Status wird geprueft...</span>
         </div>
       )}
 
@@ -330,7 +256,7 @@ export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
         ) : (
           <button
             onClick={handleStartDownload}
-            disabled={status === "downloading" || status === "checking" || status === "waiting-backend"}
+            disabled={status === "downloading" || status === "waiting-backend"}
             className="px-6 py-2.5 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 font-medium disabled:opacity-50 disabled:cursor-wait flex items-center gap-2"
           >
             {status === "downloading" && (

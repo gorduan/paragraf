@@ -23,46 +23,89 @@ MODELS: list[tuple[str, str]] = [
 # Mindestens verfuegbarer Festplattenspeicher in GB
 REQUIRED_DISK_GB = 5.0
 
-# Dateiendungen die als grosse Modelldateien gelten
-LARGE_FILE_EXTENSIONS = {".safetensors", ".bin", ".model"}
-
 # Wiederholungsversuche und Backoff
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = [2.0, 4.0, 8.0]
+
+# Lock-Timeout: nach 30 Minuten wird der Lock freigegeben
+DOWNLOAD_LOCK_TIMEOUT = 30 * 60
+
+
+def _is_model_downloaded(hub_dir: Path, model_id: str) -> bool:
+    """Prueft ob ein Modell vollstaendig heruntergeladen ist.
+
+    Ein Modell gilt als heruntergeladen wenn ein snapshots/-Verzeichnis
+    mit mindestens einem Commit-Hash existiert, der Dateien enthaelt.
+    """
+    safe_name = model_id.replace("/", "--")
+    snapshots_dir = hub_dir / f"models--{safe_name}" / "snapshots"
+    if not snapshots_dir.exists():
+        return False
+    # Mindestens ein Snapshot-Verzeichnis mit Dateien
+    for snapshot in snapshots_dir.iterdir():
+        if snapshot.is_dir() and any(snapshot.iterdir()):
+            return True
+    return False
+
+
+def _get_model_size_mb(hub_dir: Path, model_id: str) -> int:
+    """Berechnet die Groesse eines Modells im Cache in MB."""
+    safe_name = model_id.replace("/", "--")
+    model_dir = hub_dir / f"models--{safe_name}"
+    if not model_dir.exists():
+        return 0
+    total_bytes = sum(f.stat().st_size for f in model_dir.rglob("*") if f.is_file())
+    return int(total_bytes / (1024 * 1024))
 
 
 class ModelManager:
     """Verwaltet den Download, Status und Cache von ML-Modellen.
 
-    Verwendet hf_hub_download() per Datei (nicht snapshot_download) fuer
-    echten Byte-Level-Fortschritt beim Download.
+    Verwendet snapshot_download() fuer zuverlaessigen Download mit
+    Modell-Level-Fortschritt (nicht Byte-Level).
     """
 
     def __init__(self, hf_home: str | None = None) -> None:
         self.hf_home = hf_home or os.environ.get("HF_HOME", "/models")
         self._download_lock = asyncio.Lock()
         self._downloading = False
+        self._download_started_at: float = 0.0
+
+    def _check_stale_lock(self) -> None:
+        """Gibt den Lock frei wenn er zu lange gehalten wird."""
+        if (
+            self._downloading
+            and self._download_started_at > 0
+            and (time.monotonic() - self._download_started_at) > DOWNLOAD_LOCK_TIMEOUT
+        ):
+            logger.warning("Download-Lock Timeout nach %d Sekunden — Lock wird freigegeben",
+                           DOWNLOAD_LOCK_TIMEOUT)
+            self._downloading = False
+            if self._download_lock.locked():
+                self._download_lock.release()
 
     async def download_models(self) -> AsyncIterator[dict[str, Any]]:
         """Laedt alle ML-Modelle herunter und streamt SSE-Events.
 
         Yields dicts mit type-Feld:
         - disk_check: Festplattenspeicher-Pruefung
-        - disk_warning: Zu wenig Speicher (nur Warnung, kein Abbruch)
+        - disk_warning: Zu wenig Speicher
         - start: Beginn eines Modell-Downloads
-        - progress: Fortschritt in Bytes
-        - retry: Wiederholungsversuch
+        - progress: Modell-Level Fortschritt (model_index, total_models)
         - complete: Modell vollstaendig heruntergeladen
+        - retry: Wiederholungsversuch
         - error: Fehler beim Download
         - all_complete: Alle Modelle fertig
         """
+        self._check_stale_lock()
+
         if self._download_lock.locked():
             yield {"type": "error", "message": "Download laeuft bereits"}
             return
 
-        # Lock manuell acquiren um async generator mit Lock zu kombinieren
         await self._download_lock.acquire()
         self._downloading = True
+        self._download_started_at = time.monotonic()
         try:
             # Festplattenspeicher pruefen
             try:
@@ -83,24 +126,59 @@ class ModelManager:
             except Exception as e:
                 logger.warning("Festplattenplatz-Pruefung fehlgeschlagen: %s", e)
 
-            # Jedes Modell herunterladen
-            for model_id, label in MODELS:
+            hub_dir = Path(self.hf_home) / "hub"
+            total_models = len(MODELS)
+
+            for idx, (model_id, label) in enumerate(MODELS):
+                # Pruefen ob Modell schon vollstaendig da ist
+                if _is_model_downloaded(hub_dir, model_id):
+                    logger.info("Modell %s bereits heruntergeladen — ueberspringe", model_id)
+                    yield {"type": "start", "model": model_id, "label": label}
+                    yield {"type": "complete", "model": model_id}
+                    continue
+
                 yield {"type": "start", "model": model_id, "label": label}
+                yield {
+                    "type": "progress",
+                    "model": model_id,
+                    "model_index": idx + 1,
+                    "total_models": total_models,
+                    "message": f"Lade {label} herunter...",
+                }
 
                 success = False
                 last_error: str = ""
 
                 for attempt in range(1, MAX_RETRIES + 1):
                     try:
-                        async for event in self._download_model_with_progress(model_id):
-                            yield event
-                            if event.get("type") == "complete":
-                                success = True
-                                break
-                        if success:
-                            break
+                        download_start = time.monotonic()
+                        await asyncio.to_thread(
+                            self._snapshot_download_sync, model_id
+                        )
+                        elapsed = time.monotonic() - download_start
+                        size_mb = _get_model_size_mb(hub_dir, model_id)
+                        speed_mbps = round(size_mb / max(elapsed, 0.001), 1)
+
+                        yield {
+                            "type": "progress",
+                            "model": model_id,
+                            "model_index": idx + 1,
+                            "total_models": total_models,
+                            "downloaded_bytes": size_mb * 1024 * 1024,
+                            "total_bytes": size_mb * 1024 * 1024,
+                            "speed_mbps": speed_mbps,
+                            "eta_seconds": 0,
+                            "message": f"{label} heruntergeladen ({size_mb} MB)",
+                        }
+                        yield {"type": "complete", "model": model_id}
+                        success = True
+                        break
                     except Exception as exc:
                         last_error = str(exc)
+                        logger.warning(
+                            "Download %s Versuch %d fehlgeschlagen: %s",
+                            model_id, attempt, exc,
+                        )
 
                     if not success and attempt < MAX_RETRIES:
                         yield {
@@ -123,103 +201,29 @@ class ModelManager:
 
         finally:
             self._downloading = False
+            self._download_started_at = 0.0
             self._download_lock.release()
 
-    async def _download_model_with_progress(
-        self, model_id: str
-    ) -> AsyncIterator[dict[str, Any]]:
-        """Download eines einzelnen Modells mit Byte-Level-Fortschritt.
-
-        Verwendet hf_hub_download() pro Datei fuer echten Fortschritt.
-        """
+    @staticmethod
+    def _snapshot_download_sync(model_id: str, cache_dir: str | None = None) -> str:
+        """Synchroner Wrapper fuer snapshot_download (laeuft in Thread)."""
         import huggingface_hub
 
-        # Alle Dateien des Repos ermitteln
-        all_files: list[str] = list(
-            await asyncio.to_thread(huggingface_hub.list_repo_files, model_id)
+        return huggingface_hub.snapshot_download(
+            model_id,
+            cache_dir=cache_dir or os.environ.get("HF_HOME", "/models"),
         )
 
-        # Grosse Dateien filtern
-        large_files = [
-            f for f in all_files
-            if Path(f).suffix in LARGE_FILE_EXTENSIONS
-        ]
-
-        total_downloaded = 0
-        total_estimated = 0
-
-        for filename in large_files:
-            file_start = time.monotonic()
-
-            # Download der Datei
-            result_path = await asyncio.to_thread(
-                huggingface_hub.hf_hub_download,
-                repo_id=model_id,
-                filename=filename,
-                cache_dir=self.hf_home,
-            )
-
-            # Dateigröße nach Download ermitteln
-            file_bytes = Path(result_path).stat().st_size if result_path else 0
-            elapsed = time.monotonic() - file_start
-            total_downloaded += file_bytes
-            total_estimated += file_bytes
-
-            speed_mbps = (file_bytes / (1024 * 1024)) / max(elapsed, 0.001)
-            remaining_files = len(large_files) - (large_files.index(filename) + 1)
-            eta_seconds = int(remaining_files * elapsed) if remaining_files > 0 else 0
-
-            yield {
-                "type": "progress",
-                "model": model_id,
-                "downloaded_bytes": total_downloaded,
-                "total_bytes": total_estimated,
-                "speed_mbps": round(speed_mbps, 2),
-                "eta_seconds": eta_seconds,
-            }
-
-        # Kleine Config-Dateien per snapshot_download nachladen (schnell, da grosse schon da)
-        try:
-            await asyncio.to_thread(
-                huggingface_hub.snapshot_download,
-                model_id,
-                cache_dir=self.hf_home,
-            )
-        except Exception as exc:
-            logger.warning("snapshot_download fuer %s fehlgeschlagen: %s", model_id, exc)
-
-        yield {"type": "complete", "model": model_id}
-
     async def get_model_status(self) -> dict[str, Any]:
-        """Gibt den Status aller ML-Modelle zurueck.
-
-        Prueft ob Modell-Verzeichnisse mit .safetensors-Dateien existieren.
-        """
+        """Gibt den Status aller ML-Modelle zurueck."""
+        self._check_stale_lock()
         hub_dir = Path(self.hf_home) / "hub"
         models_info = []
         all_ready = True
 
         for model_id, label in MODELS:
-            # HuggingFace speichert Modelle als models--org--name
-            safe_name = model_id.replace("/", "--")
-            model_dir = hub_dir / f"models--{safe_name}"
-
-            downloaded = False
-            size_mb = 0
-
-            if model_dir.exists():
-                # Suche nach Modelldateien als Indikator fuer kompletten Download
-                model_files = (
-                    list(model_dir.rglob("*.safetensors"))
-                    or list(model_dir.rglob("*.bin"))
-                )
-                if model_files:
-                    downloaded = True
-                    # Gesamtgroesse berechnen
-                    total_bytes = sum(
-                        f.stat().st_size for f in model_dir.rglob("*") if f.is_file()
-                    )
-                    size_mb = int(total_bytes / (1024 * 1024))
+            downloaded = _is_model_downloaded(hub_dir, model_id)
+            size_mb = _get_model_size_mb(hub_dir, model_id) if downloaded else 0
 
             if not downloaded:
                 all_ready = False
@@ -238,32 +242,19 @@ class ModelManager:
         }
 
     async def get_cache_info(self) -> dict[str, Any]:
-        """Gibt Informationen ueber den Model-Cache zurueck.
-
-        Berechnet Gesamtgroesse und freien Speicherplatz.
-        """
+        """Gibt Informationen ueber den Model-Cache zurueck."""
         hub_dir = Path(self.hf_home) / "hub"
         models_info = []
 
-        # Gesamtgroesse des Hub-Verzeichnisses
         total_size_bytes = 0
         if hub_dir.exists():
             total_size_bytes = sum(
                 f.stat().st_size for f in hub_dir.rglob("*") if f.is_file()
             )
-            # Pro-Modell-Groessen
             for model_id, _label in MODELS:
-                safe_name = model_id.replace("/", "--")
-                model_dir = hub_dir / f"models--{safe_name}"
-                size_mb = 0
-                if model_dir.exists():
-                    size_bytes = sum(
-                        f.stat().st_size for f in model_dir.rglob("*") if f.is_file()
-                    )
-                    size_mb = int(size_bytes / (1024 * 1024))
+                size_mb = _get_model_size_mb(hub_dir, model_id)
                 models_info.append({"name": model_id, "size_mb": size_mb})
 
-        # Freier Speicher
         try:
             Path(self.hf_home).mkdir(parents=True, exist_ok=True)
             disk = shutil.disk_usage(self.hf_home)
@@ -279,11 +270,7 @@ class ModelManager:
         }
 
     async def clear_cache(self) -> dict[str, Any]:
-        """Loescht den Model-Cache (hub/-Verzeichnis).
-
-        Returns:
-            dict mit erfolg und nachricht.
-        """
+        """Loescht den Model-Cache (hub/-Verzeichnis)."""
         hub_dir = Path(self.hf_home) / "hub"
 
         if not hub_dir.exists():
@@ -298,10 +285,7 @@ class ModelManager:
             return {"erfolg": False, "nachricht": f"Fehler: {exc}"}
 
     async def detect_gpu(self) -> dict[str, Any]:
-        """Erkennt GPU via nvidia-smi und torch.cuda.
-
-        Versucht zuerst nvidia-smi, dann torch.cuda als Fallback.
-        """
+        """Erkennt GPU via nvidia-smi und torch.cuda."""
         from paragraf.config import settings as app_settings
 
         nvidia_smi_available = False
@@ -309,7 +293,6 @@ class ModelManager:
         gpu_name = ""
         vram_total_mb = 0
 
-        # nvidia-smi pruefen
         try:
             output = await asyncio.to_thread(
                 subprocess.check_output,
@@ -327,11 +310,10 @@ class ModelManager:
                     except ValueError:
                         vram_total_mb = 0
                 nvidia_smi_available = True
-                cuda_available = True  # nvidia-smi vorhanden impliziert CUDA-faehige GPU
+                cuda_available = True
         except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
             pass
 
-        # torch.cuda als Fallback / zusaetzliche Bestaetigung
         try:
             import torch
 
