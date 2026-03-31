@@ -232,6 +232,79 @@ class GpuInfoResponse(BaseModel):
     vram_total_mb: int = 0
 
 
+# ── Model-Download & Cache ───────────────────────────────────────────────────
+
+
+class ModelDownloadEvent(BaseModel):
+    """SSE-Event fuer Model-Download-Fortschritt."""
+
+    type: Literal[
+        "disk_check",
+        "disk_warning",
+        "start",
+        "progress",
+        "complete",
+        "retry",
+        "error",
+        "all_complete",
+    ]
+    model: str | None = None
+    label: str | None = None
+    downloaded_bytes: int | None = None
+    total_bytes: int | None = None
+    speed_mbps: float | None = None
+    eta_seconds: int | None = None
+    free_gb: float | None = None
+    required_gb: float | None = None
+    message: str | None = None
+    retryable: bool | None = None
+    attempt: int | None = None
+    max_attempts: int | None = None
+
+
+class ModelInfo(BaseModel):
+    """Info ueber ein einzelnes ML-Modell im Cache."""
+
+    name: str
+    label: str
+    downloaded: bool = False
+    size_mb: int = 0
+
+
+class ModelStatusResponse(BaseModel):
+    """Status aller ML-Modelle."""
+
+    models_ready: bool = False
+    models: list[ModelInfo] = Field(default_factory=list)
+    downloading: bool = False
+
+
+class ModelCacheEntry(BaseModel):
+    """Ein Modell im Cache mit Groesse."""
+
+    name: str
+    size_mb: int = 0
+
+
+class CacheInfoResponse(BaseModel):
+    """Cache-Informationen fuer die Settings-Seite."""
+
+    cache_path: str = ""
+    total_size_mb: int = 0
+    free_space_mb: int = 0
+    models: list[ModelCacheEntry] = Field(default_factory=list)
+
+
+class GpuDetectionResponse(BaseModel):
+    """Erweiterte GPU-Erkennung mit nvidia-smi und torch.cuda."""
+
+    nvidia_smi_available: bool = False
+    cuda_available: bool = False
+    gpu_name: str = ""
+    vram_total_mb: int = 0
+    current_device: str = "cpu"
+
+
 # ── Snapshot-Modelle ─────────────────────────────────────────────────────────
 
 
