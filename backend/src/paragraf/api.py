@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from paragraf.api_models import (
     BatchSearchRequest,
     BatchSearchResponse,
+    CacheInfoResponse,
     CompareItem,
     CompareRequest,
     CompareResponse,
@@ -25,6 +26,7 @@ from paragraf.api_models import (
     CounselingResponse,
     DiscoverRequest,
     DiscoverResponse,
+    GpuDetectionResponse,
     GpuInfoResponse,
     GroupedRecommendRequest,
     GroupedRecommendResponse,
@@ -45,6 +47,7 @@ from paragraf.api_models import (
     LawStructureResponse,
     LookupRequest,
     LookupResponse,
+    ModelStatusResponse,
     MultiHopRequest,
     MultiHopResponse,
     RecommendRequest,
@@ -64,6 +67,8 @@ from paragraf.api_models import (
     SnapshotRestoreResponse,
 )
 from qdrant_client import models as qdrant_models
+
+from paragraf.services.model_manager import ModelManager
 
 from paragraf.config import settings
 from paragraf.models.law import (
@@ -282,6 +287,9 @@ def _register_routes(app: FastAPI) -> None:
     # Query Expander (CPU-only, instantiate once)
     query_expander = QueryExpander()
 
+    # ModelManager fuer Download und Cache-Verwaltung
+    model_manager = ModelManager()
+
     # ── Health ────────────────────────────────────────────────────────────
 
     @app.get("/api/health", response_model=HealthResponse)
@@ -326,18 +334,43 @@ def _register_routes(app: FastAPI) -> None:
             torch_home=os.environ.get("TORCH_HOME", ""),
         )
 
-    @app.get("/api/settings/gpu", response_model=GpuInfoResponse)
-    async def get_gpu_info() -> GpuInfoResponse:
-        try:
-            import torch
+    @app.get("/api/settings/gpu", response_model=GpuDetectionResponse)
+    async def get_gpu_info() -> GpuDetectionResponse:
+        data = await model_manager.detect_gpu()
+        return GpuDetectionResponse(**data)
 
-            if torch.cuda.is_available():
-                name = torch.cuda.get_device_name(0)
-                vram = int(torch.cuda.get_device_properties(0).total_memory / 1024 / 1024)
-                return GpuInfoResponse(cuda_available=True, gpu_name=name, vram_total_mb=vram)
-        except Exception:
-            pass
-        return GpuInfoResponse()
+    # ── Model-Download & Cache ───────────────────────────────────────────────
+
+    @app.post("/api/models/download")
+    async def download_models(request: Request) -> StreamingResponse:
+        """Laedt ML-Modelle herunter und streamt Fortschritt als SSE."""
+        if model_manager._downloading:
+            return JSONResponse(status_code=409, content={"error": "Download laeuft bereits"})
+
+        async def _stream() -> AsyncIterator[str]:
+            async for event in model_manager.download_models():
+                if await request.is_disconnected():
+                    break
+                yield f"data: {json.dumps(event)}\n\n"
+
+        return StreamingResponse(_stream(), media_type="text/event-stream")
+
+    @app.get("/api/models/status", response_model=ModelStatusResponse)
+    async def get_model_status() -> ModelStatusResponse:
+        """Gibt den Status aller ML-Modelle zurueck."""
+        data = await model_manager.get_model_status()
+        return ModelStatusResponse(**data)
+
+    @app.get("/api/models/cache", response_model=CacheInfoResponse)
+    async def get_cache_info() -> CacheInfoResponse:
+        """Gibt Cache-Informationen zurueck."""
+        data = await model_manager.get_cache_info()
+        return CacheInfoResponse(**data)
+
+    @app.delete("/api/models/cache")
+    async def clear_cache() -> dict:
+        """Loescht den Model-Cache."""
+        return await model_manager.clear_cache()
 
     # ── Semantische Suche ─────────────────────────────────────────────────
 
