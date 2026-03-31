@@ -63,11 +63,24 @@ export function SetupWizard({ initialStep, onComplete }: SetupWizardProps) {
     if (estimate) setStorageEstimate(estimate);
   }, []);
 
+  // Start Docker before the download step so the backend is available
+  const [dockerStarted, setDockerStarted] = useState(false);
+  const goNextWithDocker = useCallback(async () => {
+    if (!dockerStarted) {
+      await window.paragrafSetup?.startDocker();
+      setDockerStarted(true);
+    }
+    goNext();
+  }, [goNext, dockerStarted]);
+
   const handleComplete = useCallback(async () => {
     await window.paragrafSetup?.completeSetup();
-    await window.paragrafSetup?.startDocker();
+    // Docker already started before download step; restart only if not running
+    if (!dockerStarted) {
+      await window.paragrafSetup?.startDocker();
+    }
     onComplete();
-  }, [onComplete]);
+  }, [onComplete, dockerStarted]);
 
   // ── Stepper UI ─────────────────────────────────────────────────────────────
 
@@ -139,7 +152,7 @@ export function SetupWizard({ initialStep, onComplete }: SetupWizardProps) {
             <StorageStep
               storageEstimate={storageEstimate}
               onLoad={handleLoadStorage}
-              onNext={goNext}
+              onNext={goNextWithDocker}
               onBack={goBack}
             />
           )}

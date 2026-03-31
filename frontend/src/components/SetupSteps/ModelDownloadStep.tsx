@@ -20,7 +20,7 @@ interface ModelState {
   errorMessage?: string;
 }
 
-type StepStatus = "idle" | "checking" | "warning" | "downloading" | "complete" | "error";
+type StepStatus = "idle" | "checking" | "waiting-backend" | "warning" | "downloading" | "complete" | "error";
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
@@ -51,24 +51,39 @@ export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
   const downloadRef = useRef<{ cancel: () => void } | null>(null);
   const throttleRef = useRef<number>(0);
 
-  // Check if models are already downloaded
+  // Wait for backend to be ready, then check model status
   useEffect(() => {
-    setStatus("checking");
-    api.modelStatus().then((res) => {
-      if (res.models_ready) {
-        setStatus("complete");
-        setModels((prev) =>
-          prev.map((m) => {
-            const serverModel = res.models.find((sm) => sm.name === m.name);
-            return serverModel?.downloaded
-              ? { ...m, status: "complete" as const, downloadedBytes: m.totalBytes }
-              : m;
-          }),
-        );
-      } else {
-        setStatus("idle");
+    let cancelled = false;
+    setStatus("waiting-backend");
+
+    const pollBackend = async () => {
+      while (!cancelled) {
+        try {
+          const res = await api.modelStatus();
+          if (cancelled) return;
+          if (res.models_ready) {
+            setStatus("complete");
+            setModels((prev) =>
+              prev.map((m) => {
+                const serverModel = res.models.find((sm) => sm.name === m.name);
+                return serverModel?.downloaded
+                  ? { ...m, status: "complete" as const, downloadedBytes: m.totalBytes }
+                  : m;
+              }),
+            );
+          } else {
+            setStatus("idle");
+          }
+          return;
+        } catch {
+          // Backend not ready yet, retry in 3s
+          await new Promise((r) => setTimeout(r, 3000));
+        }
       }
-    }).catch(() => setStatus("idle"));
+    };
+
+    pollBackend();
+    return () => { cancelled = true; };
   }, []);
 
   // Cleanup on unmount
@@ -272,6 +287,14 @@ export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
         ))}
       </div>
 
+      {/* Waiting for backend */}
+      {status === "waiting-backend" && (
+        <div className="flex items-center gap-2 text-neutral-500 mb-4" role="status">
+          <Loader size={16} className="animate-spin" aria-hidden="true" />
+          <span className="text-sm">Backend wird gestartet... Bitte warten.</span>
+        </div>
+      )}
+
       {/* Checking spinner */}
       {status === "checking" && (
         <div className="flex items-center gap-2 text-neutral-500 mb-4" role="status">
@@ -307,7 +330,7 @@ export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
         ) : (
           <button
             onClick={handleStartDownload}
-            disabled={status === "downloading" || status === "checking"}
+            disabled={status === "downloading" || status === "checking" || status === "waiting-backend"}
             className="px-6 py-2.5 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 font-medium disabled:opacity-50 disabled:cursor-wait flex items-center gap-2"
           >
             {status === "downloading" && (
