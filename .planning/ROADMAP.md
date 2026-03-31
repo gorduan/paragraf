@@ -79,12 +79,13 @@ Plans:
   2. GPU/CUDA wird automatisch erkannt (nvidia-smi + torch.cuda) und die App konfiguriert sich selbststaendig fuer GPU-Nutzung
   3. Nutzer kann in den Einstellungen zwischen CPU und GPU wechseln ohne Neuinstallation
   4. Nutzer kann in den Einstellungen den Model-Cache verwalten (Pfad einsehen, Groesse anzeigen, Cache loeschen)
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 16-01: TBD
-- [ ] 16-02: TBD
+- [ ] 16-01-PLAN.md — Backend ModelManager service + API endpoints (download SSE, model status, cache, GPU detection)
+- [ ] 16-02-PLAN.md — Electron IPC extensions (GPU switch, cache management, Docker GPU overlay support)
+- [ ] 16-03-PLAN.md — Frontend wizard steps (ModelDownload, GpuDetection) + SettingsPage extensions (GPU toggle, cache management)
 
 ### Phase 17: System Tray & Crash Resilience
 **Goal**: App laeuft zuverlaessig im Hintergrund weiter und erholt sich automatisch von Backend-Abstuerzen und Port-Konflikten
@@ -110,5 +111,5 @@ Phases execute in numeric order: 14 > 15 > 16 > 17
 |-------|-----------|----------------|--------|-----------|
 | 14. Electron Shell & Docker Lifecycle | v2.0 | 2/2 | Complete    | 2026-03-29 |
 | 15. Windows Installer & Setup Wizard | v2.0 | 2/2 | Complete    | 2026-03-31 |
-| 16. Model Download & GPU Configuration | v2.0 | 0/2 | Not started | - |
+| 16. Model Download & GPU Configuration | v2.0 | 0/3 | Not started | - |
 | 17. System Tray & Crash Resilience | v2.0 | 0/2 | Not started | - |
