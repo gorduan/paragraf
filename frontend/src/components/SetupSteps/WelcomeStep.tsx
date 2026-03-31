@@ -17,11 +17,11 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
         Willkommen bei Paragraf
       </h1>
       <p className="text-lg text-neutral-500 dark:text-neutral-400 mb-4">
-        Deutsches Recht &ndash; schnell und verstaendlich
+        Deutsches Recht &ndash; schnell und verständlich
       </p>
       <p className="text-sm text-neutral-400 dark:text-neutral-500 max-w-md mb-10">
         Paragraf hilft Ihnen, relevante Paragraphen in Sekunden zu finden.
-        Dieser Assistent richtet die App fuer Sie ein.
+        Dieser Assistent richtet die App für Sie ein.
       </p>
 
       <button

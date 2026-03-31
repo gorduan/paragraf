@@ -25,9 +25,10 @@ export function createMainWindow(): BrowserWindow {
     logger.info("Hauptfenster angezeigt");
   });
 
-  // In dev: load Vite dev server
+  // In dev: load frontend Vite dev server (start with: cd frontend && npm run dev)
+  const frontendDevUrl = process.env.PARAGRAF_FRONTEND_URL || "http://localhost:5173";
   if (process.env.ELECTRON_RENDERER_URL) {
-    win.loadURL(process.env.ELECTRON_RENDERER_URL);
+    win.loadURL(frontendDevUrl);
   } else {
     // In production: load built frontend from resources
     const rendererPath = path.join(__dirname, "../../renderer/index.html");

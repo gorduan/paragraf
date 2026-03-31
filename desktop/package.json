@@ -4,9 +4,8 @@
   "private": true,
   "description": "Paragraf Desktop – Deutsches Recht als Desktop-App",
   "main": "out/main/index.js",
-  "type": "module",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "node scripts/dev.cjs",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "build:frontend": "cd ../frontend && npm run build",

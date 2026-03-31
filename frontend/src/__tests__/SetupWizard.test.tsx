@@ -22,6 +22,7 @@ const mockSetup: ParagrafSetup = {
     lawData: 500,
     total: 8500,
     unit: "MB",
+    modelCachePath: "C:\\ProgramData\\Paragraf\\models",
   }),
   startDocker: vi.fn().mockResolvedValue({ success: true }),
 };
@@ -90,7 +91,7 @@ describe("ModeStep", () => {
 // ── DockerCheckStep ──────────────────────────────────────────────────────────
 
 describe("DockerCheckStep", () => {
-  it("shows 'Docker laeuft' for running status", async () => {
+  it("shows 'Docker läuft' for running status", async () => {
     const { DockerCheckStep } = await import("../components/SetupSteps/DockerCheckStep");
     render(
       <DockerCheckStep
@@ -102,7 +103,7 @@ describe("DockerCheckStep", () => {
       />,
     );
 
-    expect(screen.getByText(/Docker laeuft/)).toBeTruthy();
+    expect(screen.getByText(/Docker läuft/)).toBeTruthy();
   });
 
   it("shows warning for not-running status", async () => {
@@ -153,12 +154,12 @@ describe("SetupWizard navigation", () => {
     });
   });
 
-  it("goes back when Zurueck is clicked", async () => {
+  it("goes back when Zurück is clicked", async () => {
     const { SetupWizard } = await import("../components/SetupWizard");
     render(<SetupWizard initialStep={1} onComplete={vi.fn()} />);
 
-    // On step 1 (Mode), click Zurueck
-    const backBtn = screen.getByRole("button", { name: /zurueck/i });
+    // On step 1 (Mode), click Zurück
+    const backBtn = screen.getByRole("button", { name: /zurück/i });
     fireEvent.click(backBtn);
 
     // Should now show WelcomeStep

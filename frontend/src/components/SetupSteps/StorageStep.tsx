@@ -26,7 +26,7 @@ export function StorageStep({ storageEstimate, onLoad, onNext, onBack }: Storage
         Speicherbedarf
       </h2>
       <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-8">
-        Paragraf benoetigt etwa 8,5 GB Speicherplatz.
+        Paragraf benötigt etwa 8,5 GB Speicherplatz.
       </p>
 
       <div className="w-full max-w-md mb-8">
@@ -75,9 +75,11 @@ export function StorageStep({ storageEstimate, onLoad, onNext, onBack }: Storage
           Dies kann je nach Internetverbindung einige Minuten dauern.
         </p>
 
-        <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-2">
-          Modell-Cache: <code className="font-mono bg-neutral-100 dark:bg-neutral-800 px-1 rounded">C:\ProgramData\Paragraf\models</code>
-        </p>
+        {storageEstimate?.modelCachePath && (
+          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-2">
+            Modell-Cache: <code className="font-mono bg-neutral-100 dark:bg-neutral-800 px-1 rounded">{storageEstimate.modelCachePath}</code>
+          </p>
+        )}
       </div>
 
       {/* Navigation */}
@@ -86,7 +88,7 @@ export function StorageStep({ storageEstimate, onLoad, onNext, onBack }: Storage
           onClick={onBack}
           className="px-5 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900"
         >
-          Zurueck
+          Zurück
         </button>
         <button
           onClick={onNext}

@@ -30,7 +30,7 @@ export function DockerCheckStep({
         Docker-Erkennung
       </h2>
       <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-8">
-        Paragraf benoetigt Docker Desktop, um die Backend-Dienste auszufuehren.
+        Paragraf benötigt Docker Desktop, um die Backend-Dienste auszuführen.
       </p>
 
       <div className="w-full max-w-md mb-10" aria-live="polite">
@@ -48,7 +48,7 @@ export function DockerCheckStep({
             <CheckCircle size={24} className="text-success-500 shrink-0 mt-0.5" aria-hidden="true" />
             <div>
               <p className="font-medium text-success-600 dark:text-success-500">
-                Docker laeuft
+                Docker läuft
               </p>
               {dockerResult.version && (
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
@@ -68,13 +68,13 @@ export function DockerCheckStep({
                 Docker ist installiert, aber nicht gestartet
               </p>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                Bitte starten Sie Docker Desktop und klicken Sie &quot;Erneut pruefen&quot;.
+                Bitte starten Sie Docker Desktop und klicken Sie &quot;Erneut prüfen&quot;.
               </p>
               <button
                 onClick={onCheck}
                 className="mt-3 px-4 py-1.5 rounded-lg border border-warning-500 text-warning-600 dark:text-warning-500 hover:bg-warning-50 dark:hover:bg-warning-100/10 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
               >
-                Erneut pruefen
+                Erneut prüfen
               </button>
             </div>
           </div>
@@ -95,7 +95,7 @@ export function DockerCheckStep({
                 onClick={onCheck}
                 className="mt-3 px-4 py-1.5 rounded-lg border border-warning-500 text-warning-600 dark:text-warning-500 hover:bg-warning-50 dark:hover:bg-warning-100/10 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
               >
-                Erneut pruefen
+                Erneut prüfen
               </button>
             </div>
           </div>
@@ -116,13 +116,13 @@ export function DockerCheckStep({
                 Docker Desktop herunterladen
               </button>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-3">
-                Nach der Installation: Starten Sie Docker Desktop, dann klicken Sie &quot;Erneut pruefen&quot;.
+                Nach der Installation: Starten Sie Docker Desktop, dann klicken Sie &quot;Erneut prüfen&quot;.
               </p>
               <button
                 onClick={onCheck}
                 className="mt-2 px-4 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
               >
-                Erneut pruefen
+                Erneut prüfen
               </button>
             </div>
           </div>
@@ -135,7 +135,7 @@ export function DockerCheckStep({
           onClick={onBack}
           className="px-5 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900"
         >
-          Zurueck
+          Zurück
         </button>
         <button
           onClick={onNext}

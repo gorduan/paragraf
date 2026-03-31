@@ -54,7 +54,10 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle("setup:storageEstimate", () => {
-    return { dockerImages: 4000, mlModels: 4000, lawData: 500, total: 8500, unit: "MB" };
+    const modelCachePath = process.env.HF_HOME
+      || process.env.PARAGRAF_MODEL_CACHE
+      || "C:\\ProgramData\\Paragraf\\models";
+    return { dockerImages: 4000, mlModels: 4000, lawData: 500, total: 8500, unit: "MB", modelCachePath };
   });
 
   ipcMain.handle("setup:startDocker", async () => {

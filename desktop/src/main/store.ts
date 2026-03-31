@@ -23,4 +23,4 @@ const defaults: AppSchema = {
   },
 };
 
-export const store = new Store<AppSchema>({ defaults });
+export const store = new Store<AppSchema>({ name: "config", projectName: "paragraf-desktop", defaults });

@@ -19,6 +19,7 @@ interface StorageEstimate {
   lawData: number;
   total: number;
   unit: string;
+  modelCachePath: string;
 }
 
 interface ParagrafSetup {
