@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Desktop Installer
 status: executing
-stopped_at: Phase 16 context gathered
-last_updated: "2026-03-31T11:34:12.908Z"
+stopped_at: Completed 16-01-PLAN.md
+last_updated: "2026-03-31T19:38:16.961Z"
 last_activity: 2026-03-31
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 7
+  completed_plans: 5
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** Juristen und Buerger installieren Paragraf mit einem Doppelklick -- ohne CLI, ohne Docker-Kenntnisse, ohne technisches Vorwissen.
-**Current focus:** Phase 15 — windows-installer-setup-wizard
+**Current focus:** Phase 16 — model-download-gpu-configuration
 
 ## Current Position
 
-Phase: 16
-Plan: Not started
+Phase: 16 (model-download-gpu-configuration) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
 Last activity: 2026-03-31
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0% (0/10 plans across v2.0)
 | Phase 14 P01 | 5min | 2 tasks | 14 files |
 | Phase 14 P02 | 4min | 2 tasks | 7 files |
 | Phase 15 P01 | 5min | 2 tasks | 12 files |
+| Phase 16-model-download-gpu-configuration P01 | 15 | 2 tasks | 4 files |
 
 ### Decisions
 
@@ -72,6 +73,9 @@ Recent decisions affecting current work:
 - [Phase 14]: execFile with array args instead of exec to prevent shell injection
 - [Phase 14]: 10s timeout on Docker Compose stop with tree-kill fallback for clean shutdown
 - [Phase 15]: 4-tier Docker detection: docker info > docker --version > Windows Registry > missing
+- [Phase 16-01]: Use hf_hub_download per-file for byte-level SSE progress (not snapshot_download) — RESEARCH.md Pitfall 1
+- [Phase 16-01]: Manual asyncio.Lock acquire/release in async generators (Python forbids async with in generators)
+- [Phase 16-01]: nvidia-smi subprocess as primary GPU detection, torch.cuda as fallback
 
 ### Pending Todos
 
@@ -85,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T11:34:12.901Z
-Stopped at: Phase 16 context gathered
-Resume file: .planning/phases/16-model-download-gpu-configuration/16-CONTEXT.md
+Last session: 2026-03-31T19:38:16.956Z
+Stopped at: Completed 16-01-PLAN.md
+Resume file: None
