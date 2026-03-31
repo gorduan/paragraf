@@ -146,55 +146,36 @@ class ModelManager:
         ]
 
         total_downloaded = 0
-        file_sizes: dict[str, int] = {}
+        total_estimated = 0
 
         for filename in large_files:
             file_start = time.monotonic()
-            bytes_before = total_downloaded
 
-            # tqdm-Klasse fuer Byte-Level-Fortschritt
-            downloaded_ref: list[int] = [0]
+            # Download der Datei
+            result_path = await asyncio.to_thread(
+                huggingface_hub.hf_hub_download,
+                repo_id=model_id,
+                filename=filename,
+                cache_dir=self.hf_home,
+            )
 
-            try:
-                from tqdm.auto import tqdm
-
-                class _ProgressTqdm(tqdm):  # type: ignore[misc]
-                    """tqdm-Subklasse die Bytes zaehlt."""
-
-                    def update(self, n: int = 1) -> bool | None:  # type: ignore[override]
-                        result = super().update(n)
-                        if n and n > 0:
-                            downloaded_ref[0] += n
-                        return result
-
-                tqdm_class: Any = _ProgressTqdm
-            except ImportError:
-                tqdm_class = None
-
-            kwargs: dict[str, Any] = {
-                "repo_id": model_id,
-                "filename": filename,
-                "cache_dir": self.hf_home,
-            }
-            if tqdm_class is not None:
-                kwargs["tqdm_class"] = tqdm_class
-
-            await asyncio.to_thread(huggingface_hub.hf_hub_download, **kwargs)
-
+            # Dateigröße nach Download ermitteln
+            file_bytes = Path(result_path).stat().st_size if result_path else 0
             elapsed = time.monotonic() - file_start
-            file_bytes = downloaded_ref[0]
-            file_sizes[filename] = file_bytes
             total_downloaded += file_bytes
+            total_estimated += file_bytes
 
             speed_mbps = (file_bytes / (1024 * 1024)) / max(elapsed, 0.001)
+            remaining_files = len(large_files) - (large_files.index(filename) + 1)
+            eta_seconds = int(remaining_files * elapsed) if remaining_files > 0 else 0
 
             yield {
                 "type": "progress",
                 "model": model_id,
                 "downloaded_bytes": total_downloaded,
-                "total_bytes": sum(file_sizes.values()),
+                "total_bytes": total_estimated,
                 "speed_mbps": round(speed_mbps, 2),
-                "eta_seconds": 0,
+                "eta_seconds": eta_seconds,
             }
 
         # Kleine Config-Dateien per snapshot_download nachladen (schnell, da grosse schon da)
