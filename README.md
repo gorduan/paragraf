@@ -1,92 +1,65 @@
-# Paragraf v2 – Docker Web-App fuer deutsches Recht
+# Paragraf
 
-Semantische Suche ueber deutsche Gesetze mit RAG-Pipeline (BAAI/bge-m3 Embeddings, Qdrant Hybrid-Search, Cross-Encoder Reranking).
+RAG-basierte Rechtsrecherche fuer deutsches und europaeisches Recht.
 
-## Quick-Start
+**Status: 0.9-beta** -- Feature-complete fuer den Kernbereich (Hybrid-Suche, Querverweise, Reranking). API kann sich noch aendern.
+
+## Was ist Paragraf?
+
+Paragraf ist eine lokale Anwendung, die 95+ deutsche und europaeische Gesetze als Vektordatenbank vorhaelt und per Hybrid-Search (Dense + Sparse Vektoren) mit Cross-Encoder Reranking durchsuchbar macht.
+
+Die eigentliche Staerke liegt im **MCP-Server**: Jedes MCP-kompatible LLM (Claude, GPT, etc.) erhaelt Zugriff auf eine strukturierte Gesetzes-Datenbank mit Querverweisen -- statt auf unstrukturierte Websuche angewiesen zu sein. Das Web-Frontend dient als Demo-Oberflaeche.
+
+## Schnellstart
 
 ```bash
-# 1. Repository klonen
-git clone <repo-url>
-cd "paragraf v2"
-
-# 2. Starten (baut Images beim ersten Mal)
+git clone https://github.com/your-username/paragraf.git
+cd paragraf
 docker compose up --build
-
-# 3. Oeffnen
-# http://localhost
 ```
 
-Das Backend laedt beim ersten Start die ML-Modelle (~2 GB). Dies dauert einige Minuten – der Fortschritt wird im Frontend-Overlay angezeigt.
+- Web-App: http://localhost:3847
+- API: http://localhost:3847/api/health
+- MCP: http://localhost:8001/mcp
+
+Ausfuehrliche Anleitung: [INSTALLATION.md](INSTALLATION.md)
 
 ## Architektur
 
-| Service | Image | Port | Funktion |
-|---------|-------|------|----------|
-| **qdrant** | qdrant/qdrant:v1.13.2 | 6333 | Vektordatenbank |
-| **backend** | Custom (python:3.12-slim) | 8000 | FastAPI + ML-Modelle |
-| **frontend** | Custom (nginx:alpine) | 80 | React SPA + API-Proxy |
+| Komponente | Technologie | Funktion |
+|------------|-------------|----------|
+| Backend | Python 3.12, FastAPI | REST-API, ML-Pipeline (Embedding, Reranking) |
+| MCP-Server | FastMCP | MCP-Protokoll fuer LLM-Integration (14 Tools) |
+| Frontend | React 19, Vite, TailwindCSS | Demo-Oberflaeche (Web-App) |
+| Vektordatenbank | Qdrant v1.13.2 | Hybrid-Search (Dense + Sparse mit RRF-Fusion) |
+| ML-Modelle | BAAI/bge-m3, bge-reranker-v2-m3 | Embedding (1024-dim) + Cross-Encoder Reranking |
 
-```
-Browser → nginx (:80) → /api/* → backend (:8000) → Qdrant (:6333)
-                       → /*    → React SPA (static files)
-```
+Deployment: Docker Compose (4 Services: qdrant, backend, mcp, frontend)
 
-## GPU-Beschleunigung (optional)
+## Dokumentation
 
-Fuer NVIDIA-GPUs mit installiertem [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html):
+- [Installationsanleitung](INSTALLATION.md) -- Docker-Setup, GPU-Konfiguration, lokale Entwicklung, Troubleshooting
+- [REST-API-Referenz](API.md) -- Alle Endpoints mit curl-Beispielen
+- [MCP-Integration](MCP.md) -- Setup fuer Claude Desktop/Code, alle 14 MCP-Tools mit Beispiel-Prompts
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
-```
+## Ehrliche Einschaetzung
 
-## Gesetze indexieren
+**Was funktioniert gut:**
+- Hybrid-Search mit RRF-Fusion findet relevante Paragraphen zuverlaessig
+- Querverweise zwischen Gesetzen werden automatisch erkannt und verfolgt
+- MCP-Integration gibt LLMs direkten Zugriff auf strukturierte Gesetzestexte
+- 95+ Gesetze verfuegbar (SGB I-XIV, BGG, AGG, BGB, StGB, GG, EU-Recht, etc.)
 
-Nach dem Start muessen die Gesetze erst indexiert werden:
+**Was man wissen sollte:**
+- Die Suche ist gruendlich, nicht schnell (mehrere Sekunden pro Anfrage durch Reranking)
+- Das Frontend ist eine Demo-Oberflaeche, kein ausgereiftes Produkt
+- ML-Modelle brauchen ca. 4 GB RAM und ca. 4 GB Festplatte
+- Erster Start dauert laenger (Modell-Download)
 
-1. Im Frontend die Seite "Index" oeffnen (Ctrl+6)
-2. Gewuenschte Gesetze auswaehlen und "Indexieren" klicken
-3. Alternativ per API: `curl -X POST http://localhost/api/index -H "Content-Type: application/json" -d '{}'`
+## Rechtlicher Hinweis
 
-## Konfiguration
+Paragraf ist **kein** Rechtsberatungsdienst im Sinne des Rechtsdienstleistungsgesetzes (RDG). Die bereitgestellten Informationen sind allgemeine Rechtsinformationen und ersetzen keine individuelle Rechtsberatung. Bei konkreten Rechtsfragen wenden Sie sich an einen Rechtsanwalt oder eine [EUTB-Beratungsstelle](https://www.teilhabeberatung.de) (Tel: 0800 11 10 111).
 
-Alle Einstellungen werden ueber Environment-Variablen in `docker-compose.yml` gesteuert. Siehe `.env.example` fuer alle verfuegbaren Variablen.
+## Lizenz
 
-## Modelle vorladen (optional)
-
-Um die Modelle einmalig vorzuladen, ohne den Server zu starten:
-
-```bash
-docker compose run --rm backend python scripts/download_models.py
-```
-
-## Entwicklung
-
-### Backend lokal
-
-```bash
-cd backend
-pip install -e ".[dev]"
-python -m paragraf --mode api --port 8000
-```
-
-### Frontend lokal
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Der Vite Dev-Server proxied `/api/*` automatisch zum Backend auf Port 8000.
-
-### Tests
-
-```bash
-docker compose exec backend python -m pytest tests/ -v
-```
-
-## Rechtliche Hinweise
-
-- Gesetzestexte: gemeinfrei nach Paragraph 5 UrhG
-- Keine Rechtsberatung im Sinne des RDG – nur allgemeine Rechtsinformation
-- DSGVO: Stateless, keine Nutzerdatenspeicherung
+Gesetzestexte sind gemeinfrei (Paragraph 5 UrhG). Der Quellcode dieses Projekts steht unter der MIT-Lizenz.
