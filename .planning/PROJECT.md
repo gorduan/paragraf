@@ -82,7 +82,7 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen -- mit semant
 - **Qdrant Version**: v1.13.2 -- Features muessen mit dieser Version kompatibel sein
 - **Modelle**: BAAI/bge-m3 + bge-reranker-v2-m3 -- keine neuen ML-Modelle einfuehren
 - **Sprache**: Deutsche UI, deutsche Docstrings, englische Variablen/Funktionsnamen
-- **Branch**: Alle Commits auf Branch "Docker-only", nie auf main/master
+- **Branch**: Alle Commits direkt auf `main`
 
 ## Key Decisions
 

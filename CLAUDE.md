@@ -140,7 +140,7 @@ RAG-basierte Rechtsrecherche fuer deutsches und europaeisches Recht. Nutzt BAAI/
 - **Qdrant Version**: v1.13.2 — Features muessen mit dieser Version kompatibel sein
 - **Modelle**: BAAI/bge-m3 + bge-reranker-v2-m3 — keine neuen ML-Modelle einfuehren
 - **Sprache**: Deutsche UI, deutsche Docstrings, englische Variablen/Funktionsnamen
-- **Branch**: Alle Commits auf Branch "Docker-only", nie auf main/master
+- **Branch**: Alle Commits direkt auf `main`
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:codebase/STACK.md -->
@@ -340,7 +340,7 @@ RAG-basierte Rechtsrecherche fuer deutsches und europaeisches Recht. Nutzt BAAI/
 - Context exports from `App.tsx`: `ThemeContext`, `BookmarkContext`
 - Not used in either Python or TypeScript
 ## Git Conventions
-- All commits and pushes go to branch `Docker-only`, never directly to `main`/`master`
+- All commits and pushes go directly to `main`
 - Mix of English and German commit messages
 - Prefix patterns observed: `fix:`, `Add`, `Fix`
 - Recent examples: `"Fix .gitignore: data/ rule..."`, `"fix: SSE-Stream-Abbruch bei Indexierung..."`

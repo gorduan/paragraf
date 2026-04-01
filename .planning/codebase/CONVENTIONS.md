@@ -208,7 +208,7 @@ status: current
 ## Git Conventions
 
 **Branch Policy:**
-- All commits and pushes go to branch `Docker-only`, never directly to `main`/`master`
+- All commits and pushes go directly to `main`
 
 **Commit Messages:**
 - Mix of English and German commit messages
