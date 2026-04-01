@@ -65,7 +65,7 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen -- mit semant
 
 ## Context
 
-**Current state (v1.0 shipped):**
+**Current state (v1.0 shipped, Phase 18 complete):**
 - 283 files changed, ~50k lines added across 13 phases
 - Tech stack: Python 3.12 + FastAPI + FastMCP, React 19 + Vite + TailwindCSS 4, Qdrant v1.13.2
 - 4 Docker services: qdrant, backend, mcp, frontend (nginx)
@@ -73,6 +73,7 @@ Juristen und Buerger finden in Sekunden die relevanten Paragraphen -- mit semant
 - 24 vitest frontend tests, backend unit tests across all services
 - Nyquist test coverage: 1/10 phases fully compliant (area for improvement)
 - All Qdrant v1.13.2 capabilities utilized except ColBERT multi-vector
+- Phase 18 complete: Version 0.9-beta, full documentation (INSTALLATION.md, API.md, MCP.md, README.md)
 
 ## Constraints
 
