@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "mcp__paragraf__paragraf_search",
-      "mcp__paragraf__paragraf_lookup"
-    ]
-  }
-}

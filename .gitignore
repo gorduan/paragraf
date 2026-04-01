@@ -31,3 +31,12 @@ Thumbs.db
 
 # Data (nur root-level)
 /data/
+
+# Claude Code / GSD workflow
+.claude/
+.planning/
+
+# Electron build artifacts
+desktop/out/
+desktop/release/
+desktop/etest/
