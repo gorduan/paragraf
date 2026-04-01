@@ -1,6 +1,6 @@
 {
   "name": "paragraf-desktop",
-  "version": "2.0.0",
+  "version": "0.9.0-beta",
   "private": true,
   "description": "Paragraf Desktop – Deutsches Recht als Desktop-App",
   "main": "out/main/index.js",

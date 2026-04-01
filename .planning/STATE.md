@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Desktop Installer
-status: executing
-stopped_at: Phase 18 context gathered
-last_updated: "2026-04-01T16:02:44.880Z"
-last_activity: 2026-03-31
+status: verifying
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-04-01T16:25:11.851Z"
+last_activity: 2026-04-01
 progress:
-  total_phases: 5
+  total_phases: 4
   completed_phases: 3
   total_plans: 7
   completed_plans: 7
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 
 Phase: 16 (model-download-gpu-configuration) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-03-31
+Status: Phase complete — ready for verification
+Last activity: 2026-04-01
 
 Progress: [░░░░░░░░░░] 0% (0/10 plans across v2.0)
 
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0% (0/10 plans across v2.0)
 | Phase 15 P01 | 5min | 2 tasks | 12 files |
 | Phase 16-model-download-gpu-configuration P01 | 15 | 2 tasks | 4 files |
 | Phase 16-model-download-gpu-configuration P02 | 15 | 2 tasks | 5 files |
+| Phase 18-documentation-and-beta-release P01 | 2min | 2 tasks | 6 files |
 
 ### Decisions
 
@@ -80,10 +81,7 @@ Recent decisions affecting current work:
 - [Phase 16-02]: getGpuComposeFilePath mirrors getComposeFilePath pattern for dev/packaged path resolution
 - [Phase 16-02]: store.get casts to concrete types to work around electron-store {} | undefined return type
 - [Phase 16-02]: setup:complete now sets setupStep=7 (7-step wizard with new download+gpu steps 4+5)
-
-### Roadmap Evolution
-
-- Phase 18 added: Documentation & Beta Release — README, Install-Guide, API-Guide, MCP-Guide, Version 0.9-beta
+- [Phase 18-documentation-and-beta-release]: PEP 440 format 0.9b0 for Python, npm semver 0.9.0-beta for JS packages
 
 ### Pending Todos
 
@@ -97,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T16:02:44.874Z
-Stopped at: Phase 18 context gathered
-Resume file: .planning/phases/18-documentation-and-beta-release/18-CONTEXT.md
+Last session: 2026-04-01T16:25:11.843Z
+Stopped at: Completed 18-01-PLAN.md
+Resume file: None

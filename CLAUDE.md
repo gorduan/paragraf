@@ -1,4 +1,4 @@
-# Paragraf v2 – Docker Web-App fuer deutsches Recht
+# Paragraf – RAG-basierte Rechtsrecherche fuer deutsches Recht
 
 ## Projektbeschreibung
 Docker-basierte Web-App fuer deutsches Recht mit RAG-basierter Rechtsauskunft.
@@ -17,7 +17,7 @@ und Cross-Encoder Reranking. Deployment per `docker compose up`.
 
 ## Projektstruktur
 ```
-paragraf v2/
+paragraf/
 ├── docker-compose.yml          # 3 Services: qdrant, backend, frontend
 ├── docker-compose.gpu.yml      # GPU-Override (optional)
 ├── .env.example
@@ -127,11 +127,9 @@ Spawn Subagents fuer **jede nicht-triviale Teilaufgabe**:
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
 
-**Paragraf v2 — Volles Qdrant-Potenzial**
+**Paragraf 0.9-beta — RAG-basierte Rechtsrecherche fuer deutsches Recht**
 
-Docker-basierte Web-App fuer deutsches und europaeisches Recht mit RAG-basierter Rechtsrecherche. Nutzt BAAI/bge-m3 Embeddings, Qdrant Hybrid-Search (Dense + Sparse mit RRF-Fusion) und Cross-Encoder Reranking. Dual-Interface: React-Frontend fuer Endnutzer und MCP-Server fuer Claude Desktop/Code.
-
-Dieses Milestone erschliesst das volle Potenzial der Qdrant-Datenbank und verbessert Frontend, Backend und MCP-Tools gleichermassen.
+RAG-basierte Rechtsrecherche fuer deutsches und europaeisches Recht. Nutzt BAAI/bge-m3 Embeddings, Qdrant Hybrid-Search (Dense + Sparse mit RRF-Fusion) und Cross-Encoder Reranking. Der MCP-Server fuer Claude Desktop/Code ist die primaere Staerke des Systems; das React-Frontend dient als Demo-Interface. Gruendliche Suche ueber ~100 Gesetze mit Querverweisen und Zitationsnetzwerk.
 
 **Core Value:** Juristen und Buerger finden in Sekunden die relevanten Paragraphen — mit semantischer Suche, Querverweisen zwischen Gesetzen und gruppierten Ergebnissen, die den Kontext einer Rechtsfrage vollstaendig erschliessen.
 
