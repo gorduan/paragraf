@@ -36,6 +36,14 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 - [x] **MODEL-03**: Nutzer kann zwischen CPU und GPU zur Laufzeit wechseln (Settings)
 - [x] **MODEL-04**: Model-Cache kann in den Einstellungen verwaltet werden (Pfad, Groesse, Loeschen)
 
+### Documentation & Beta Release
+
+- [ ] **DOC-01**: Version auf 0.9-beta geaendert in allen relevanten Dateien (pyproject.toml, package.json, __init__.py, CLAUDE.md, .env.example)
+- [ ] **DOC-02**: README.md komplett neu geschrieben als sachliche Projekt-Uebersicht mit Links zu Guides (kein Marketing)
+- [ ] **DOC-03**: INSTALLATION.md erstellt mit Schritt-fuer-Schritt Docker-Anleitung, GPU-Setup, lokaler Entwicklung, Troubleshooting
+- [ ] **DOC-04**: API.md erstellt mit allen REST-Endpoints, curl-Beispielen, gruppiert nach Funktion
+- [ ] **DOC-05**: MCP.md erstellt als wichtigster Guide mit Setup fuer Claude Desktop/Code, alle 14 MCP-Tools mit Beispiel-Prompts
+
 ## v2.1 Requirements (Deferred)
 
 ### Native Mode (Docker-free)
@@ -83,12 +91,17 @@ Requirements fuer dieses Milestone. Jedes mapped zu Roadmap-Phasen.
 | MODEL-02 | Phase 16 | Complete |
 | MODEL-03 | Phase 16 | Complete |
 | MODEL-04 | Phase 16 | Complete |
+| DOC-01 | Phase 18 | Pending |
+| DOC-02 | Phase 18 | Pending |
+| DOC-03 | Phase 18 | Pending |
+| DOC-04 | Phase 18 | Pending |
+| DOC-05 | Phase 18 | Pending |
 
 **Coverage:**
-- v2.0 requirements: 17 total
-- Mapped to phases: 17
+- v2.0 requirements: 22 total
+- Mapped to phases: 22
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-29*
-*Traceability updated: 2026-03-29*
+*Traceability updated: 2026-04-01*
