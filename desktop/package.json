@@ -3,7 +3,10 @@
   "version": "0.9.0-beta",
   "private": true,
   "description": "Paragraf Desktop – Deutsches Recht als Desktop-App",
-  "author": "Paragraf",
+  "author": {
+    "name": "Paragraf",
+    "email": "paragraf@gorduan.de"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/gorduan/paragraf.git"
