@@ -37,19 +37,31 @@ Die Desktop-App ist ein Electron-basierter Wrapper mit grafischem Setup-Wizard. 
    - Installer ausfuehren, Neustart falls noetig
    - Docker Desktop starten und warten bis das Symbol in der Taskleiste gruen wird
 
-2. **Paragraf-Installer ausfuehren:**
+2. **Installer bauen** (es gibt noch kein fertiges Release zum Download):
+
+   ```bash
+   git clone https://github.com/gorduan/paragraf.git
+   cd paragraf/desktop
+   npm install
+   npm run prebuild:dist
+   npm run dist
+   ```
+
+   Der Installer liegt danach in `desktop/release/Paragraf-Setup-0.9.0-beta.exe`.
+
+3. **Paragraf-Installer ausfuehren:**
    - `Paragraf-Setup-0.9.0-beta.exe` starten
    - Installationsordner waehlen (Standard: `C:\Users\<Name>\AppData\Local\Programs\Paragraf`)
    - Optional: Desktop-Verknuepfung und Startmenue-Eintrag erstellen
 
-3. **Setup-Wizard durchlaufen:**
+4. **Setup-Wizard durchlaufen:**
    Der Wizard startet beim ersten Oeffnen der App und fuehrt durch folgende Schritte:
    - **Docker-Erkennung:** Prueft ob Docker Desktop installiert und gestartet ist
    - **Speicherpfad:** Wo ML-Modelle gespeichert werden (Standard: `C:\ProgramData\Paragraf\models`)
    - **GPU-Auswahl:** Falls eine NVIDIA-Grafikkarte erkannt wird, kann GPU-Beschleunigung aktiviert werden
    - **Zusammenfassung:** Uebersicht der gewaehlten Einstellungen
 
-4. **Paragraf startet automatisch:**
+5. **Paragraf startet automatisch:**
    Nach Abschluss des Wizards startet die App die Docker-Container im Hintergrund. Beim ersten Start werden ML-Modelle (~4 GB) heruntergeladen -- das dauert je nach Internetverbindung 5-15 Minuten.
 
 ### Desktop-App verwenden

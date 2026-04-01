@@ -23,6 +23,18 @@ Die Desktop-App ist ein Electron-Wrapper, der Docker im Hintergrund verwaltet --
 
 ### Desktop-App (Windows)
 
+Der Installer muss zuerst gebaut werden (es gibt noch kein fertiges Release zum Download):
+
+```bash
+git clone https://github.com/gorduan/paragraf.git
+cd paragraf/desktop
+npm install
+npm run prebuild:dist
+npm run dist
+```
+
+Der Installer liegt danach in `desktop/release/Paragraf-Setup-0.9.0-beta.exe`.
+
 1. [Docker Desktop](https://www.docker.com/products/docker-desktop/) installieren und starten
 2. `Paragraf-Setup-0.9.0-beta.exe` ausfuehren
 3. Setup-Wizard folgen (Docker-Erkennung, Speicherpfad, GPU-Auswahl)
