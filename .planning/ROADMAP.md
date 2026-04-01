@@ -34,6 +34,7 @@
 - [x] **Phase 15: Windows Installer & Setup Wizard** - NSIS-Installer mit First-Run-Wizard und Docker-Erkennung (completed 2026-03-31)
 - [x] **Phase 16: Model Download & GPU Configuration** - ML-Modell-Download mit Fortschritt und automatische GPU-Erkennung (completed 2026-03-31)
 - [ ] **Phase 17: System Tray & Crash Resilience** - Tray-Minimierung, Port-Konflikt-Erkennung und automatischer Neustart
+- [ ] **Phase 18: Documentation & Beta Release** - README-Ueberarbeitung, Installationsanleitung, API-Guide, MCP-Guide, Version 0.9-beta
 
 ## Phase Details
 
@@ -113,3 +114,14 @@ Phases execute in numeric order: 14 > 15 > 16 > 17
 | 15. Windows Installer & Setup Wizard | v2.0 | 2/2 | Complete    | 2026-03-31 |
 | 16. Model Download & GPU Configuration | v2.0 | 3/3 | Complete   | 2026-03-31 |
 | 17. System Tray & Crash Resilience | v2.0 | 0/2 | Not started | - |
+| 18. Documentation & Beta Release | v2.0 | 0/0 | Not started | - |
+
+### Phase 18: Documentation & Beta Release
+
+**Goal:** Projekt-Dokumentation ueberarbeiten fuer GitHub: ehrliche README ohne Marketing, ausfuehrliche Installationsanleitung, API-Guide, MCP-Guide. Version auf 0.9-beta aendern. Frontend als Demo positionieren, Staerken liegen im MCP fuer bessere LLM-Antworten.
+**Requirements**: TBD
+**Depends on:** Phase 17
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 18 to break down)

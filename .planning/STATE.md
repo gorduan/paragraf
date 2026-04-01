@@ -81,6 +81,10 @@ Recent decisions affecting current work:
 - [Phase 16-02]: store.get casts to concrete types to work around electron-store {} | undefined return type
 - [Phase 16-02]: setup:complete now sets setupStep=7 (7-step wizard with new download+gpu steps 4+5)
 
+### Roadmap Evolution
+
+- Phase 18 added: Documentation & Beta Release — README, Install-Guide, API-Guide, MCP-Guide, Version 0.9-beta
+
 ### Pending Todos
 
 None yet.
