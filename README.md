@@ -21,24 +21,20 @@ Die Desktop-App ist ein Electron-Wrapper, der Docker im Hintergrund verwaltet --
 
 ## Schnellstart
 
-### Desktop-App (Windows)
+### Desktop-App (Windows, macOS, Linux)
 
-Der Installer muss zuerst gebaut werden (es gibt noch kein fertiges Release zum Download):
+1. Installer von der [Releases-Seite](https://github.com/gorduan/paragraf/releases) herunterladen
+2. [Docker Desktop](https://www.docker.com/products/docker-desktop/) installieren und starten
+3. Installer ausfuehren
+4. Setup-Wizard folgen (Docker-Erkennung, Speicherpfad, GPU-Auswahl)
+5. Paragraf oeffnet sich automatisch
 
-```bash
-git clone https://github.com/gorduan/paragraf.git
-cd paragraf/desktop
-npm install
-npm run prebuild:dist
-npm run dist
-```
-
-Der Installer liegt danach in `desktop/release/Paragraf-Setup-0.9.0-beta.exe`.
-
-1. [Docker Desktop](https://www.docker.com/products/docker-desktop/) installieren und starten
-2. `Paragraf-Setup-0.9.0-beta.exe` ausfuehren
-3. Setup-Wizard folgen (Docker-Erkennung, Speicherpfad, GPU-Auswahl)
-4. Paragraf oeffnet sich automatisch
+| Plattform | Datei |
+|-----------|-------|
+| Windows (x64) | `Paragraf-Setup-*-win-x64.exe` |
+| macOS (Intel) | `Paragraf-*-mac-x64.dmg` |
+| macOS (Apple Silicon) | `Paragraf-*-mac-arm64.dmg` |
+| Linux (x64) | `Paragraf-*-linux-x64.AppImage` oder `.deb` |
 
 ### Docker Compose (alle Plattformen)
 
@@ -69,13 +65,14 @@ Deployment: Docker Compose (3 Services: qdrant, backend, mcp) -- die Desktop-App
 
 ## Plattform-Unterstuetzung
 
-| Plattform | Desktop-App | Docker Compose | Status |
-|-----------|-------------|----------------|--------|
-| **Windows 10/11** (x64) | NSIS-Installer | `docker compose up` | Primaere Plattform |
-| **macOS 12+** (Intel/Apple Silicon) | -- | `docker compose up` | Funktioniert, kein Installer |
-| **Linux** (x64, Docker-faehig) | -- | `docker compose up` | Funktioniert, kein Installer |
+| Plattform | Desktop-App | Docker Compose |
+|-----------|-------------|----------------|
+| **Windows 10/11** (x64) | `.exe` (NSIS-Installer) | `docker compose up` |
+| **macOS 12+** (Intel) | `.dmg` | `docker compose up` |
+| **macOS 12+** (Apple Silicon) | `.dmg` (arm64) | `docker compose up` |
+| **Linux** (x64) | `.AppImage` / `.deb` | `docker compose up` |
 
-Der Windows-Installer ist aktuell die einzige Desktop-Variante. macOS- und Linux-Nutzer verwenden Docker Compose direkt.
+Alle Installer auf der [Releases-Seite](https://github.com/gorduan/paragraf/releases).
 
 ## Dokumentation
 

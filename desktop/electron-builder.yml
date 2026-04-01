@@ -24,6 +24,7 @@ extraResources:
       - "!**/__pycache__/**"
       - "!**/.pytest_cache/**"
 
+# ── Windows ──────────────────────────────────────────────────────────────────
 win:
   target:
     - target: nsis
@@ -39,5 +40,35 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: Paragraf
   menuCategory: Paragraf
-  artifactName: "Paragraf-Setup-${version}.${ext}"
+  artifactName: "Paragraf-Setup-${version}-win-x64.${ext}"
   license: build/license.rtf
+
+# ── macOS ────────────────────────────────────────────────────────────────────
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: resources/icon.png
+  category: public.app-category.reference
+  artifactName: "Paragraf-${version}-mac-${arch}.${ext}"
+
+dmg:
+  title: "Paragraf ${version}"
+
+# ── Linux ────────────────────────────────────────────────────────────────────
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  icon: resources/icon.png
+  category: Education
+  artifactName: "Paragraf-${version}-linux-x64.${ext}"
+
+appImage:
+  artifactName: "Paragraf-${version}-linux-x64.AppImage"

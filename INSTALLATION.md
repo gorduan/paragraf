@@ -26,33 +26,57 @@ Die Desktop-App ist ein Electron-basierter Wrapper mit grafischem Setup-Wizard. 
 
 | Anforderung | Details |
 |-------------|---------|
-| Betriebssystem | Windows 10 oder 11 (x64) |
+| Betriebssystem | Windows 10/11 (x64), macOS 12+ (Intel/Apple Silicon), Linux (x64) |
 | Docker Desktop | Muss installiert und gestartet sein |
-| Installer | `Paragraf-Setup-0.9.0-beta.exe` |
+| Installer | Von der [Releases-Seite](https://github.com/gorduan/paragraf/releases) herunterladen |
+
+### Verfuegbare Installer
+
+| Plattform | Datei |
+|-----------|-------|
+| Windows (x64) | `Paragraf-Setup-*-win-x64.exe` |
+| macOS (Intel) | `Paragraf-*-mac-x64.dmg` |
+| macOS (Apple Silicon) | `Paragraf-*-mac-arm64.dmg` |
+| Linux (x64) | `Paragraf-*-linux-x64.AppImage` oder `Paragraf-*-linux-x64.deb` |
 
 ### Installation
 
 1. **Docker Desktop installieren** (falls noch nicht vorhanden):
+
+   **Windows:**
    - Herunterladen von https://www.docker.com/products/docker-desktop/
    - Installer ausfuehren, Neustart falls noetig
    - Docker Desktop starten und warten bis das Symbol in der Taskleiste gruen wird
 
-2. **Installer bauen** (es gibt noch kein fertiges Release zum Download):
+   **macOS:**
+   - Herunterladen von https://www.docker.com/products/docker-desktop/
+   - `.dmg` oeffnen, Docker in den Programme-Ordner ziehen
+   - Docker Desktop starten, warten bis das Menueleisten-Symbol gruen wird
 
+   **Linux:**
    ```bash
-   git clone https://github.com/gorduan/paragraf.git
-   cd paragraf/desktop
-   npm install
-   npm run prebuild:dist
-   npm run dist
+   # Ubuntu/Debian
+   sudo apt update && sudo apt install docker.io docker-compose-v2
+   sudo systemctl enable --now docker
+   sudo usermod -aG docker $USER  # Ausloggen/Einloggen noetig
    ```
 
-   Der Installer liegt danach in `desktop/release/Paragraf-Setup-0.9.0-beta.exe`.
+2. **Installer von der [Releases-Seite](https://github.com/gorduan/paragraf/releases) herunterladen und ausfuehren:**
 
-3. **Paragraf-Installer ausfuehren:**
-   - `Paragraf-Setup-0.9.0-beta.exe` starten
-   - Installationsordner waehlen (Standard: `C:\Users\<Name>\AppData\Local\Programs\Paragraf`)
-   - Optional: Desktop-Verknuepfung und Startmenue-Eintrag erstellen
+   **Windows:** `.exe` starten, Installationsordner waehlen, optional Desktop-Verknuepfung erstellen.
+
+   **macOS:** `.dmg` oeffnen, Paragraf in den Programme-Ordner ziehen.
+
+   **Linux (AppImage):** Ausfuehrbar machen und starten:
+   ```bash
+   chmod +x Paragraf-*-linux-x64.AppImage
+   ./Paragraf-*-linux-x64.AppImage
+   ```
+
+   **Linux (deb):**
+   ```bash
+   sudo dpkg -i Paragraf-*-linux-x64.deb
+   ```
 
 4. **Setup-Wizard durchlaufen:**
    Der Wizard startet beim ersten Oeffnen der App und fuehrt durch folgende Schritte:
@@ -501,14 +525,20 @@ Neuen Installer (`Paragraf-Setup-x.y.z.exe`) ausfuehren. Die vorherige Version w
 
 ## Deinstallation
 
-### Desktop-App (Windows)
+### Desktop-App
 
-1. Windows-Einstellungen > Apps > Paragraf > Deinstallieren
-2. Optional -- Docker-Volumes und Modell-Cache loeschen:
-   ```bash
-   docker compose -f docker-compose.desktop.yml down -v
-   rmdir /s /q C:\ProgramData\Paragraf
-   ```
+**Windows:** Windows-Einstellungen > Apps > Paragraf > Deinstallieren
+
+**macOS:** Paragraf aus dem Programme-Ordner in den Papierkorb ziehen
+
+**Linux (deb):** `sudo apt remove paragraf-desktop`
+
+**Linux (AppImage):** Die `.AppImage`-Datei loeschen
+
+Optional -- Docker-Volumes und Modell-Cache loeschen (alle Plattformen):
+```bash
+docker compose -f docker-compose.desktop.yml down -v
+```
 
 ### Docker Compose
 
