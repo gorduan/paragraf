@@ -32,12 +32,12 @@ Die Desktop-App ist ein Electron-basierter Wrapper mit grafischem Setup-Wizard. 
 
 ### Verfuegbare Installer
 
-| Plattform | Datei |
-|-----------|-------|
-| Windows (x64) | `Paragraf-Setup-*-win-x64.exe` |
-| macOS (Intel) | `Paragraf-*-mac-x64.dmg` |
-| macOS (Apple Silicon) | `Paragraf-*-mac-arm64.dmg` |
-| Linux (x64) | `Paragraf-*-linux-x64.AppImage` oder `Paragraf-*-linux-x64.deb` |
+| Plattform | Download |
+|-----------|----------|
+| Windows (x64) | [Paragraf-Setup-0.9.0-beta-win-x64.exe](https://github.com/gorduan/paragraf/releases/download/v0.9.0-beta/Paragraf-Setup-0.9.0-beta-win-x64.exe) |
+| macOS (Intel) | [Paragraf-0.9.0-beta-mac-x64.dmg](https://github.com/gorduan/paragraf/releases/download/v0.9.0-beta/Paragraf-0.9.0-beta-mac-x64.dmg) |
+| macOS (Apple Silicon) | [Paragraf-0.9.0-beta-mac-arm64.dmg](https://github.com/gorduan/paragraf/releases/download/v0.9.0-beta/Paragraf-0.9.0-beta-mac-arm64.dmg) |
+| Linux (x64) | [AppImage](https://github.com/gorduan/paragraf/releases/download/v0.9.0-beta/Paragraf-0.9.0-beta-linux-x64.AppImage) / [.deb](https://github.com/gorduan/paragraf/releases/download/v0.9.0-beta/Paragraf-0.9.0-beta-linux-x64.deb) |
 
 ### Installation
 
