@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Desktop Installer
-status: executing
-stopped_at: Completed 16-02-PLAN.md
-last_updated: "2026-03-31T19:44:21.516Z"
-last_activity: 2026-03-31
+status: verifying
+stopped_at: Completed 18-02-PLAN.md
+last_updated: "2026-04-01T16:28:02.029Z"
+last_activity: 2026-04-01
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 
 Phase: 16 (model-download-gpu-configuration) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-03-31
+Status: Phase complete — ready for verification
+Last activity: 2026-04-01
 
 Progress: [░░░░░░░░░░] 0% (0/10 plans across v2.0)
 
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0% (0/10 plans across v2.0)
 | Phase 15 P01 | 5min | 2 tasks | 12 files |
 | Phase 16-model-download-gpu-configuration P01 | 15 | 2 tasks | 4 files |
 | Phase 16-model-download-gpu-configuration P02 | 15 | 2 tasks | 5 files |
+| Phase 18-documentation-and-beta-release P02 | 4 | 2 tasks | 2 files |
 
 ### Decisions
 
@@ -80,6 +81,7 @@ Recent decisions affecting current work:
 - [Phase 16-02]: getGpuComposeFilePath mirrors getComposeFilePath pattern for dev/packaged path resolution
 - [Phase 16-02]: store.get casts to concrete types to work around electron-store {} | undefined return type
 - [Phase 16-02]: setup:complete now sets setupStep=7 (7-step wizard with new download+gpu steps 4+5)
+- [Phase 18-documentation-and-beta-release]: localhost:3847 as primary URL in API curl examples (nginx proxy path)
 
 ### Pending Todos
 
@@ -93,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T19:44:21.511Z
-Stopped at: Completed 16-02-PLAN.md
+Last session: 2026-04-01T16:28:02.024Z
+Stopped at: Completed 18-02-PLAN.md
 Resume file: None
