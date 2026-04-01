@@ -8,12 +8,30 @@ RAG-basierte Rechtsrecherche fuer deutsches und europaeisches Recht.
 
 Paragraf ist eine lokale Anwendung, die 95+ deutsche und europaeische Gesetze als Vektordatenbank vorhaelt und per Hybrid-Search (Dense + Sparse Vektoren) mit Cross-Encoder Reranking durchsuchbar macht.
 
-Die eigentliche Staerke liegt im **MCP-Server**: Jedes MCP-kompatible LLM (Claude, GPT, etc.) erhaelt Zugriff auf eine strukturierte Gesetzes-Datenbank mit Querverweisen -- statt auf unstrukturierte Websuche angewiesen zu sein. Das Web-Frontend dient als Demo-Oberflaeche.
+Die eigentliche Staerke liegt im **MCP-Server**: Jedes MCP-kompatible LLM (Claude, GPT, etc.) erhaelt Zugriff auf eine strukturierte Gesetzes-Datenbank mit Querverweisen -- statt auf unstrukturierte Websuche angewiesen zu sein.
+
+## Zwei Wege, Paragraf zu nutzen
+
+| Variante | Fuer wen | Was wird benoetigt |
+|----------|----------|-------------------|
+| **Desktop-App** (empfohlen) | Endnutzer ohne CLI-Kenntnisse | Windows-Installer (`Paragraf-Setup-0.9.0-beta.exe`), Docker Desktop |
+| **Docker Compose** | Entwickler, Linux/macOS-Nutzer | Git, Docker, Terminal |
+
+Die Desktop-App ist ein Electron-Wrapper, der Docker im Hintergrund verwaltet -- mit grafischem Setup-Wizard, automatischer GPU-Erkennung und Modell-Download. Unter der Haube laufen dieselben Docker-Services.
 
 ## Schnellstart
 
+### Desktop-App (Windows)
+
+1. [Docker Desktop](https://www.docker.com/products/docker-desktop/) installieren und starten
+2. `Paragraf-Setup-0.9.0-beta.exe` ausfuehren
+3. Setup-Wizard folgen (Docker-Erkennung, Speicherpfad, GPU-Auswahl)
+4. Paragraf oeffnet sich automatisch
+
+### Docker Compose (alle Plattformen)
+
 ```bash
-git clone https://github.com/your-username/paragraf.git
+git clone https://github.com/gorduan/paragraf.git
 cd paragraf
 docker compose up --build
 ```
@@ -28,17 +46,28 @@ Ausfuehrliche Anleitung: [INSTALLATION.md](INSTALLATION.md)
 
 | Komponente | Technologie | Funktion |
 |------------|-------------|----------|
+| Desktop-App | Electron 41 | Grafische Oberflaeche, Docker-Lifecycle, Setup-Wizard |
 | Backend | Python 3.12, FastAPI | REST-API, ML-Pipeline (Embedding, Reranking) |
 | MCP-Server | FastMCP | MCP-Protokoll fuer LLM-Integration (14 Tools) |
-| Frontend | React 19, Vite, TailwindCSS | Demo-Oberflaeche (Web-App) |
+| Web-Frontend | React 19, Vite, TailwindCSS | Browser-Oberflaeche (auch ohne Desktop-App nutzbar) |
 | Vektordatenbank | Qdrant v1.13.2 | Hybrid-Search (Dense + Sparse mit RRF-Fusion) |
 | ML-Modelle | BAAI/bge-m3, bge-reranker-v2-m3 | Embedding (1024-dim) + Cross-Encoder Reranking |
 
-Deployment: Docker Compose (4 Services: qdrant, backend, mcp, frontend)
+Deployment: Docker Compose (3 Services: qdrant, backend, mcp) -- die Desktop-App startet und stoppt Docker automatisch.
+
+## Plattform-Unterstuetzung
+
+| Plattform | Desktop-App | Docker Compose | Status |
+|-----------|-------------|----------------|--------|
+| **Windows 10/11** (x64) | NSIS-Installer | `docker compose up` | Primaere Plattform |
+| **macOS 12+** (Intel/Apple Silicon) | -- | `docker compose up` | Funktioniert, kein Installer |
+| **Linux** (x64, Docker-faehig) | -- | `docker compose up` | Funktioniert, kein Installer |
+
+Der Windows-Installer ist aktuell die einzige Desktop-Variante. macOS- und Linux-Nutzer verwenden Docker Compose direkt.
 
 ## Dokumentation
 
-- [Installationsanleitung](INSTALLATION.md) -- Docker-Setup, GPU-Konfiguration, lokale Entwicklung, Troubleshooting
+- [Installationsanleitung](INSTALLATION.md) -- Desktop-App, Docker-Setup, GPU, plattformspezifische Hinweise, Troubleshooting
 - [REST-API-Referenz](API.md) -- Alle Endpoints mit curl-Beispielen
 - [MCP-Integration](MCP.md) -- Setup fuer Claude Desktop/Code, alle 14 MCP-Tools mit Beispiel-Prompts
 
@@ -49,12 +78,14 @@ Deployment: Docker Compose (4 Services: qdrant, backend, mcp, frontend)
 - Querverweise zwischen Gesetzen werden automatisch erkannt und verfolgt
 - MCP-Integration gibt LLMs direkten Zugriff auf strukturierte Gesetzestexte
 - 95+ Gesetze verfuegbar (SGB I-XIV, BGG, AGG, BGB, StGB, GG, EU-Recht, etc.)
+- Desktop-App mit Setup-Wizard macht die Einrichtung unter Windows zugaenglich
 
 **Was man wissen sollte:**
 - Die Suche ist gruendlich, nicht schnell (mehrere Sekunden pro Anfrage durch Reranking)
-- Das Frontend ist eine Demo-Oberflaeche, kein ausgereiftes Produkt
 - ML-Modelle brauchen ca. 4 GB RAM und ca. 4 GB Festplatte
-- Erster Start dauert laenger (Modell-Download)
+- Erster Start dauert laenger (Modell-Download ~4 GB)
+- Docker Desktop muss installiert sein -- auch fuer die Desktop-App
+- macOS/Linux-Installer existieren noch nicht
 
 ## Rechtlicher Hinweis
 
