@@ -62,7 +62,7 @@ jobs:
 
       - name: Build installer
         working-directory: desktop
-        run: npm run dist
+        run: npx electron-builder --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
