@@ -127,9 +127,8 @@ class ModelManager:
                 logger.warning("Festplattenplatz-Pruefung fehlgeschlagen: %s", e)
 
             hub_dir = Path(self.hf_home) / "hub"
-            total_models = len(MODELS)
 
-            for idx, (model_id, label) in enumerate(MODELS):
+            for model_id, label in MODELS:
                 # Pruefen ob Modell schon vollstaendig da ist
                 if _is_model_downloaded(hub_dir, model_id):
                     logger.info("Modell %s bereits heruntergeladen — ueberspringe", model_id)
@@ -138,38 +137,14 @@ class ModelManager:
                     continue
 
                 yield {"type": "start", "model": model_id, "label": label}
-                yield {
-                    "type": "progress",
-                    "model": model_id,
-                    "model_index": idx + 1,
-                    "total_models": total_models,
-                    "message": f"Lade {label} herunter...",
-                }
 
                 success = False
                 last_error: str = ""
 
                 for attempt in range(1, MAX_RETRIES + 1):
                     try:
-                        download_start = time.monotonic()
-                        await asyncio.to_thread(
-                            self._snapshot_download_sync, model_id
-                        )
-                        elapsed = time.monotonic() - download_start
-                        size_mb = _get_model_size_mb(hub_dir, model_id)
-                        speed_mbps = round(size_mb / max(elapsed, 0.001), 1)
-
-                        yield {
-                            "type": "progress",
-                            "model": model_id,
-                            "model_index": idx + 1,
-                            "total_models": total_models,
-                            "downloaded_bytes": size_mb * 1024 * 1024,
-                            "total_bytes": size_mb * 1024 * 1024,
-                            "speed_mbps": speed_mbps,
-                            "eta_seconds": 0,
-                            "message": f"{label} heruntergeladen ({size_mb} MB)",
-                        }
+                        async for event in self._download_model_per_file(model_id, label):
+                            yield event
                         yield {"type": "complete", "model": model_id}
                         success = True
                         break
@@ -204,15 +179,67 @@ class ModelManager:
             self._download_started_at = 0.0
             self._download_lock.release()
 
-    @staticmethod
-    def _snapshot_download_sync(model_id: str, cache_dir: str | None = None) -> str:
-        """Synchroner Wrapper fuer snapshot_download (laeuft in Thread)."""
+    async def _download_model_per_file(
+        self, model_id: str, label: str
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Download eines Modells Datei fuer Datei mit Fortschritt nach jeder Datei.
+
+        Ermittelt Dateigroessen vorab ueber die HuggingFace API und sendet nach
+        jeder heruntergeladenen Datei ein progress-Event mit echten Bytes.
+        """
         import huggingface_hub
 
-        return huggingface_hub.snapshot_download(
-            model_id,
-            cache_dir=cache_dir or os.environ.get("HF_HOME", "/models"),
+        # Repo-Infos holen um Dateigroessen zu kennen
+        repo_info = await asyncio.to_thread(
+            huggingface_hub.repo_info, model_id, files_metadata=True
         )
+        # Alle Dateien mit Groessen sammeln
+        file_sizes: dict[str, int] = {}
+        for sibling in repo_info.siblings or []:
+            file_sizes[sibling.rfilename] = sibling.size or 0
+
+        total_bytes = sum(file_sizes.values())
+        downloaded_bytes = 0
+        download_start = time.monotonic()
+
+        yield {
+            "type": "progress",
+            "model": model_id,
+            "downloaded_bytes": 0,
+            "total_bytes": total_bytes,
+            "speed_mbps": 0,
+            "eta_seconds": 0,
+            "message": f"Lade {label} herunter... (0 / {total_bytes // (1024*1024)} MB)",
+        }
+
+        # Dateien nach Groesse sortieren (grosse zuerst fuer besseres Feedback)
+        sorted_files = sorted(file_sizes.keys(), key=lambda f: file_sizes.get(f, 0), reverse=True)
+
+        for filename in sorted_files:
+            await asyncio.to_thread(
+                huggingface_hub.hf_hub_download,
+                repo_id=model_id,
+                filename=filename,
+                cache_dir=self.hf_home,
+            )
+
+            downloaded_bytes += file_sizes.get(filename, 0)
+            elapsed = time.monotonic() - download_start
+            speed_mbps = round((downloaded_bytes / (1024 * 1024)) / max(elapsed, 0.001), 1)
+            remaining_bytes = total_bytes - downloaded_bytes
+            eta_seconds = int(remaining_bytes / max(downloaded_bytes / max(elapsed, 0.001), 1))
+            dl_mb = downloaded_bytes // (1024 * 1024)
+            total_mb = total_bytes // (1024 * 1024)
+
+            yield {
+                "type": "progress",
+                "model": model_id,
+                "downloaded_bytes": downloaded_bytes,
+                "total_bytes": total_bytes,
+                "speed_mbps": speed_mbps,
+                "eta_seconds": eta_seconds,
+                "message": f"Lade {label}... ({dl_mb} / {total_mb} MB — {speed_mbps} MB/s)",
+            }
 
     async def get_model_status(self) -> dict[str, Any]:
         """Gibt den Status aller ML-Modelle zurueck."""

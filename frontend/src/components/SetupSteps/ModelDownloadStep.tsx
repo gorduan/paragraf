@@ -14,6 +14,10 @@ interface ModelState {
   label: string;
   status: "waiting" | "downloading" | "complete" | "error";
   message?: string;
+  downloadedBytes: number;
+  totalBytes: number;
+  speedMbps: number;
+  etaSeconds: number;
 }
 
 type StepStatus = "waiting-backend" | "idle" | "warning" | "downloading" | "complete" | "error";
@@ -23,8 +27,8 @@ type StepStatus = "waiting-backend" | "idle" | "warning" | "downloading" | "comp
 export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
   const [status, setStatus] = useState<StepStatus>("waiting-backend");
   const [models, setModels] = useState<ModelState[]>([
-    { name: "BAAI/bge-m3", label: "Embedding-Modell (BAAI/bge-m3)", status: "waiting" },
-    { name: "BAAI/bge-reranker-v2-m3", label: "Reranker-Modell (BAAI/bge-reranker-v2-m3)", status: "waiting" },
+    { name: "BAAI/bge-m3", label: "Embedding-Modell (BAAI/bge-m3)", status: "waiting", downloadedBytes: 0, totalBytes: 0, speedMbps: 0, etaSeconds: 0 },
+    { name: "BAAI/bge-reranker-v2-m3", label: "Reranker-Modell (BAAI/bge-reranker-v2-m3)", status: "waiting", downloadedBytes: 0, totalBytes: 0, speedMbps: 0, etaSeconds: 0 },
   ]);
   const [freeGb, setFreeGb] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
@@ -85,7 +89,14 @@ export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
       case "progress":
         setModels((prev) =>
           prev.map((m) =>
-            m.name === event.model ? { ...m, message: event.message } : m,
+            m.name === event.model ? {
+              ...m,
+              message: event.message,
+              downloadedBytes: event.downloaded_bytes ?? m.downloadedBytes,
+              totalBytes: event.total_bytes ?? m.totalBytes,
+              speedMbps: event.speed_mbps ?? m.speedMbps,
+              etaSeconds: event.eta_seconds ?? m.etaSeconds,
+            } : m,
           ),
         );
         break;
@@ -125,7 +136,7 @@ export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
   const handleStartDownload = useCallback(() => {
     setStatus("downloading");
     setErrorMessage("");
-    setModels((prev) => prev.map((m) => ({ ...m, status: "waiting" as const, message: undefined })));
+    setModels((prev) => prev.map((m) => ({ ...m, status: "waiting" as const, message: undefined, downloadedBytes: 0, totalBytes: 0, speedMbps: 0, etaSeconds: 0 })));
     const handle = api.downloadModels(handleProgress);
     downloadRef.current = handle;
   }, [handleProgress]);
@@ -194,11 +205,29 @@ export function ModelDownloadStep({ onNext, onBack }: ModelDownloadStepProps) {
             )}
             {m.status === "downloading" && (
               <div className="mt-2">
-                <div className="h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
-                  <div className="h-full rounded-full bg-primary-500 animate-pulse w-full" />
-                </div>
-                <p className="text-xs text-neutral-500 mt-1" aria-live="polite">
-                  {m.message || "Wird heruntergeladen..."}
+                {m.totalBytes > 0 ? (
+                  <div
+                    className="h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden"
+                    role="progressbar"
+                    aria-valuenow={Math.round((m.downloadedBytes / m.totalBytes) * 100)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`${m.label}: ${Math.round((m.downloadedBytes / m.totalBytes) * 100)}%`}
+                  >
+                    <div
+                      className="h-full rounded-full bg-primary-500 transition-all duration-500"
+                      style={{ width: `${Math.round((m.downloadedBytes / m.totalBytes) * 100)}%` }}
+                    />
+                  </div>
+                ) : (
+                  <div className="h-2 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden">
+                    <div className="h-full rounded-full bg-primary-500 animate-pulse w-full" />
+                  </div>
+                )}
+                <p className="text-xs text-neutral-500 mt-1.5" aria-live="polite">
+                  {m.totalBytes > 0
+                    ? `${(m.downloadedBytes / (1024**3)).toFixed(1)} / ${(m.totalBytes / (1024**3)).toFixed(1)} GB \u2014 ${m.speedMbps.toFixed(1)} MB/s \u2014 ca. ${m.etaSeconds > 60 ? `${Math.round(m.etaSeconds / 60)} Min.` : `${m.etaSeconds} Sek.`}`
+                    : (m.message || "Wird heruntergeladen...")}
                 </p>
               </div>
             )}
